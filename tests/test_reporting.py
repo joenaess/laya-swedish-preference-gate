@@ -293,3 +293,27 @@ def test_calibrate_score_split(tiny_gate):
     logits, labels = score_split(tiny_gate, ROWS)
     assert logits.shape == (3, 2) and list(labels) == [0, 1, 1]
     json.dumps(logits.tolist())
+
+
+def test_probe_section_renders_and_is_optional():
+    assert readme.probe_summary({}) is None
+    assert "Not measured" in readme.probe_section({})
+    m = synthetic_metrics()
+    acc = {"accuracy": 0.64, "ci95": [0.59, 0.7], "n": 299}
+    m["probe"] = {
+        "n_pairs": 299,
+        "gate": {
+            "order_averaged": acc,
+            "ece_order_averaged": 0.23,
+            "by_margin": {"1.0-<2.0": acc, ">=2.0": acc},
+            "default_margin": {"margin": 0.2, "coverage": 0.84, "accuracy_on_covered": 0.67},
+            "by_confidence": [{"confidence": [0.9, 1.0], "fraction": 0.65, "accuracy": 0.7}],
+        },
+        "judge": {"order_averaged": {"accuracy": 0.87, "ci95": [0.85, 0.9], "n": 598}},
+    }
+    section = readme.probe_section(m)
+    assert "64.0% [59.0%, 70.0%] for gaps 1.0–2.0" in section
+    assert "0.9–1.0 | 65.0% | 70.0%" in section
+    text = readme.render(m)
+    assert "Measured directly: on 299 pairs" in text and "weak quality judge" in text
+    assert "**Measured on fluent pairs:**" in publish.model_card(m, "me/model")

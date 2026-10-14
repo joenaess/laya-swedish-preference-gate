@@ -301,16 +301,62 @@ Rule: judge prefers the rejected response in both orders AND gate's order-averag
 (`judge.label_noise.pair_ids`). These are candidates for mislabeled or ambiguous pairs, not
 confirmed errors: both "judges" may share a bias, for example toward longer answers.
 
+### Fluent-vs-fluent probe (does it judge quality?)
+
+The held-out numbers above come from the training distribution, where "chosen" is idiomatic
+Swedish and "rejected" is a deliberately poor translation. This probe asks the harder question:
+**can the gate pick the better answer when both are natural Swedish?**
+
+Design: 299 UltraFeedback pairs (seed 20261014, GPT-4 rating margin >= 1.0, <= 3500 English chars) rewritten into natural Swedish by kimi-k3 with identical instructions for both answers, content and errors preserved; label = higher-rated answer. Source: [`argilla/ultrafeedback-binarized-preferences-cleaned`](https://huggingface.co/datasets/argilla/ultrafeedback-binarized-preferences-cleaned).
+299 of 300 sampled pairs translated cleanly (translation parse
+failures: 1). Sanity checks: the log length ratio between
+the two answers correlates 0.998 between English and Swedish
+(content length preserved), and the TF-IDF style model that scores
+98.4% on the training distribution drops to
+64.2% here (the translationese signal is largely gone).
+5.0% of probe inputs were truncated for the gate.
+
+| Scorer (both orders) | Accuracy [95% bootstrap CI] |
+|---|---|
+| **Gate** (order-averaged probability) | **64.2% [58.9%, 69.6%]** |
+| Gate, better answer in slot A | 58.9% [53.2%, 64.5%] |
+| Gate, better answer in slot B | 70.6% [65.6%, 75.6%] |
+| **Kimi-k3 judge** | **87.3% [84.6%, 89.8%]** |
+| TF-IDF style model (trained on the gate's training split) | 64.2% [58.5%, 69.6%] |
+| Longer Swedish answer wins | 57.5% [51.8%, 63.2%] |
+
+- Gate positional consistency drops to 82.3% (vs
+  98.4% in-distribution); Kimi-k3's is
+  94.0%. Gate–judge agreement: 61.0%.
+- **Calibration does not transfer:** mean confidence 0.872, ECE
+  0.230 (vs 0.006 in-distribution).
+  At the default `margin=0.2`, 83.6% of probe pairs pass
+  as confident, with only 66.8% accuracy, so a cascade would keep
+  most of its mistakes instead of routing them to the judge.
+- By GPT-4 rating gap: 59.8% [52.3%, 68.2%] for gaps 1.0–2.0, 67.7% [60.5%, 74.9%] for gaps ≥ 2.0.
+- Excluding the 32 probe prompts that likely overlap training prompts
+  (char 3-5-gram TF-IDF cosine >= 0.8 to the nearest training prompt): 62.5% [56.6%, 68.2%].
+
+| Gate confidence | Share of probe pairs | Accuracy |
+|---|---|---|
+| 0.5–0.7 | 16.4% | 51.0% |
+| 0.7–0.9 | 18.4% | 56.4% |
+| 0.9–1.0 | 65.2% | 69.7% |
+
+**Takeaway:** the gate carries a modest quality signal (above chance) but is far behind an
+LLM judge on fluent pairs and is badly over-confident there. Use it for naturalness and
+translationese; do not use its confidence to skip the judge on fluent answers.
+
 ### Tests
 
-`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **82 passed, 0 failed,
-0 errors, 0 skipped** of 82.
-Coverage: **70.7%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 71.4% · `judge.py` 79.3% · `predictor.py` 97.9% · `publish.py` 55.4% · `readme.py` 93.3% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0%.
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **96 passed, 0 failed,
+0 errors, 0 skipped** of 96.
+Coverage: **66.0%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 69.6% · `judge.py` 79.3% · `predictor.py` 97.9% · `probe.py` 30.9% · `publish.py` 57.7% · `readme.py` 93.8% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0%.
 
 
 ## Limitations
 
-- **The labels encode translation quality, by construction.** Per the dataset card, kimi-k3 localized each prompt and chosen response into idiomatic Swedish and *deliberately* wrote the rejected response as poor translation (literal phrasing, English loan words, US-centric content). A TF-IDF logistic regression reaches 98.4% on the same held-out pairs, so most of the gate's accuracy is detecting translationese. Do not read it as a general helpfulness or correctness judge for two *fluent* Swedish answers.
+- **The labels encode translation quality, by construction.** Per the dataset card, kimi-k3 localized each prompt and chosen response into idiomatic Swedish and *deliberately* wrote the rejected response as poor translation (literal phrasing, English loan words, US-centric content). A TF-IDF logistic regression reaches 98.4% on the same held-out pairs, so most of the gate's accuracy is detecting translationese. Measured directly: on 299 pairs where *both* answers are natural Swedish and only quality differs, the gate is right 64.2% of the time (95% CI 58.9%–69.6%) versus 87.3% for Kimi-k3, and its calibration breaks down (ECE 0.230). Do not use it as a general helpfulness or correctness judge for two *fluent* Swedish answers.
 - **The judge generated the data.** Kimi-k3 wrote both sides of every pair, so its agreement with the labels measures self-consistency, not independent quality judgement.
 - **Pairwise preference, not fact-checking.** The gate predicts which of two responses the dataset labels as chosen. It does not verify factual correctness, and a fluent wrong answer can beat a terse correct one.
 - **1024-token window.** 42.3% of pairs exceed it; the gate then sees only the end of the prompt and the start of each response, so differences late in long answers are invisible to it.
@@ -319,7 +365,7 @@ Coverage: **70.7%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · 
 
 ## Conclusion
 
-The fine-tuned gate reaches 98.4% accuracy on held-out pairs (the zero-shot base checkpoint: 51.6%), with calibrated probabilities (ECE 0.006, meeting the ≤ 0.085 target) and a median single-pair GPU forward pass of 9.9 ms (meeting the 35 ms target). It picks the same winner in both presentation orders for 98.4% of pairs. When it is confident (margin ≥ 0.2, 99.4% of predictions) it is right 98.6% of the time, so its confidence is usable for routing. That accuracy should be read next to the lexical baseline: a TF-IDF logistic regression scores 98.4% on the same pairs, because the dataset contrasts idiomatic Swedish with deliberately poor translation. The gate does not measurably beat that baseline (+0.0 points); what it adds is calibrated confidence, order-robustness and a single model that also reads the prompt. The gate is a strong translationese detector; how well it ranks two equally fluent answers by helpfulness was not measured and should not be assumed.
+The fine-tuned gate reaches 98.4% accuracy on held-out pairs (the zero-shot base checkpoint: 51.6%), with calibrated probabilities (ECE 0.006, meeting the ≤ 0.085 target) and a median single-pair GPU forward pass of 9.9 ms (meeting the 35 ms target). It picks the same winner in both presentation orders for 98.4% of pairs. When it is confident (margin ≥ 0.2, 99.4% of predictions) it is right 98.6% of the time, so its confidence is usable for routing. That accuracy should be read next to the lexical baseline: a TF-IDF logistic regression scores 98.4% on the same pairs, because the dataset contrasts idiomatic Swedish with deliberately poor translation. The gate does not measurably beat that baseline (+0.0 points); what it adds is calibrated confidence, order-robustness and a single model that also reads the prompt. The gate is a strong translationese detector. It is a weak quality judge: on 299 pairs where *both* answers are natural Swedish and only quality differs, the gate is right 64.2% of the time (95% CI 58.9%–69.6%) versus 87.3% for Kimi-k3, and its calibration breaks down (ECE 0.230).
 
 Against these labels Kimi-k3 is *less* accurate than the gate (95.5% vs 98.6%) and 802× slower, which is expected: the labels mark translationese, which the gate was trained on, while the judge was also asked about helpfulness and correctness, and it generated these pairs itself. The judge still helps where the gate is unsure: routing the 5.2% least-confident instances (threshold 0.45) lifts accuracy from 98.6% to 99.1% at an expected 507.5 ms per pair. The pre-registered rule (cheapest threshold within 0.5 points of the best) picks 0.00, i.e. 0.0% routed, because the gain is that small. For its intended System 1 role on data like this, settling confident comparisons in milliseconds and escalating the rest, the gate is fit for purpose (latency target met, ECE target met, confident-subset accuracy 98.6% vs judge 95.5%). It should not be the only judge for high-stakes decisions.
 

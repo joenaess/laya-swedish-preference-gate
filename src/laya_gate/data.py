@@ -294,31 +294,50 @@ def split_examples(examples: Sequence[dict[str, Any]], val_frac: float = 0.15, s
 # ------------------------------------------------------------------------- baselines
 
 
+def _tfidf_model(train):
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.linear_model import LogisticRegression
+
+    vec = TfidfVectorizer(min_df=5, max_features=50_000, sublinear_tf=True)
+    vec.fit([r[k] for r in train for k in ("candidate_a", "candidate_b")])
+
+    def feats(a_texts, b_texts):
+        return vec.transform(a_texts) - vec.transform(b_texts)
+
+    y = np.array([r["label"] for r in train])
+    clf = LogisticRegression(max_iter=2000, C=4.0).fit(
+        feats([r["candidate_a"] for r in train], [r["candidate_b"] for r in train]), y
+    )
+    return vec, clf, feats
+
+
+def fit_tfidf_baseline(train):
+    """`predict_b(a, b)`: True when the TF-IDF style model says candidate B is better."""
+    _vec, clf, feats = _tfidf_model(train)
+
+    def predict_b(a: str, b: str) -> bool:
+        return bool(clf.predict(feats([a], [b]))[0])
+
+    return predict_b
+
+
 def shortcut_baselines(train, evaluation, top_k: int = 15) -> dict[str, Any]:
     """Cheap non-neural baselines on val_eval, to show how much of the task is lexical.
 
     - longer response wins
     - logistic regression on the TF-IDF difference (candidate_a - candidate_b)
     """
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.linear_model import LogisticRegression
-
-    y_tr = np.array([r["label"] for r in train])
     y_ev = np.array([r["label"] for r in evaluation])
     longer_b = np.array([len(r["candidate_b"]) > len(r["candidate_a"]) for r in evaluation])
-    vec = TfidfVectorizer(min_df=5, max_features=50_000, sublinear_tf=True)
-    vec.fit([r[k] for r in train for k in ("candidate_a", "candidate_b")])
-
-    def feats(rows):
-        a = vec.transform([r["candidate_a"] for r in rows])
-        return a - vec.transform([r["candidate_b"] for r in rows])
-
-    clf = LogisticRegression(max_iter=2000, C=4.0).fit(feats(train), y_tr)
+    vec, clf, feats = _tfidf_model(train)
+    pred = clf.predict(
+        feats([r["candidate_a"] for r in evaluation], [r["candidate_b"] for r in evaluation])
+    )
     names, w = vec.get_feature_names_out(), clf.coef_[0]
     return {
         "split": "val_eval",
         "longer_response_wins_accuracy": float((longer_b.astype(int) == y_ev).mean()),
-        "tfidf_logreg_accuracy": float((clf.predict(feats(evaluation)) == y_ev).mean()),
+        "tfidf_logreg_accuracy": float((pred == y_ev).mean()),
         "words_favouring_chosen": [str(x) for x in names[np.argsort(w)[:top_k]]],
         "words_favouring_rejected": [str(x) for x in names[np.argsort(w)[-top_k:][::-1]]],
         "note": "label 1 = candidate_b chosen, so negative weights favour candidate_a; lists "

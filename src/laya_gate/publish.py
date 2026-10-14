@@ -84,8 +84,8 @@ milliseconds and escalate the uncertain ones to a slow LLM judge ("System 2").
 > Swedish answer (chosen) with a *deliberately* poor translation (rejected: literal phrasing,
 > English loan words, US-centric content). The gate is therefore, first and foremost, an
 > **authentic-Swedish vs. translationese detector**. It reaches {readme.pct(acc)} on held-out
-> pairs, but a bag-of-words baseline reaches {readme.pct(base)} on the same pairs. Its ability to
-> rank two *equally fluent* answers by helpfulness or correctness has **not** been measured.
+> pairs, but a bag-of-words baseline reaches {readme.pct(base)} on the same pairs.
+> {_probe_line(m)}
 > See [Limitations](#limitations).
 
 Code, pipeline and full results: [github.com/{GITHUB_REPO}](https://github.com/{GITHUB_REPO}).
@@ -240,8 +240,8 @@ cut `candidate_b` away entirely. `SwedishPreferenceGate` truncates each field fa
 - Flagging suspicious pairs in Swedish preference datasets.
 
 **Out of scope:** fact-checking; safety or toxicity classification; ranking two fluent, native
-answers by helpfulness (not evaluated); languages other than Swedish; any high-stakes decision
-without human review.
+answers by helpfulness (see the fluent-vs-fluent probe below: well behind an LLM judge, and
+over-confident); languages other than Swedish; any high-stakes decision without human review.
 
 ## Training data
 
@@ -269,6 +269,10 @@ selection or the temperature fit.
 ### System 1 vs System 2 (Kimi-k3 judge)
 
 {readme.judge_section(m)}
+
+### Fluent-vs-fluent probe (does it judge quality?)
+
+{readme.probe_section(m)}
 
 ## Limitations
 
@@ -307,6 +311,19 @@ Apache-2.0. Base model license: {lic.get("convaiinnovations/laya", "see repo")};
 {lic.get("jonasaise/dpo-swedish-interpreted", "see repo")}. The dataset is derived from
 UltraFeedback; check the upstream terms before commercial use.
 """
+
+
+def _probe_line(m: dict) -> str:
+    summary = readme.probe_summary(m)
+    if summary:
+        return (
+            f"**Measured on fluent pairs:** {summary}. Treat its confidence as meaningful "
+            "only for naturalness/translationese."
+        )
+    return (
+        "Its ability to rank two *equally fluent* answers by helpfulness or correctness has "
+        "**not** been measured."
+    )
 
 
 def _routed_at(m: dict, threshold: float):

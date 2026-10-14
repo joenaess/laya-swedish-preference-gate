@@ -502,23 +502,24 @@
   },
   "tests": {
     "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
-    "total": 82,
-    "passed": 82,
+    "total": 96,
+    "passed": 96,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "skipped_tests": {},
     "all_passed": true,
-    "coverage_percent": 70.7,
+    "coverage_percent": 66.0,
     "coverage_per_module": {
       "__init__.py": 100.0,
       "benchmark.py": 63.2,
       "calibrate.py": 63.8,
-      "data.py": 71.4,
+      "data.py": 69.6,
       "judge.py": 79.3,
       "predictor.py": 97.9,
-      "publish.py": 55.4,
-      "readme.py": 93.3,
+      "probe.py": 30.9,
+      "publish.py": 57.7,
+      "readme.py": 93.8,
       "testing.py": 0.0,
       "train.py": 37.3,
       "utils.py": 100.0
@@ -529,7 +530,7 @@
     "repo_id": "jonasaise/laya-swedish-preference-gate",
     "url": "https://huggingface.co/jonasaise/laya-swedish-preference-gate",
     "visibility": "public",
-    "commit": "a650a1191f2510143deb292352eaf82c12e539ba",
+    "commit": "c4cc3a379a05bef843997be7ee13eaa6811ef070",
     "files": [
       "README.md",
       "encoder",
@@ -539,5 +540,153 @@
       "temperature.json",
       "tokenizer"
     ]
+  },
+  "probe": {
+    "source": "argilla/ultrafeedback-binarized-preferences-cleaned",
+    "design": "299 UltraFeedback pairs (seed 20261014, GPT-4 rating margin >= 1.0, <= 3500 English chars) rewritten into natural Swedish by kimi-k3 with identical instructions for both answers, content and errors preserved; label = higher-rated answer",
+    "n_requested": 300,
+    "n_eligible_pool": 23544,
+    "n_pairs": 299,
+    "translation": {
+      "live": 1,
+      "failed": 0,
+      "parse_failed": 1,
+      "done": 1,
+      "model": "kimi-k3"
+    },
+    "fraction_truncated_for_gate": 0.05016722408026756,
+    "length_ratio_correlation_en_sv": 0.9978383403279629,
+    "gate": {
+      "order_averaged": {
+        "accuracy": 0.6421404682274248,
+        "ci95": [
+          0.5886287625418061,
+          0.6956521739130435
+        ],
+        "n": 299
+      },
+      "chosen_in_a": {
+        "accuracy": 0.5886287625418061,
+        "ci95": [
+          0.5317725752508361,
+          0.6454849498327759
+        ],
+        "n": 299
+      },
+      "chosen_in_b": {
+        "accuracy": 0.705685618729097,
+        "ci95": [
+          0.6555183946488294,
+          0.7558528428093646
+        ],
+        "n": 299
+      },
+      "positional_consistency": 0.822742474916388,
+      "mean_confidence": 0.8717956346846358,
+      "ece_order_averaged": 0.23032140029517667,
+      "default_margin": {
+        "margin": 0.2,
+        "coverage": 0.8361204013377926,
+        "accuracy_on_covered": 0.668,
+        "accuracy_on_routed": 0.5102040816326531
+      },
+      "by_confidence": [
+        {
+          "confidence": [
+            0.5,
+            0.7
+          ],
+          "fraction": 0.16387959866220736,
+          "accuracy": 0.5102040816326531
+        },
+        {
+          "confidence": [
+            0.7,
+            0.9
+          ],
+          "fraction": 0.18394648829431437,
+          "accuracy": 0.5636363636363636
+        },
+        {
+          "confidence": [
+            0.9,
+            1.0
+          ],
+          "fraction": 0.6521739130434783,
+          "accuracy": 0.6974358974358974
+        }
+      ],
+      "by_margin": {
+        "1.0-<2.0": {
+          "accuracy": 0.5984848484848485,
+          "ci95": [
+            0.5227272727272727,
+            0.6818181818181818
+          ],
+          "n": 132
+        },
+        ">=2.0": {
+          "accuracy": 0.6766467065868264,
+          "ci95": [
+            0.6047904191616766,
+            0.7485029940119761
+          ],
+          "n": 167
+        }
+      },
+      "excluding_likely_training_overlap": {
+        "accuracy": 0.6254681647940075,
+        "ci95": [
+          0.5655430711610487,
+          0.6816479400749064
+        ],
+        "n": 267
+      }
+    },
+    "judge": {
+      "order_averaged": {
+        "accuracy": 0.8729096989966555,
+        "ci95": [
+          0.8461538461538461,
+          0.8979933110367893
+        ],
+        "n": 598
+      },
+      "both_orders_correct_fraction": 0.842809364548495,
+      "positional_consistency": 0.939799331103679,
+      "parse_failures": 0
+    },
+    "baselines": {
+      "tfidf_style_model": {
+        "accuracy": 0.6421404682274248,
+        "ci95": [
+          0.5852842809364549,
+          0.6956521739130435
+        ],
+        "n": 299
+      },
+      "longer_wins_swedish": {
+        "accuracy": 0.5752508361204013,
+        "ci95": [
+          0.5183946488294314,
+          0.6321070234113713
+        ],
+        "n": 299
+      },
+      "longer_wins_english_original": {
+        "accuracy": 0.5819397993311036,
+        "ci95": [
+          0.5250836120401338,
+          0.6421404682274248
+        ],
+        "n": 299
+      }
+    },
+    "gate_judge_agreement": 0.6103678929765887,
+    "likely_training_overlap": {
+      "rule": "char 3-5-gram TF-IDF cosine >= 0.8 to the nearest training prompt",
+      "n_flagged": 32,
+      "max_similarity_median": 0.23035460527673948
+    }
   }
 }

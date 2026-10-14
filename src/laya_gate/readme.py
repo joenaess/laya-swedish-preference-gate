@@ -403,6 +403,83 @@ Rule: {noise.get("rule", NM)}. **{noise.get("n_suspected", NM)}** of {sample.get
 confirmed errors: both "judges" may share a bias, for example toward longer answers."""
 
 
+def probe_summary(m: dict) -> str | None:
+    """One sentence with the fluent-vs-fluent probe result, or None when it has not run."""
+    p = m.get("probe")
+    if not isinstance(p, dict):
+        return None
+    g, j = get(p, "gate.order_averaged", {}), get(p, "judge.order_averaged", {})
+    return (
+        f"on {p.get('n_pairs')} pairs where *both* answers are natural Swedish and only quality "
+        f"differs, the gate is right {pct(g.get('accuracy'))} of the time (95% CI "
+        f"{pct(get(g, 'ci95.0'))}–{pct(get(g, 'ci95.1'))}) versus {pct(j.get('accuracy'))} for "
+        f"Kimi-k3, and its calibration breaks down (ECE {num(get(p, 'gate.ece_order_averaged'))})"
+    )
+
+
+def probe_section(m: dict) -> str:
+    p = m.get("probe")
+    if not isinstance(p, dict):
+        return f"Not measured: {p or 'run `python -m laya_gate.probe`'}."
+    g, j, b = p.get("gate", {}), p.get("judge", {}), p.get("baselines", {})
+    dm = g.get("default_margin", {})
+
+    def cell(x):
+        return (
+            f"{pct(x.get('accuracy'))} [{pct(get(x, 'ci95.0'))}, {pct(get(x, 'ci95.1'))}]"
+            if isinstance(x, dict)
+            else NM
+        )
+
+    conf_rows = "\n".join(
+        f"| {c['confidence'][0]:.1f}–{c['confidence'][1]:.1f} | {pct(c['fraction'])} | "
+        f"{pct(c['accuracy'])} |"
+        for c in g.get("by_confidence", [])
+    )
+    ov = p.get("likely_training_overlap", {})
+    return f"""The held-out numbers above come from the training distribution, where "chosen" is idiomatic
+Swedish and "rejected" is a deliberately poor translation. This probe asks the harder question:
+**can the gate pick the better answer when both are natural Swedish?**
+
+Design: {p.get("design", NM)}. Source: [`{p.get("source", NM)}`](https://huggingface.co/datasets/{p.get("source", "")}).
+{p.get("n_pairs", NM)} of {p.get("n_requested", NM)} sampled pairs translated cleanly (translation parse
+failures: {get(p, "translation.parse_failed", NM)}). Sanity checks: the log length ratio between
+the two answers correlates {num(p.get("length_ratio_correlation_en_sv"))} between English and Swedish
+(content length preserved), and the TF-IDF style model that scores
+{pct(get(m, "data.baselines.tfidf_logreg_accuracy"))} on the training distribution drops to
+{pct(get(b, "tfidf_style_model.accuracy"))} here (the translationese signal is largely gone).
+{pct(p.get("fraction_truncated_for_gate"))} of probe inputs were truncated for the gate.
+
+| Scorer (both orders) | Accuracy [95% bootstrap CI] |
+|---|---|
+| **Gate** (order-averaged probability) | **{cell(g.get("order_averaged"))}** |
+| Gate, better answer in slot A | {cell(g.get("chosen_in_a"))} |
+| Gate, better answer in slot B | {cell(g.get("chosen_in_b"))} |
+| **Kimi-k3 judge** | **{cell(j.get("order_averaged"))}** |
+| TF-IDF style model (trained on the gate's training split) | {cell(b.get("tfidf_style_model"))} |
+| Longer Swedish answer wins | {cell(b.get("longer_wins_swedish"))} |
+
+- Gate positional consistency drops to {pct(g.get("positional_consistency"))} (vs
+  {pct(get(m, "benchmark.positional.consistent_fraction"))} in-distribution); Kimi-k3's is
+  {pct(j.get("positional_consistency"))}. Gate–judge agreement: {pct(p.get("gate_judge_agreement"))}.
+- **Calibration does not transfer:** mean confidence {num(g.get("mean_confidence"))}, ECE
+  {num(g.get("ece_order_averaged"))} (vs {num(get(m, "calibration.ece_post"))} in-distribution).
+  At the default `margin={dm.get("margin", NM)}`, {pct(dm.get("coverage"))} of probe pairs pass
+  as confident, with only {pct(dm.get("accuracy_on_covered"))} accuracy, so a cascade would keep
+  most of its mistakes instead of routing them to the judge.
+- By GPT-4 rating gap: {cell(g.get("by_margin", {}).get("1.0-<2.0"))} for gaps 1.0–2.0, {cell(g.get("by_margin", {}).get(">=2.0"))} for gaps ≥ 2.0.
+- Excluding the {ov.get("n_flagged", NM)} probe prompts that likely overlap training prompts
+  ({ov.get("rule", NM)}): {cell(g.get("excluding_likely_training_overlap"))}.
+
+| Gate confidence | Share of probe pairs | Accuracy |
+|---|---|---|
+{conf_rows}
+
+**Takeaway:** the gate carries a modest quality signal (above chance) but is far behind an
+LLM judge on fluent pairs and is badly over-confident there. Use it for naturalness and
+translationese; do not use its confidence to skip the judge on fluent answers."""
+
+
 def tests_section(m: dict) -> str:
     t = m.get("tests")
     if not isinstance(t, dict):
@@ -437,8 +514,10 @@ def limitations(m: dict) -> str:
         "*deliberately* wrote the rejected response as poor translation (literal phrasing, "
         "English loan words, US-centric content). A TF-IDF logistic regression reaches "
         f"{pct(get(m, 'data.baselines.tfidf_logreg_accuracy'))} on the same held-out pairs, "
-        "so most of the gate's accuracy is detecting translationese. Do not read it as a "
-        "general helpfulness or correctness judge for two *fluent* Swedish answers.",
+        "so most of the gate's accuracy is detecting translationese. "
+        + (f"Measured directly: {probe_summary(m)}. " if probe_summary(m) else "")
+        + "Do not use it as a general helpfulness or correctness judge for two *fluent* "
+        "Swedish answers.",
         "**The judge generated the data.** Kimi-k3 wrote both sides of every pair, so its "
         "agreement with the labels measures self-consistency, not independent quality "
         "judgement.",
@@ -481,8 +560,13 @@ def conclusion(m: dict) -> str:
         f"logistic regression scores {pct(get(m, 'data.baselines.tfidf_logreg_accuracy'))} on "
         "the same pairs, because the dataset contrasts idiomatic Swedish with deliberately "
         f"poor translation. {baseline_comparison(m)} The gate is a strong translationese "
-        "detector; how well it ranks two equally fluent answers by helpfulness was not "
-        "measured and should not be assumed."
+        "detector. "
+        + (
+            f"It is a weak quality judge: {probe_summary(m)}."
+            if probe_summary(m)
+            else "How well it ranks two equally fluent answers by helpfulness was not "
+            "measured and should not be assumed."
+        )
     )
     if not isinstance(j, dict):
         return p1 + "\n\nThe System 2 comparison was not run, so the cascade could not be assessed."
@@ -704,6 +788,10 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 ### System 1 vs System 2
 
 {judge_section(m)}
+
+### Fluent-vs-fluent probe (does it judge quality?)
+
+{probe_section(m)}
 
 ### Tests
 
