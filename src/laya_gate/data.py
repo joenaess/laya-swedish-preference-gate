@@ -131,6 +131,16 @@ def state_room(tok, max_len: int = MAX_LEN, head_max_len: int = HEAD_MAX_LEN) ->
     return _room(tok, internal_question(), max_len, head_max_len)
 
 
+def state_room_for(
+    tok, questions: dict, max_len: int = MAX_LEN, head_max_len: int = HEAD_MAX_LEN
+) -> int:
+    """State budget that fits after *every* question's head, so one truncated state serves all."""
+    from laya.common import state_room as _room
+    from laya.train import to_internal
+
+    return min(_room(tok, to_internal(q, d), max_len, head_max_len) for q, d in questions.items())
+
+
 def count_state_tokens(tok, state: dict[str, str]) -> int:
     from laya.common import encode_text, serialize_state
 

@@ -480,6 +480,289 @@ LLM judge on fluent pairs and is badly over-confident there. Use it for naturaln
 translationese; do not use its confidence to skip the judge on fluent answers."""
 
 
+def generation_section(m: dict) -> str:
+    """How the fluent training pairs were produced: reasoning-off fidelity and concurrency."""
+    f, fid = m.get("fluent_data"), m.get("fluent_fidelity")
+    if not isinstance(f, dict):
+        return f"Not measured: {f or 'run `python -m laya_gate.fluent`'}."
+    runs = f.get("throughput_runs", [])
+    run_rows = "\n".join(
+        f"| {r['chunk']} | {r['concurrency']} | {num(r.get('requests_per_second'), 2)} | "
+        f"{num(r.get('output_tokens_per_second'), 0)} | {num(r.get('latency_p50_s'), 1)} s | "
+        f"{r.get('failed', NM)} / {r.get('parse_failed', NM)} |"
+        for r in runs
+    )
+    by_conc: dict[int, list[float]] = {}
+    for r in runs:
+        if isinstance(r.get("requests_per_second"), float):
+            by_conc.setdefault(r["concurrency"], []).append(r["requests_per_second"])
+    conc_line = ", ".join(
+        f"concurrency {c}: {min(v):.2f}–{max(v):.2f} req/s over {len(v)} chunk(s)"
+        for c, v in sorted(by_conc.items())
+    )
+    total_s = sum(r.get("wall_seconds", 0.0) for r in runs)
+    if isinstance(fid, dict):
+        ja = fid.get("judge_accuracy_both_orders", {})
+        sim, lr = (
+            fid.get("mean_char_similarity_to_reasoning_on", {}),
+            fid.get("mean_length_ratio_off_over_on", {}),
+        )
+        fid_text = (
+            f"Before generating, the first {fid.get('n_pairs', NM)} probe pairs were re-translated "
+            f"with reasoning off (median {num(fid.get('reasoning_off_completion_tokens_median'), 0)} "
+            "completion tokens per pair) and compared with the reasoning-on translations. "
+            f"Lengths are preserved (off/on length ratio {num(lr.get('chosen'))} for the better "
+            f"answer, {num(lr.get('rejected'))} for the worse), character similarity is "
+            f"{num(sim.get('chosen'), 2)} / {num(sim.get('rejected'), 2)}, and Kimi-k3 recovers the "
+            f"UltraFeedback label on {pct(ja.get('reasoning_off'))} of reasoning-off pairs vs "
+            f"{pct(ja.get('reasoning_on'))} of reasoning-on pairs (both orders). The small drop "
+            "was accepted for training data; the probe itself stays reasoning-on."
+        )
+    else:
+        fid_text = "The reasoning-off fidelity check was not recorded."
+    return f"""{f.get("requested", NM)} more UltraFeedback pairs (disjoint from the probe; pool of
+{f.get("eligible_pool_excluding_probe", NM)}) were rewritten into natural Swedish with the probe's
+translation prompt, by {f.get("translator", NM)}. {f.get("translated", NM)} translated cleanly
+({f.get("translation_failures", NM)} failures); {f.get("dropped_near_duplicate_prompts", NM)} were
+dropped because their Swedish prompt nearly duplicates a probe or validation prompt (char n-gram
+cosine ≥ 0.8), leaving **{f.get("kept", NM)}** pairs, split
+{" / ".join(f"{k} {v}" for k, v in f.get("splits", {}).items())} with the better answer in slot B
+for {pct(get(f, "label_balance_frac_chosen_in_b.train"))} of train pairs.
+
+{fid_text}
+
+Throughput against the self-hosted Kimi-k3 endpoint (8× NVIDIA B300, HGX), 1,000 requests per
+chunk, reasoning off: {conc_line}. Concurrency 128 was slower than 64 (longer queueing, more
+parse failures), so the remaining chunks ran at 64. Total generation wall-clock:
+{total_s / 3600:.1f} h. Variation between chunks at the same concurrency reflects other load on
+the shared endpoint.
+
+| Chunk | Concurrency | Requests/s | Output tokens/s | Median latency | Failed / parse failures |
+|---|---|---|---|---|---|
+{run_rows}"""
+
+
+def v2_summary(m: dict) -> str | None:
+    """One paragraph comparing v1 and v2 on the probe, or None when v2 has not been evaluated."""
+    ev, v1 = m.get("v2_eval"), m.get("v1_eval")
+    if not (isinstance(ev, dict) and ev.get("checkpoint") and isinstance(v1, dict)):
+        return None
+    k = "probe/preference"
+
+    def a(d, key=k):
+        return get(d, f"{key}.accuracy_order_averaged_prob.accuracy")
+
+    t2 = get(ev, "probe/cascade.table", [])
+    r1 = get(v1, "probe/cascade.recommended", {})
+    # v2 row routing about as much as v1's recommended setting, for a like-for-like comparison
+    near = min(
+        t2, key=lambda r: abs(r["routed_fraction"] - r1.get("routed_fraction", 0)), default={}
+    )
+    return (
+        f"An experimental **v2** checkpoint (`python -m laya_gate.v2`, see "
+        f"[v2](#v2-training-on-fluent-pairs-too)) adds {get(m, 'fluent_data.splits.train', NM)} "
+        "fluent-vs-fluent training pairs and a separate naturalness question. On the probe it "
+        f"reaches {pct(a(ev))} (95% CI {pct(get(ev, f'{k}.accuracy_order_averaged_prob.ci95.0'))}"
+        f"–{pct(get(ev, f'{k}.accuracy_order_averaged_prob.ci95.1'))}) vs {pct(a(v1))} for v1, "
+        f"with ECE {num(get(ev, f'{k}.ece_order_averaged'))} instead of "
+        f"{num(get(v1, f'{k}.ece_order_averaged'))}, so its margin routes mistakes to the judge "
+        f"again: with about {pct(r1.get('routed_fraction'), 0)} of probe instances routed to "
+        f"Kimi-k3, the cascade reaches {pct(near.get('cascade_accuracy'))} with v2 "
+        f"({pct(near.get('routed_fraction'))} routed) vs {pct(r1.get('cascade_accuracy'))} with v1. "
+        f"The cost is {pct(a(v1, 'original/preference'))} → {pct(a(ev, 'original/preference'))} "
+        "on the original held-out pairs (both orders averaged), and the probe is still "
+        f"{num(100 * ((get(m, 'probe.judge.order_averaged.accuracy') or 0) - (a(ev) or 0)), 1)} "
+        "percentage points "
+        "behind Kimi-k3. v2 is not on the Hub yet."
+    )
+
+
+def _v2_row(label: str, v1: Any, v2: Any, fmt=pct) -> str:
+    return f"| {label} | {fmt(v1)} | {fmt(v2)} |"
+
+
+def v2_section(m: dict) -> str:
+    ev, v1 = m.get("v2_eval"), m.get("v1_eval")
+    tr, cal = m.get("v2_training"), m.get("v2_calibration")
+    if not (isinstance(ev, dict) and ev.get("checkpoint") and isinstance(tr, dict)):
+        return "Not measured: run `python -m laya_gate.v2 train|calibrate|evaluate`."
+    v1 = v1 if isinstance(v1, dict) else {}
+
+    def acc(d, key):
+        return get(d, f"{key}.accuracy_order_averaged_prob.accuracy")
+
+    def ci(d, key):
+        lo = get(d, f"{key}.accuracy_order_averaged_prob.ci95.0")
+        hi = get(d, f"{key}.accuracy_order_averaged_prob.ci95.1")
+        a = acc(d, key)
+        return f"{pct(a)} [{pct(lo)}, {pct(hi)}]" if a is not None else NM
+
+    def same(x):
+        return x
+
+    rows = [
+        _v2_row(
+            "Original val_eval, preference (order-averaged)",
+            acc(v1, "original/preference"),
+            acc(ev, "original/preference"),
+        ),
+        _v2_row(
+            "Original val_eval, ECE (order-averaged)",
+            get(v1, "original/preference.ece_order_averaged"),
+            get(ev, "original/preference.ece_order_averaged"),
+            num,
+        ),
+        _v2_row(
+            "Fluent val_eval, preference (order-averaged)",
+            acc(v1, "fluent/preference"),
+            acc(ev, "fluent/preference"),
+        ),
+        _v2_row(
+            "Fluent val_eval, ECE (order-averaged)",
+            get(v1, "fluent/preference.ece_order_averaged"),
+            get(ev, "fluent/preference.ece_order_averaged"),
+            num,
+        ),
+        _v2_row(
+            "**Probe** (reasoning-on), preference [95% CI]",
+            ci(v1, "probe/preference"),
+            ci(ev, "probe/preference"),
+            same,
+        ),
+        _v2_row(
+            "Probe, ECE (order-averaged)",
+            get(v1, "probe/preference.ece_order_averaged"),
+            get(ev, "probe/preference.ece_order_averaged"),
+            num,
+        ),
+        _v2_row(
+            "Probe, positional consistency",
+            get(v1, "probe/preference.positional_consistency"),
+            get(ev, "probe/preference.positional_consistency"),
+        ),
+        _v2_row(
+            f"Probe, share passing margin {DEFAULT_MARGIN}",
+            get(v1, "probe/preference.default_margin_order_averaged.coverage"),
+            get(ev, "probe/preference.default_margin_order_averaged.coverage"),
+        ),
+        _v2_row(
+            "Probe, accuracy on pairs passing the margin",
+            get(v1, "probe/preference.default_margin_order_averaged.accuracy_on_covered"),
+            get(ev, "probe/preference.default_margin_order_averaged.accuracy_on_covered"),
+        ),
+        _v2_row(
+            "Probe, accuracy on pairs routed to the judge",
+            get(v1, "probe/preference.default_margin_order_averaged.accuracy_on_routed"),
+            get(ev, "probe/preference.default_margin_order_averaged.accuracy_on_routed"),
+        ),
+        _v2_row(
+            "GPU forward, batch 1, median",
+            get(v1, "latency_gpu_forward_ms.p50"),
+            get(ev, "latency_gpu_forward_ms.p50"),
+            ms,
+        ),
+    ]
+    hist = tr.get("history", [])
+    groups = [k for k in (hist[0]["val_calib"] if hist else {}) if k != "mean_loss"]
+    head = " | ".join(f"{g} loss / acc" for g in groups)
+    hist_rows = "\n".join(
+        f"| {h['epoch']} | {num(h['train_loss'])} | "
+        + " | ".join(
+            f"{num(h['val_calib'][g]['loss'])} / {pct(h['val_calib'][g]['acc'])}" for g in groups
+        )
+        + f" | {h['epoch_seconds'] / 60:.1f} min |"
+        for h in hist
+    )
+    hp = tr.get("hyperparameters", {})
+    nat = ev.get("original/naturalness", {})
+    fn, pn = ev.get("fluent/naturalness", {}), ev.get("probe/naturalness", {})
+
+    def casc(d):
+        c = get(d, "probe/cascade", {})
+        rows_ = c.get("table", [])
+        rec = c.get("recommended", {})
+        return c, rows_, rec
+
+    c2, t2, r2 = casc(ev)
+    c1, t1, r1 = casc(v1)
+    by_thr1 = {round(r["threshold"], 2): r for r in t1}
+
+    def casc_row(r):
+        o = by_thr1.get(round(r["threshold"], 2), {})
+        is_rec = abs(r["threshold"] - r2.get("threshold", -1)) < 1e-9
+        thr = f"**{r['threshold']:.2f}** (recommended)" if is_rec else f"{r['threshold']:.2f}"
+        return (
+            f"| {thr} | {pct(o.get('routed_fraction'))} / "
+            f"{pct(o.get('cascade_accuracy'))} | {pct(r['routed_fraction'])} / "
+            f"{pct(r['cascade_accuracy'])} | {ms(r['expected_latency_ms'])} |"
+        )
+
+    casc_rows = "\n".join(casc_row(r) for r in t2)
+    temps = ", ".join(
+        f"`{q}` T = {num(f.get('temperature'))} (NLL {num(f.get('nll_pre'))} → "
+        f"{num(f.get('nll_post'))}, fit on {f.get('fit_on', NM)})"
+        for q, f in (cal or {}).items()
+    )
+    return f"""**Why:** the probe showed that v1 mostly detects translationese. v2 keeps the original
+data and adds pairs where *both* answers are fluent Swedish and only quality differs, so the
+preference head has to learn more than style. A second `choice` question, **naturalness**
+("Which candidate response is written in more natural, idiomatic Swedish?"), keeps the
+translationese skill available explicitly: it is trained on the original pairs (natural vs
+translationese) and on fluent pairs with a 50/50 target (both are natural, so it should not
+pick a side).
+
+#### Training data generation
+
+{generation_section(m)}
+
+#### Training
+
+Initialized from the base `convaiinnovations/laya` multilingual checkpoint (not from v1), same
+recipe as v1 (lr {hp.get("lr", NM)}, micro-batch {hp.get("micro_batch", NM)} × accumulation
+{hp.get("grad_accum", NM)}, warmup + cosine, bf16), {hp.get("epochs", NM)} epochs over
+{tr.get("train_units", NM)} (pair, question) units; {tr.get("order_resampling", "")}. Best epoch:
+**{tr.get("best_epoch", NM)}** ({tr.get("selection", NM)}). Total {num((tr.get("total_seconds") or 0) / 60, 1)} min on
+{tr.get("hardware", NM)}; peak GPU memory {num(tr.get("peak_gpu_memory_allocated_gib"), 2)} GiB.
+
+| Epoch | Train loss | {head} | Time |
+|---|---|{"---|" * len(groups)}---|
+{hist_rows}
+
+Temperatures were fitted per question on val_calib, both orders:
+{temps}.
+
+#### v1 vs v2
+
+Both checkpoints were scored with the same code (`python -m laya_gate.v2 evaluate`, v1 via
+`--checkpoint checkpoints/best_model --section v1_eval`), on the held-out val_eval halves and the
+{get(ev, "probe/preference.n_pairs", NM)}-pair probe, each pair in both orders.
+
+| Metric | v1 | v2 |
+|---|---|---|
+{chr(10).join(rows)}
+
+For reference, Kimi-k3 scores {pct(get(m, "probe.judge.order_averaged.accuracy"))} on the probe.
+
+**Naturalness head (v2 only).** On original val_eval it picks the idiomatic answer over the
+translationese one {pct(get(nat, "accuracy_order_averaged_prob.accuracy"))} of the time (ECE
+{num(nat.get("ece_order_averaged"))}). On fluent pairs, where both answers are natural, its
+order-averaged probability stays within 0.2 of 0.5 for {pct(fn.get("fraction_within_0.2"))} of
+fluent val_eval pairs and {pct(pn.get("fraction_within_0.2"))} of probe pairs (mean distance from
+0.5: {num(fn.get("mean_abs_dev_from_0.5"))} and {num(pn.get("mean_abs_dev_from_0.5"))}).
+
+**Probe cascade.** Gate first, Kimi-k3 (cached reasoning-on verdicts from the probe run, judge
+alone {pct(c2.get("judge_accuracy"))}) for instances with `|p − 0.5| < threshold`. Each order is
+a separate instance here, so threshold 0 differs slightly from the order-averaged accuracy above.
+
+| Threshold | v1 routed / accuracy | v2 routed / accuracy | v2 expected latency |
+|---|---|---|---|
+{casc_rows}
+
+Recommended for v2 ({r2.get("rule", NM)}): threshold {num(r2.get("threshold"), 2)}, routing
+{pct(r2.get("routed_fraction"))} for {pct(r2.get("cascade_accuracy"))}; for v1 the same rule gives
+{num(r1.get("threshold"), 2)} → {pct(r1.get("routed_fraction"))} routed, {pct(r1.get("cascade_accuracy"))}."""
+
+
 def tests_section(m: dict) -> str:
     t = m.get("tests")
     if not isinstance(t, dict):
@@ -615,7 +898,8 @@ def conclusion(m: dict) -> str:
         )
     else:
         p2 = "The judge comparison is incomplete, so the cascade could not be assessed."
-    return p1 + "\n\n" + p2
+    v2 = v2_summary(m)
+    return p1 + "\n\n" + p2 + (f"\n\n{v2}" if v2 else "")
 
 
 def baseline_comparison(m: dict) -> str:
@@ -723,7 +1007,7 @@ deliberately poor translation. What it has learned is mainly to tell **authentic
 translationese**, and it is compared against {JUDGE_HW}.
 
 {hub_line}
-
+{(chr(10) + v2_summary(m) + chr(10)) if v2_summary(m) else ""}
 ## Results at a glance
 
 {results_table(m)}
@@ -792,6 +1076,10 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 ### Fluent-vs-fluent probe (does it judge quality?)
 
 {probe_section(m)}
+
+### v2: training on fluent pairs too
+
+{v2_section(m)}
 
 ### Tests
 

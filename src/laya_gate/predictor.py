@@ -15,8 +15,18 @@ from typing import Any
 import numpy as np
 import torch
 
-from .data import internal_question, state_room, truncate_triplet
-from .utils import CHECKPOINT_DIR, DEFAULT_MARGIN, HEAD_MAX_LEN, MAX_LEN, OPTIONS
+from .data import state_room_for, truncate_triplet
+from .utils import (
+    CHECKPOINT_DIR,
+    DEFAULT_MARGIN,
+    HEAD_MAX_LEN,
+    MAX_LEN,
+    NATURALNESS_QID,
+    OPTIONS,
+    QID,
+    QUESTION,
+    QUESTIONS_FILE,
+)
 
 TEMPERATURE_FILE = "temperature.json"
 
@@ -39,6 +49,7 @@ def resolve_checkpoint(checkpoint_path: str | os.PathLike) -> Path:
                 "tokenizer/*",
                 "encoder/*",
                 TEMPERATURE_FILE,
+                QUESTIONS_FILE,
             ],
         )
     )
@@ -84,8 +95,11 @@ class SwedishPreferenceGate:
             accepts predictions with calibrated probability >= 0.7 for either candidate.
         device: "cuda", "cpu", ... Defaults to CUDA when available.
         dtype: weights/activation dtype. Defaults to bfloat16 on CUDA and float32 elsewhere.
-        temperature: override the fitted temperature (otherwise read from `temperature.json`;
-            1.0 when the checkpoint has none).
+        temperature: override the fitted `preference` temperature (otherwise read from
+            `temperature.json`; 1.0 when the checkpoint has none).
+
+    A checkpoint that ships `questions.json` with a `naturalness` question (v2) also supports
+    `predict_naturalness` / `predict_naturalness_batch`.
     """
 
     def __init__(
@@ -108,27 +122,44 @@ class SwedishPreferenceGate:
         self.model = model.to(self.device, dtype=dtype).eval()
         self.max_len = int(self.cfg.get("max_len", MAX_LEN))
         self.head_max_len = int(self.cfg.get("head_max_len", HEAD_MAX_LEN))
-        self.room = state_room(self.tok, self.max_len, self.head_max_len)
-        self._q = internal_question()
+        q_path = self.model_dir / QUESTIONS_FILE
+        self.questions = (
+            json.loads(q_path.read_text(encoding="utf-8")) if q_path.exists() else dict(QUESTION)
+        )
+        from laya.train import to_internal
+
+        self._internal = {qid: to_internal(qid, q) for qid, q in self.questions.items()}
+        self.room = state_room_for(self.tok, self.questions, self.max_len, self.head_max_len)
 
         temp_path = self.model_dir / TEMPERATURE_FILE
-        self.calibrated = temperature is not None or temp_path.exists()
-        if temperature is None and temp_path.exists():
-            temperature = json.loads(temp_path.read_text(encoding="utf-8"))["temperature"]
-        self.temperature = float(temperature if temperature is not None else 1.0)
-        if self.temperature <= 0:
+        saved = json.loads(temp_path.read_text(encoding="utf-8")) if temp_path.exists() else {}
+        self.calibrated = temperature is not None or bool(saved)
+        self.temperatures = {qid: 1.0 for qid in self.questions}
+        self.temperatures.update(saved.get("temperatures", {}))
+        if "temperature" in saved:
+            self.temperatures[QID] = saved["temperature"]
+        if temperature is not None:
+            self.temperatures[QID] = temperature
+        self.temperature = float(self.temperatures[QID])
+        if any(t <= 0 for t in self.temperatures.values()):
             raise ValueError("temperature must be positive")
 
     # ------------------------------------------------------------------ encoding
 
-    def encode(self, prompt: str, candidate_a: str, candidate_b: str) -> dict[str, Any]:
+    def encode(
+        self, prompt: str, candidate_a: str, candidate_b: str, qid: str = QID
+    ) -> dict[str, Any]:
         """Token-level truncation, then the `choice` sequence laya trains on."""
         from laya.common import build_sequence
 
+        if qid not in self._internal:
+            raise ValueError(f"this checkpoint has no {qid!r} question")
         state, truncated, _ = truncate_triplet(
             self.tok, prompt, candidate_a, candidate_b, self.room
         )
-        ids, markers = build_sequence(self.tok, state, self._q, self.max_len, self.head_max_len)
+        ids, markers = build_sequence(
+            self.tok, state, self._internal[qid], self.max_len, self.head_max_len
+        )
         return {"ids": ids, "markers": markers, "qtype": 0, "truncated": truncated}
 
     def logits(self, items: Sequence[dict[str, Any]], batch_size: int = 32) -> np.ndarray:
@@ -141,8 +172,9 @@ class SwedishPreferenceGate:
             out[idx] = forward_logits(self.model, batch, self.device).cpu().numpy()
         return out
 
-    def probabilities(self, logits: np.ndarray) -> np.ndarray:
-        z = np.asarray(logits, dtype=np.float64) / self.temperature
+    def probabilities(self, logits: np.ndarray, qid: str = QID) -> np.ndarray:
+        t = self.temperature if qid == QID else self.temperatures[qid]
+        z = np.asarray(logits, dtype=np.float64) / t
         z = z - z.max(axis=-1, keepdims=True)
         p = np.exp(z)
         return p / p.sum(axis=-1, keepdims=True)
@@ -182,3 +214,35 @@ class SwedishPreferenceGate:
         ]
         probs = self.probabilities(self.logits(items, batch_size=batch_size))
         return [self._result(p) for p in probs]
+
+    @property
+    def has_naturalness(self) -> bool:
+        return NATURALNESS_QID in self._internal
+
+    def _natural_result(self, probs: np.ndarray) -> dict[str, Any]:
+        p_a = float(probs[0])
+        return {
+            "more_natural": OPTIONS[0] if p_a >= 0.5 else OPTIONS[1],
+            "p_a_more_natural": p_a,
+            "probabilities": {OPTIONS[0]: p_a, OPTIONS[1]: float(probs[1])},
+        }
+
+    def predict_naturalness(self, prompt: str, candidate_a: str, candidate_b: str):
+        """Which response reads as more natural, idiomatic Swedish (v2 checkpoints only)."""
+        return self.predict_naturalness_batch([prompt], [candidate_a], [candidate_b], 1)[0]
+
+    def predict_naturalness_batch(
+        self,
+        prompts: Sequence[str],
+        candidates_a: Sequence[str],
+        candidates_b: Sequence[str],
+        batch_size: int = 32,
+    ) -> list[dict[str, Any]]:
+        if not len(prompts) == len(candidates_a) == len(candidates_b):
+            raise ValueError("prompts and candidate lists must have the same length")
+        items = [
+            self.encode(p, a, b, qid=NATURALNESS_QID)
+            for p, a, b in zip(prompts, candidates_a, candidates_b, strict=True)
+        ]
+        probs = self.probabilities(self.logits(items, batch_size=batch_size), NATURALNESS_QID)
+        return [self._natural_result(p) for p in probs]

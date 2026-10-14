@@ -43,6 +43,20 @@ QUESTION = {
 }
 OPTIONS = ("candidate_a", "candidate_b")
 
+NATURALNESS_QID = "naturalness"
+NATURALNESS_QUESTION = {
+    NATURALNESS_QID: {
+        "type": "choice",
+        "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+        "criteria": {
+            "candidate_a": "response A reads more naturally",
+            "candidate_b": "response B reads more naturally",
+        },
+    }
+}
+QUESTIONS_V2 = {**QUESTION, **NATURALNESS_QUESTION}
+QUESTIONS_FILE = "questions.json"
+
 
 def load_metrics() -> dict[str, Any]:
     if METRICS_PATH.exists():

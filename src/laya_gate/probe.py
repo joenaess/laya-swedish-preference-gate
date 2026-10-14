@@ -78,7 +78,8 @@ def _content(messages) -> str:
     return ""
 
 
-def sample_pairs(n: int, seed: int = SEED) -> tuple[list[dict[str, Any]], int]:
+def eligible_pairs() -> list[dict[str, Any]]:
+    """UltraFeedback pairs with rating gap >= MIN_MARGIN and <= MAX_CHARS English characters."""
     from datasets import load_dataset
 
     ds = load_dataset(SOURCE, split="train")
@@ -107,6 +108,11 @@ def sample_pairs(n: int, seed: int = SEED) -> tuple[list[dict[str, Any]], int]:
                     "rejected_rating": float(r["rejected-rating"]),
                 }
             )
+    return rows
+
+
+def sample_pairs(n: int, seed: int = SEED) -> tuple[list[dict[str, Any]], int]:
+    rows = eligible_pairs()
     rng = random.Random(seed)
     picked = rng.sample(rows, n)
     for p in picked:  # hide which answer is better from the translator
@@ -137,19 +143,35 @@ def _parse_translation(content: str | None) -> dict[str, str] | None:
     return {k: obj[k].strip() for k in keys}
 
 
-def _key(model: str, pair: dict[str, Any]) -> str:
-    payload = json.dumps([model, TRANSLATE_SYSTEM, pair["id"], pair["chosen_first"]])
+def _key(model: str, pair: dict[str, Any], mode: str = "") -> str:
+    parts = [model, TRANSLATE_SYSTEM, pair["id"], pair["chosen_first"]] + ([mode] if mode else [])
+    payload = json.dumps(parts)
     return hashlib.sha256(payload.encode()).hexdigest()
 
 
-async def translate_all(client, model: str, pairs, concurrency: int, max_retries: int = 3):
-    PROBE_DIR.mkdir(parents=True, exist_ok=True)
-    cache = {r["key"]: r for r in read_jsonl(TRANSLATIONS)} if TRANSLATIONS.exists() else {}
+async def translate_all(
+    client,
+    model: str,
+    pairs,
+    concurrency: int,
+    max_retries: int = 3,
+    cache_path=TRANSLATIONS,
+    extra: dict[str, Any] | None = None,
+    mode: str = "",
+    progress_every: int = 25,
+):
+    """Translate pairs (cached by model, prompt version, pair id, order and `mode`).
+
+    `extra` is passed to the chat completion (e.g. to switch reasoning off); `mode` names it
+    in the cache key so different settings never share cached results.
+    """
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache = {r["key"]: r for r in read_jsonl(cache_path)} if cache_path.exists() else {}
     sem, lock = asyncio.Semaphore(concurrency), asyncio.Lock()
     stats = {"live": 0, "failed": 0, "parse_failed": 0, "done": 0}
 
     async def one(p):
-        key = _key(model, p)
+        key = _key(model, p, mode)
         if key in cache and cache[key].get("translation"):
             return cache[key]
         first, second = (
@@ -167,6 +189,7 @@ async def translate_all(client, model: str, pairs, concurrency: int, max_retries
                             model=model,
                             temperature=0,
                             max_tokens=16384,
+                            **(extra or {}),
                             messages=[
                                 {"role": "system", "content": TRANSLATE_SYSTEM},
                                 {"role": "user", "content": user},
@@ -200,10 +223,10 @@ async def translate_all(client, model: str, pairs, concurrency: int, max_retries
             "usage": resp.usage.model_dump() if resp.usage else {},
         }
         async with lock:
-            with open(TRANSLATIONS, "a", encoding="utf-8") as f:
+            with open(cache_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(row, ensure_ascii=False) + "\n")
         stats["done"] += 1
-        if stats["done"] % 25 == 0:
+        if progress_every and stats["done"] % progress_every == 0:
             print(f"translate: {stats['done']} live done", flush=True)
         return row
 

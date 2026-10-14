@@ -12,6 +12,8 @@ translationese**, and it is compared against self-hosted Kimi-k3 on 8× NVIDIA B
 
 Weights: [huggingface.co/jonasaise/laya-swedish-preference-gate](https://huggingface.co/jonasaise/laya-swedish-preference-gate) (public).
 
+An experimental **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is not on the Hub yet.
+
 ## Results at a glance
 
 | Metric | Value | Target |
@@ -347,11 +349,123 @@ the two answers correlates 0.998 between English and Swedish
 LLM judge on fluent pairs and is badly over-confident there. Use it for naturalness and
 translationese; do not use its confidence to skip the judge on fluent answers.
 
+### v2: training on fluent pairs too
+
+**Why:** the probe showed that v1 mostly detects translationese. v2 keeps the original
+data and adds pairs where *both* answers are fluent Swedish and only quality differs, so the
+preference head has to learn more than style. A second `choice` question, **naturalness**
+("Which candidate response is written in more natural, idiomatic Swedish?"), keeps the
+translationese skill available explicitly: it is trained on the original pairs (natural vs
+translationese) and on fluent pairs with a 50/50 target (both are natural, so it should not
+pick a side).
+
+#### Training data generation
+
+12000 more UltraFeedback pairs (disjoint from the probe; pool of
+23244) were rewritten into natural Swedish with the probe's
+translation prompt, by kimi-k3, reasoning off, prompt = probe.TRANSLATE_SYSTEM. 11988 translated cleanly
+(12 failures); 316 were
+dropped because their Swedish prompt nearly duplicates a probe or validation prompt (char n-gram
+cosine ≥ 0.8), leaving **11672** pairs, split
+train 9921 / val_calib 875 / val_eval 876 with the better answer in slot B
+for 50.0% of train pairs.
+
+Before generating, the first 100 probe pairs were re-translated with reasoning off (median 518 completion tokens per pair) and compared with the reasoning-on translations. Lengths are preserved (off/on length ratio 0.996 for the better answer, 1.000 for the worse), character similarity is 0.80 / 0.78, and Kimi-k3 recovers the UltraFeedback label on 86.5% of reasoning-off pairs vs 89.0% of reasoning-on pairs (both orders). The small drop was accepted for training data; the probe itself stays reasoning-on.
+
+Throughput against the self-hosted Kimi-k3 endpoint (8× NVIDIA B300, HGX), 1,000 requests per
+chunk, reasoning off: concurrency 64: 1.15–1.79 req/s over 11 chunk(s), concurrency 128: 1.44–1.44 req/s over 1 chunk(s). Concurrency 128 was slower than 64 (longer queueing, more
+parse failures), so the remaining chunks ran at 64. Total generation wall-clock:
+2.3 h. Variation between chunks at the same concurrency reflects other load on
+the shared endpoint.
+
+| Chunk | Concurrency | Requests/s | Output tokens/s | Median latency | Failed / parse failures |
+|---|---|---|---|---|---|
+| 0 | 64 | 1.77 | 1161 | 33.2 s | 0 / 0 |
+| 1 | 128 | 1.44 | 990 | 50.2 s | 0 / 2 |
+| 2 | 64 | 1.22 | 820 | 32.7 s | 0 / 1 |
+| 3 | 64 | 1.15 | 798 | 34.0 s | 0 / 2 |
+| 4 | 64 | 1.79 | 1158 | 32.9 s | 0 / 0 |
+| 5 | 64 | 1.74 | 1175 | 34.5 s | 0 / 0 |
+| 6 | 64 | 1.77 | 1161 | 33.9 s | 0 / 2 |
+| 7 | 64 | 1.45 | 972 | 33.1 s | 0 / 1 |
+| 8 | 64 | 1.43 | 942 | 33.2 s | 0 / 1 |
+| 9 | 64 | 1.41 | 945 | 33.9 s | 0 / 2 |
+| 10 | 64 | 1.27 | 863 | 34.1 s | 0 / 1 |
+| 11 | 64 | 1.76 | 1158 | 33.8 s | 0 / 0 |
+
+#### Training
+
+Initialized from the base `convaiinnovations/laya` multilingual checkpoint (not from v1), same
+recipe as v1 (lr 2e-05, micro-batch 8 × accumulation
+2, warmup + cosine, bf16), 3 epochs over
+45342 (pair, question) units; each pair encoded in both orders; one order drawn per item per epoch. Best epoch:
+**1** (lowest mean val_calib loss over (source, question) groups). Total 108.7 min on
+NVIDIA GeForce RTX 4080 Laptop GPU; peak GPU memory 10.73 GiB.
+
+| Epoch | Train loss | original/preference loss / acc | original/naturalness loss / acc | fluent/preference loss / acc | fluent/naturalness loss / acc | Time |
+|---|---|---|---|---|---|---|
+| 1 | 0.421 | 0.055 / 97.8% | 0.066 / 98.1% | 0.551 / 75.3% | 0.748 / not measured | 35.9 min |
+| 2 | 0.266 | 0.046 / 98.7% | 0.042 / 98.7% | 0.700 / 76.5% | 0.743 / not measured | 36.4 min |
+| 3 | 0.197 | 0.088 / 98.6% | 0.046 / 98.6% | 1.322 / 73.9% | 0.755 / not measured | 36.4 min |
+
+Temperatures were fitted per question on val_calib, both orders:
+`preference` T = 1.446 (NLL 0.280 → 0.265, fit on val_calib original+fluent, both orders), `naturalness` T = 0.575 (NLL 0.066 → 0.057, fit on val_calib original, both orders).
+
+#### v1 vs v2
+
+Both checkpoints were scored with the same code (`python -m laya_gate.v2 evaluate`, v1 via
+`--checkpoint checkpoints/best_model --section v1_eval`), on the held-out val_eval halves and the
+299-pair probe, each pair in both orders.
+
+| Metric | v1 | v2 |
+|---|---|---|
+| Original val_eval, preference (order-averaged) | 98.7% | 97.6% |
+| Original val_eval, ECE (order-averaged) | 0.009 | 0.023 |
+| Fluent val_eval, preference (order-averaged) | 63.4% | 78.8% |
+| Fluent val_eval, ECE (order-averaged) | 0.224 | 0.024 |
+| **Probe** (reasoning-on), preference [95% CI] | 64.2% [58.9%, 69.6%] | 75.9% [70.9%, 80.6%] |
+| Probe, ECE (order-averaged) | 0.230 | 0.033 |
+| Probe, positional consistency | 82.3% | 85.3% |
+| Probe, share passing margin 0.2 | 83.6% | 65.6% |
+| Probe, accuracy on pairs passing the margin | 66.8% | 85.7% |
+| Probe, accuracy on pairs routed to the judge | 51.0% | 57.3% |
+| GPU forward, batch 1, median | 10.3 ms | 11.0 ms |
+
+For reference, Kimi-k3 scores 87.3% on the probe.
+
+**Naturalness head (v2 only).** On original val_eval it picks the idiomatic answer over the
+translationese one 98.1% of the time (ECE
+0.017). On fluent pairs, where both answers are natural, its
+order-averaged probability stays within 0.2 of 0.5 for 85.4% of
+fluent val_eval pairs and 83.3% of probe pairs (mean distance from
+0.5: 0.095 and 0.105).
+
+**Probe cascade.** Gate first, Kimi-k3 (cached reasoning-on verdicts from the probe run, judge
+alone 87.3%) for instances with `|p − 0.5| < threshold`. Each order is
+a separate instance here, so threshold 0 differs slightly from the order-averaged accuracy above.
+
+| Threshold | v1 routed / accuracy | v2 routed / accuracy | v2 expected latency |
+|---|---|---|---|
+| 0.00 | 0.0% / 64.7% | 0.0% / 75.9% | 11.0 ms |
+| 0.05 | 2.8% / 65.4% | 7.9% / 78.8% | 760.1 ms |
+| 0.10 | 4.2% / 65.6% | 17.1% / 81.3% | 1636.7 ms |
+| 0.15 | 5.5% / 66.1% | 24.7% / 83.8% | 2369.9 ms |
+| 0.20 | 7.2% / 66.7% | 33.1% / 84.8% | 3166.8 ms |
+| 0.25 | 9.4% / 67.1% | 38.8% / 85.1% | 3708.7 ms |
+| 0.30 | 11.9% / 68.9% | 49.5% / 86.6% | 4728.8 ms |
+| 0.35 | 16.2% / 70.4% | 59.5% / 86.6% | 5685.1 ms |
+| 0.40 | 21.6% / 71.1% | 72.6% / 87.3% | 6928.3 ms |
+| **0.45** (recommended) | 31.9% / 73.7% | 88.0% / 88.1% | 8394.7 ms |
+
+Recommended for v2 (lowest routed fraction within 0.5% of the best cascade accuracy in the sweep): threshold 0.45, routing
+88.0% for 88.1%; for v1 the same rule gives
+0.45 → 31.9% routed, 73.7%.
+
 ### Tests
 
-`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **96 passed, 0 failed,
-0 errors, 0 skipped** of 96.
-Coverage: **66.0%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 69.6% · `judge.py` 79.3% · `predictor.py` 97.9% · `probe.py` 30.9% · `publish.py` 57.7% · `readme.py` 93.8% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0%.
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **105 passed, 0 failed,
+0 errors, 0 skipped** of 105.
+Coverage: **61.9%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 70.2% · `fluent.py` 21.6% · `judge.py` 79.3% · `predictor.py` 97.5% · `probe.py` 46.0% · `publish.py` 57.7% · `readme.py` 95.0% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 30.1%.
 
 
 ## Limitations
@@ -368,6 +482,8 @@ Coverage: **66.0%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · 
 The fine-tuned gate reaches 98.4% accuracy on held-out pairs (the zero-shot base checkpoint: 51.6%), with calibrated probabilities (ECE 0.006, meeting the ≤ 0.085 target) and a median single-pair GPU forward pass of 9.9 ms (meeting the 35 ms target). It picks the same winner in both presentation orders for 98.4% of pairs. When it is confident (margin ≥ 0.2, 99.4% of predictions) it is right 98.6% of the time, so its confidence is usable for routing. That accuracy should be read next to the lexical baseline: a TF-IDF logistic regression scores 98.4% on the same pairs, because the dataset contrasts idiomatic Swedish with deliberately poor translation. The gate does not measurably beat that baseline (+0.0 points); what it adds is calibrated confidence, order-robustness and a single model that also reads the prompt. The gate is a strong translationese detector. It is a weak quality judge: on 299 pairs where *both* answers are natural Swedish and only quality differs, the gate is right 64.2% of the time (95% CI 58.9%–69.6%) versus 87.3% for Kimi-k3, and its calibration breaks down (ECE 0.230).
 
 Against these labels Kimi-k3 is *less* accurate than the gate (95.5% vs 98.6%) and 802× slower, which is expected: the labels mark translationese, which the gate was trained on, while the judge was also asked about helpfulness and correctness, and it generated these pairs itself. The judge still helps where the gate is unsure: routing the 5.2% least-confident instances (threshold 0.45) lifts accuracy from 98.6% to 99.1% at an expected 507.5 ms per pair. The pre-registered rule (cheapest threshold within 0.5 points of the best) picks 0.00, i.e. 0.0% routed, because the gain is that small. For its intended System 1 role on data like this, settling confident comparisons in milliseconds and escalating the rest, the gate is fit for purpose (latency target met, ECE target met, confident-subset accuracy 98.6% vs judge 95.5%). It should not be the only judge for high-stakes decisions.
+
+An experimental **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is not on the Hub yet.
 
 ## Usage ideas
 

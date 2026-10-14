@@ -317,3 +317,105 @@ def test_probe_section_renders_and_is_optional():
     text = readme.render(m)
     assert "Measured directly: on 299 pairs" in text and "weak quality judge" in text
     assert "**Measured on fluent pairs:**" in publish.model_card(m, "me/model")
+
+
+def _v2_metrics() -> dict:
+    m = synthetic_metrics()
+    acc = {"accuracy": 0.8, "ci95": [0.75, 0.85], "n": 299}
+    pm = {
+        "n_pairs": 299,
+        "accuracy_order_averaged_prob": acc,
+        "positional_consistency": 0.9,
+        "ece_order_averaged": 0.05,
+        "default_margin_order_averaged": {
+            "margin": 0.2,
+            "coverage": 0.6,
+            "accuracy_on_covered": 0.9,
+            "accuracy_on_routed": 0.65,
+        },
+    }
+    table = [
+        {
+            "threshold": t,
+            "routed_fraction": t,
+            "cascade_accuracy": 0.8 + t / 10,
+            "expected_latency_ms": 10 + t,
+        }
+        for t in (0.0, 0.1, 0.2)
+    ]
+    cascade = {"table": table, "recommended": {**table[1], "rule": "r"}, "judge_accuracy": 0.87}
+    ev = {
+        "checkpoint": "v2_eval",
+        "original/preference": pm,
+        "fluent/preference": pm,
+        "probe/preference": pm,
+        "original/naturalness": pm,
+        "fluent/naturalness": {"mean_abs_dev_from_0.5": 0.1, "fraction_within_0.2": 0.85},
+        "probe/naturalness": {"mean_abs_dev_from_0.5": 0.12, "fraction_within_0.2": 0.8},
+        "probe/cascade": cascade,
+        "latency_gpu_forward_ms": {"p50": 10.0, "p95": 11.0},
+    }
+    m["v2_eval"], m["v1_eval"] = ev, {**ev, "checkpoint": "v1_eval"}
+    val = {"original/preference": {"loss": 0.1, "acc": 0.98, "n": 10}, "mean_loss": 0.1}
+    m["v2_training"] = {
+        "hyperparameters": {"lr": 2e-5, "micro_batch": 8, "grad_accum": 2, "epochs": 1},
+        "train_units": 40,
+        "order_resampling": "one order per item per epoch",
+        "history": [{"epoch": 1, "train_loss": 0.3, "val_calib": val, "epoch_seconds": 60.0}],
+        "best_epoch": 1,
+        "total_seconds": 60.0,
+    }
+    m["v2_calibration"] = {"preference": {"temperature": 2.0, "nll_pre": 0.5, "nll_post": 0.4}}
+    m["fluent_data"] = {
+        "requested": 10,
+        "kept": 9,
+        "splits": {"train": 7, "val_calib": 1, "val_eval": 1},
+        "throughput_runs": [
+            {
+                "chunk": 0,
+                "concurrency": 64,
+                "requests_per_second": 1.8,
+                "output_tokens_per_second": 1100.0,
+                "latency_p50_s": 33.0,
+                "failed": 0,
+                "parse_failed": 0,
+                "wall_seconds": 600.0,
+            },
+            {
+                "chunk": 1,
+                "concurrency": 128,
+                "requests_per_second": 1.4,
+                "output_tokens_per_second": 990.0,
+                "latency_p50_s": 50.0,
+                "failed": 0,
+                "parse_failed": 2,
+                "wall_seconds": 700.0,
+            },
+        ],
+    }
+    m["fluent_fidelity"] = {
+        "n_pairs": 100,
+        "judge_accuracy_both_orders": {"reasoning_on": 0.89, "reasoning_off": 0.865},
+    }
+    return m
+
+
+def test_v2_section_renders_and_is_optional():
+    assert "Not measured" in readme.v2_section({})
+    assert "Not measured" in readme.generation_section({})
+    m = _v2_metrics()
+    section = readme.v2_section(m)
+    assert "| **Probe** (reasoning-on), preference [95% CI] | 80.0% [75.0%, 85.0%] |" in section
+    assert "**0.10** (recommended)" in section
+    assert "concurrency 64: 1.80–1.80 req/s" in section and "concurrency 128" in section
+    assert "86.5% of reasoning-off pairs vs 89.0%" in section
+    assert "### v2: training on fluent pairs too" in readme.render(m)
+
+
+def test_pair_metrics_order_averaged_fields():
+    from laya_gate import v2
+
+    m = v2.pair_metrics(np.array([0.9, 0.6]), np.array([0.8, 0.5]), [0, 0])
+    dm = m["default_margin_order_averaged"]
+    assert dm["coverage"] == 0.5 and dm["accuracy_on_covered"] == 1.0
+    assert 0.0 <= m["ece_order_averaged"] <= 1.0
