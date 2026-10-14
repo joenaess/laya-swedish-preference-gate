@@ -50,3 +50,4 @@ markers = [
 [tool.ruff.lint.per-file-ignores]
 # Markdown table templates: wrapping them would change the rendered README.
 "src/laya_gate/readme.py" = ["E501"]
+"src/laya_gate/publish.py" = ["E501"]

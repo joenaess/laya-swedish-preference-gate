@@ -10,7 +10,7 @@ where the preferred answer is idiomatic, localized Swedish and the rejected one 
 deliberately poor translation. What it has learned is mainly to tell **authentic Swedish from
 translationese**, and it is compared against self-hosted Kimi-k3 on 8× NVIDIA B300 (HGX).
 
-Weights are not published on the Hub: the Hub refused to create `joenaess/laya-swedish-preference-gate` (HTTP 403); the HF_TOKEN in use cannot write to that namespace. Set HF_REPO_ID to a namespace the token can write to, or use a token for the intended account, and rerun `python -m laya_gate.publish`.
+Weights: [huggingface.co/jonasaise/laya-swedish-preference-gate](https://huggingface.co/jonasaise/laya-swedish-preference-gate) (public).
 
 ## Results at a glance
 
@@ -39,12 +39,12 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 
 ## Quickstart
 
-The weights are not on the Hub (see [License](#license) and the publish notes), so run `./run.sh` first to produce `checkpoints/best_model`.
+The fine-tuned weights are on the Hugging Face Hub at [`jonasaise/laya-swedish-preference-gate`](https://huggingface.co/jonasaise/laya-swedish-preference-gate); `SwedishPreferenceGate` downloads them on first use.
 
 ```python
 from laya_gate.predictor import SwedishPreferenceGate
 
-gate = SwedishPreferenceGate(checkpoint_path="checkpoints/best_model")
+gate = SwedishPreferenceGate(checkpoint_path="jonasaise/laya-swedish-preference-gate")
 result = gate.predict_preference(
     prompt="Hur fungerar fotosyntesen?",
     chosen_candidate="Fotosyntesen är den process där växter omvandlar ljusenergi till kemisk energi...",
@@ -305,7 +305,7 @@ confirmed errors: both "judges" may share a bias, for example toward longer answ
 
 `pytest -v --cov=src/laya_gate (all markers; skips listed)`: **82 passed, 0 failed,
 0 errors, 0 skipped** of 82.
-Coverage: **70.7%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 71.4% · `judge.py` 79.3% · `predictor.py` 97.9% · `publish.py` 51.9% · `readme.py` 93.3% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0%.
+Coverage: **70.7%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 71.4% · `judge.py` 79.3% · `predictor.py` 97.9% · `publish.py` 55.4% · `readme.py` 93.3% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0%.
 
 
 ## Limitations
@@ -316,7 +316,6 @@ Coverage: **70.7%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · 
 - **1024-token window.** 42.3% of pairs exceed it; the gate then sees only the end of the prompt and the start of each response, so differences late in long answers are invisible to it.
 - **Kimi-k3 is a reference, not ground truth.** The judge is a strong but imperfect model; agreement with it is not correctness.
 - **Single seed, single run.** Numbers come from one training run; seed-to-seed variance was not measured.
-- **Not on the Hub:** upload skipped: the Hub refused to create `joenaess/laya-swedish-preference-gate` (HTTP 403); the HF_TOKEN in use cannot write to that namespace. Set HF_REPO_ID to a namespace the token can write to, or use a token for the intended account, and rerun `python -m laya_gate.publish`.
 
 ## Conclusion
 

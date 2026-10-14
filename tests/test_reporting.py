@@ -183,11 +183,26 @@ def test_publish_blockers(monkeypatch):
 
 
 def test_model_card_metadata():
+    import yaml
+
     card = publish.model_card(synthetic_metrics(), "me/model")
-    assert card.startswith("---\nlanguage: [sv]\nlicense: apache-2.0")
-    assert "base_model: convaiinnovations/laya" in card
-    assert "pipeline_tag: text-classification" in card
-    assert 'checkpoint_path="me/model"' in card
+    meta = yaml.safe_load(card.split("---")[1])
+    assert meta["language"] == ["sv"] and meta["license"] == "apache-2.0"
+    assert meta["base_model"] == "convaiinnovations/laya"
+    assert meta["datasets"] == ["jonasaise/dpo-swedish-interpreted"]
+    assert meta["pipeline_tag"] == "text-classification"
+    assert {"preference-model", "reward-model", "dpo", "swedish", "laya"} <= set(meta["tags"])
+    assert meta["model-index"][0]["results"][0]["metrics"][0]["value"] == 0.98
+    assert 'SwedishPreferenceGate("me/model")' in card and 'laya.load("me/model")' in card
+    for section in (
+        "## How to use",
+        "## Intended use",
+        "## Training data",
+        "## Evaluation",
+        "## Limitations",
+        "## License",
+    ):
+        assert section in card
 
 
 def test_publish_skips_and_records_reason(monkeypatch, tmp_path):
@@ -197,7 +212,7 @@ def test_publish_skips_and_records_reason(monkeypatch, tmp_path):
     monkeypatch.setattr(publish, "update_metrics", lambda k, v: recorded.update({k: v}))
     monkeypatch.setattr(publish.readme, "main", lambda: None)
     with pytest.raises(SystemExit) as exc:
-        publish.main()
+        publish.main([])
     assert exc.value.code == 0
     assert recorded["publish"]["status"] == "skipped"
     assert "HF_TOKEN" in recorded["publish"]["reason"]

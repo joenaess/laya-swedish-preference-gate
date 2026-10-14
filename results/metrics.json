@@ -517,7 +517,7 @@
       "data.py": 71.4,
       "judge.py": 79.3,
       "predictor.py": 97.9,
-      "publish.py": 51.9,
+      "publish.py": 55.4,
       "readme.py": 93.3,
       "testing.py": 0.0,
       "train.py": 37.3,
@@ -525,7 +525,19 @@
     }
   },
   "publish": {
-    "status": "skipped",
-    "reason": "upload skipped: the Hub refused to create `joenaess/laya-swedish-preference-gate` (HTTP 403); the HF_TOKEN in use cannot write to that namespace. Set HF_REPO_ID to a namespace the token can write to, or use a token for the intended account, and rerun `python -m laya_gate.publish`."
+    "status": "uploaded",
+    "repo_id": "jonasaise/laya-swedish-preference-gate",
+    "url": "https://huggingface.co/jonasaise/laya-swedish-preference-gate",
+    "visibility": "public",
+    "commit": "a650a1191f2510143deb292352eaf82c12e539ba",
+    "files": [
+      "README.md",
+      "encoder",
+      "model.safetensors",
+      "results/metrics.json",
+      "rl_agent_config.json",
+      "temperature.json",
+      "tokenizer"
+    ]
   }
 }
