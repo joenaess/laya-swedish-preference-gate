@@ -1,0 +1,531 @@
+{
+  "data": {
+    "source": "jonasaise/dpo-swedish-interpreted",
+    "schema_note": "two parquet schemas in one split; read file-by-file, columns prompt/chosen/rejected (+ language or target_language)",
+    "raw_pairs": 14986,
+    "dropped": {
+      "empty_field": 0,
+      "identical_responses": 0,
+      "duplicate": 0
+    },
+    "total_pairs": 14986,
+    "languages": {
+      "Swedish": 14985,
+      "sv": 1
+    },
+    "splits": {
+      "train": 12750,
+      "val_calib": 1118,
+      "val_eval": 1118
+    },
+    "train_size": 12750,
+    "val_size": 2236,
+    "val_pairs_moved_to_train_for_shared_prompt": 12,
+    "label_balance_frac_chosen_in_b": {
+      "train": 0.5002352941176471,
+      "val_calib": 0.4991055456171735,
+      "val_eval": 0.49821109123434704
+    },
+    "max_len": 1024,
+    "head_max_len": 256,
+    "question_head_tokens": 32,
+    "state_room_tokens": 991,
+    "fraction_truncated": 0.422794608301081,
+    "n_truncated": 6336,
+    "token_length_untruncated": {
+      "median": 858.0,
+      "p95": 2423.75,
+      "max": 11276
+    },
+    "seed": 20261014,
+    "licenses": {
+      "convaiinnovations/laya": "apache-2.0",
+      "jonasaise/dpo-swedish-interpreted": "mit",
+      "redistribution_allowed": true,
+      "derivative_license": "apache-2.0"
+    },
+    "baselines": {
+      "split": "val_eval",
+      "longer_response_wins_accuracy": 0.7128801431127012,
+      "tfidf_logreg_accuracy": 0.9838998211091234,
+      "words_favouring_chosen": [
+        "alltså",
+        "gärna",
+        "utifrån",
+        "innebär",
+        "stället",
+        "svenska",
+        "exempel",
+        "sverige",
+        "samt",
+        "däremot",
+        "både",
+        "hör",
+        "går",
+        "sig",
+        "ger"
+      ],
+      "words_favouring_rejected": [
+        "denna",
+        "detta",
+        "konfidens",
+        "såsom",
+        "kommer",
+        "av",
+        "baserat",
+        "inkluderar",
+        "hjälpa",
+        "är",
+        "också",
+        "självförtroende",
+        "vänligen",
+        "jag",
+        "vara"
+      ],
+      "note": "label 1 = candidate_b chosen, so negative weights favour candidate_a; lists are mapped to chosen/rejected accordingly"
+    },
+    "construction": "per the dataset card, kimi-k3 localized the prompt and chosen response and deliberately generated a rejected response with poor translation, English loan words or US-centric content"
+  },
+  "training": {
+    "base_checkpoint": "convaiinnovations/laya (subfolder=multilingual)",
+    "backbone": "jhu-clsp/mmBERT-base",
+    "hyperparameters": {
+      "epochs": 3,
+      "micro_batch": 8,
+      "grad_accum": 2,
+      "lr": 2e-05,
+      "warmup_frac": 0.1,
+      "weight_decay": 0.01,
+      "grad_clip": 1.0,
+      "precision": "bfloat16",
+      "gradient_checkpointing": false,
+      "eval_batch": 32,
+      "seed": 20261014,
+      "max_len": 1024,
+      "head_max_len": 256,
+      "loss": "soft cross-entropy over the two choice options",
+      "oom_fallback": "none"
+    },
+    "effective_batch": 16,
+    "optimizer_updates": 2391,
+    "train_items": 12750,
+    "history": [
+      {
+        "epoch": 1,
+        "train_loss": 0.31669449309689296,
+        "val_calib_loss": 0.12833287044843136,
+        "val_calib_acc": 0.9740608228980322,
+        "val_eval_loss": 0.12014728879390704,
+        "val_eval_acc": 0.9749552772808586,
+        "val_loss": 0.1242400796211692,
+        "val_acc": 0.9745080500894454,
+        "train_seconds": 585.2900787510443,
+        "epoch_seconds": 611.1579859800404
+      },
+      {
+        "epoch": 2,
+        "train_loss": 0.035973840626227105,
+        "val_calib_loss": 0.0771877345742432,
+        "val_calib_acc": 0.9794275491949911,
+        "val_eval_loss": 0.0650979033544283,
+        "val_eval_acc": 0.9847942754919499,
+        "val_loss": 0.07114281896433575,
+        "val_acc": 0.9821109123434705,
+        "train_seconds": 606.2027145869797,
+        "epoch_seconds": 632.2658761939965
+      },
+      {
+        "epoch": 3,
+        "train_loss": 0.001715109531059001,
+        "val_calib_loss": 0.09681425579965793,
+        "val_calib_acc": 0.983005366726297,
+        "val_eval_loss": 0.07805890452922368,
+        "val_eval_acc": 0.9856887298747764,
+        "val_loss": 0.08743658016444081,
+        "val_acc": 0.9843470483005368,
+        "train_seconds": 608.2647693559993,
+        "epoch_seconds": 634.3449065710302
+      }
+    ],
+    "best_epoch": 2,
+    "selection": "lowest loss on the val_calib half; val_eval is never used for selection",
+    "best_val_eval_acc": 0.9847942754919499,
+    "best_val_acc": 0.9821109123434705,
+    "zero_shot_base": {
+      "val_calib_loss": 1.2805718575905816,
+      "val_calib_acc": 0.5116279069767442,
+      "val_eval_loss": 1.2379238483944177,
+      "val_eval_acc": 0.5161001788908766
+    },
+    "total_seconds": 1883.2470020569745,
+    "per_epoch_seconds": [
+      611.1579859800404,
+      632.2658761939965,
+      634.3449065710302
+    ],
+    "peak_gpu_memory_allocated_gib": 10.725080966949463,
+    "peak_gpu_memory_reserved_gib": 10.8359375,
+    "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU",
+    "torch": "2.14.1+cu130"
+  },
+  "calibration": {
+    "method": "temperature scaling, single scalar T = exp(log_T), L-BFGS on NLL",
+    "fit_split": "val_calib",
+    "eval_split": "val_eval",
+    "n_bins": 15,
+    "temperature": 1.9674825750516516,
+    "temperature_within_laya_clamp": true,
+    "ece_pre": 0.013450732674874222,
+    "ece_post": 0.006311145236834391,
+    "nll_pre": 0.06564794537438681,
+    "nll_post": 0.046466739961832336,
+    "accuracy": 0.9838998211091234,
+    "target_ece": 0.085,
+    "target_met": true,
+    "per_split": {
+      "val_calib": {
+        "n": 1118,
+        "accuracy": 0.9803220035778175,
+        "ece_pre": 0.016476156843925522,
+        "ece_post": 0.008704847836792349,
+        "nll_pre": 0.07748832059592527,
+        "nll_post": 0.05265810768802775
+      },
+      "val_eval": {
+        "n": 1118,
+        "accuracy": 0.9838998211091234,
+        "ece_pre": 0.013450732674874222,
+        "ece_post": 0.006311145236834391,
+        "nll_pre": 0.06564794537438681,
+        "nll_post": 0.046466739961832336
+      }
+    },
+    "note": "headline ECE/NLL are on val_eval (held out from the fit); val_calib numbers are in-sample for the fit and therefore optimistic"
+  },
+  "benchmark": {
+    "split": "val_eval",
+    "temperature": 1.9674825750516516,
+    "n_pairs": 1118,
+    "positional": {
+      "consistent_fraction": 0.9838998211091234,
+      "accuracy_original_order": 0.9838998211091234,
+      "accuracy_swapped_order": 0.9856887298747764,
+      "accuracy_both_orders": 0.9847942754919499,
+      "accuracy_chosen_in_a": 0.9803220035778175,
+      "accuracy_chosen_in_b": 0.9892665474060823,
+      "accuracy_gap_a_minus_b": -0.008944543828264817,
+      "accuracy_order_averaged_prob": 0.9874776386404294,
+      "mean_p_slot_a": 0.4935536561714271
+    },
+    "margin": {
+      "default_margin": 0.2,
+      "coverage": 0.9937388193202147,
+      "accuracy_on_covered": 0.9864986498649865,
+      "accuracy_all": 0.9847942754919499,
+      "sweep": [
+        {
+          "margin": 0.0,
+          "coverage": 1.0,
+          "accuracy_on_covered": 0.9847942754919499
+        },
+        {
+          "margin": 0.05,
+          "coverage": 0.9995527728085868,
+          "accuracy_on_covered": 0.9847874720357942
+        },
+        {
+          "margin": 0.1,
+          "coverage": 0.998211091234347,
+          "accuracy_on_covered": 0.9852150537634409
+        },
+        {
+          "margin": 0.15,
+          "coverage": 0.9968694096601073,
+          "accuracy_on_covered": 0.9856437864513234
+        },
+        {
+          "margin": 0.2,
+          "coverage": 0.9937388193202147,
+          "accuracy_on_covered": 0.9864986498649865
+        },
+        {
+          "margin": 0.25,
+          "coverage": 0.9910554561717353,
+          "accuracy_on_covered": 0.9878158844765343
+        },
+        {
+          "margin": 0.3,
+          "coverage": 0.9852415026833632,
+          "accuracy_on_covered": 0.9904675442578302
+        },
+        {
+          "margin": 0.35,
+          "coverage": 0.9803220035778175,
+          "accuracy_on_covered": 0.9908759124087592
+        },
+        {
+          "margin": 0.4,
+          "coverage": 0.9762969588550984,
+          "accuracy_on_covered": 0.9912963811268896
+        },
+        {
+          "margin": 0.45,
+          "coverage": 0.9521466905187835,
+          "accuracy_on_covered": 0.9953029591357445
+        }
+      ],
+      "note": "over both presentation orders (2 x n_pairs instances)"
+    },
+    "latency": {
+      "method": "batch size 1, 20 warm-up passes, then 200 timed passes over 200 distinct val_eval pairs; torch.cuda.synchronize() before and after each timed pass; forward = host->device copy + model + logits back to host; tokenization = token-level truncation + laya sequence building",
+      "input_tokens": {
+        "p50": 878.0,
+        "p95": 1024.0,
+        "mean": 749.53,
+        "max": 1024.0,
+        "n": 200
+      },
+      "device": "NVIDIA GeForce RTX 4080 Laptop GPU",
+      "dtype": "torch.bfloat16",
+      "gpu_forward_ms": {
+        "p50": 9.859491983661428,
+        "p95": 11.229856702266261,
+        "mean": 9.102026621694677,
+        "max": 11.510533979162574,
+        "n": 200
+      },
+      "gpu_forward_ms_max_length": {
+        "input_tokens": 1024,
+        "p50": 11.40377699630335,
+        "p95": 11.606895999284461,
+        "mean": 11.417740508913994,
+        "max": 17.20920199295506,
+        "n": 200
+      },
+      "gpu_end_to_end_ms": {
+        "p50": 11.883466999279335,
+        "p95": 21.088381091249172,
+        "mean": 13.233902929641772,
+        "max": 24.25808599218726,
+        "n": 200
+      },
+      "throughput_gpu": [
+        {
+          "batch_size": 1,
+          "pairs": 512,
+          "seconds": 4.8143954510451294,
+          "pairs_per_second": 106.34772427945296
+        },
+        {
+          "batch_size": 8,
+          "pairs": 512,
+          "seconds": 4.270436023012735,
+          "pairs_per_second": 119.89408042666119
+        },
+        {
+          "batch_size": 32,
+          "pairs": 512,
+          "seconds": 5.121302895015106,
+          "pairs_per_second": 99.97455930567251
+        }
+      ],
+      "target_ms": 35.0,
+      "target_met": true,
+      "target_criterion": "median GPU forward pass at batch size 1 on real inputs",
+      "p95_under_target": true,
+      "tokenization_ms": {
+        "p50": 1.5196640160866082,
+        "p95": 9.224189838278104,
+        "mean": 3.566139467875473,
+        "max": 12.035664985887706,
+        "n": 200
+      },
+      "cpu_forward_ms": {
+        "p50": 606.8401070078835,
+        "p95": 760.3040252899518,
+        "mean": 506.69359085926163,
+        "max": 766.7755719739944,
+        "n": 30
+      },
+      "cpu_threads": 24,
+      "cpu_dtype": "torch.float32"
+    }
+  },
+  "judge": {
+    "model": "kimi-k3",
+    "endpoint": "self-hosted Kimi-k3 (8x NVIDIA B300, HGX)",
+    "sample": {
+      "split": "val_eval",
+      "n_pairs": 500,
+      "n_requests": 1000,
+      "seed": 20261014
+    },
+    "settings": {
+      "temperature": 0,
+      "max_tokens": 16384,
+      "concurrency": 16,
+      "max_retries": 3,
+      "timeout_s": 600.0,
+      "input": "full untruncated prompt and responses"
+    },
+    "cached_before_run": 10,
+    "request_failures": 0,
+    "parse_failures": 0,
+    "parse_failure_rate": 0.0,
+    "latency_ms": {
+      "p50": 9531.211617490044,
+      "p95": 34626.14595610934,
+      "mean": 14367.778617959118,
+      "max": 215257.8309829696,
+      "n": 1000
+    },
+    "throughput": {
+      "requests_per_second": 0.9947463730370273,
+      "wall_seconds": 995.2285595950088,
+      "live_requests": 990,
+      "concurrency": 16
+    },
+    "tokens": {
+      "prompt_tokens": 1272393,
+      "completion_tokens": 498238,
+      "total_tokens": 1770631
+    },
+    "gate_latency_ms_used": 11.883466999279335,
+    "latency_ratio_judge_over_gate": 802.0564720773876,
+    "judge_accuracy": {
+      "AB": 0.956,
+      "BA": 0.954,
+      "order_averaged": 0.955,
+      "order_averaged_parse_failures_as_wrong": 0.955
+    },
+    "judge_positional_consistency": 0.982,
+    "gate_accuracy": {
+      "AB": 0.988,
+      "BA": 0.984,
+      "order_averaged": 0.986
+    },
+    "gate_positional_consistency": 0.988,
+    "agreement_rate": 0.947,
+    "disagreements": {
+      "n": 53,
+      "gate_accuracy": 0.7924528301886793,
+      "judge_accuracy": 0.20754716981132076
+    },
+    "cascade": [
+      {
+        "threshold": 0.0,
+        "routed_fraction": 0.0,
+        "cascade_accuracy": 0.986,
+        "expected_latency_ms": 11.883466999279335,
+        "routed_without_verdict": 0
+      },
+      {
+        "threshold": 0.05,
+        "routed_fraction": 0.0,
+        "cascade_accuracy": 0.986,
+        "expected_latency_ms": 11.883466999279335,
+        "routed_without_verdict": 0
+      },
+      {
+        "threshold": 0.1,
+        "routed_fraction": 0.002,
+        "cascade_accuracy": 0.986,
+        "expected_latency_ms": 30.945890234259423,
+        "routed_without_verdict": 0
+      },
+      {
+        "threshold": 0.15,
+        "routed_fraction": 0.003,
+        "cascade_accuracy": 0.986,
+        "expected_latency_ms": 40.47710185174947,
+        "routed_without_verdict": 0
+      },
+      {
+        "threshold": 0.2,
+        "routed_fraction": 0.007,
+        "cascade_accuracy": 0.986,
+        "expected_latency_ms": 78.60194832170964,
+        "routed_without_verdict": 0
+      },
+      {
+        "threshold": 0.25,
+        "routed_fraction": 0.011,
+        "cascade_accuracy": 0.986,
+        "expected_latency_ms": 116.72679479166982,
+        "routed_without_verdict": 0
+      },
+      {
+        "threshold": 0.3,
+        "routed_fraction": 0.016,
+        "cascade_accuracy": 0.989,
+        "expected_latency_ms": 164.38285287912004,
+        "routed_without_verdict": 0
+      },
+      {
+        "threshold": 0.35,
+        "routed_fraction": 0.023,
+        "cascade_accuracy": 0.987,
+        "expected_latency_ms": 231.10133420155034,
+        "routed_without_verdict": 0
+      },
+      {
+        "threshold": 0.4,
+        "routed_fraction": 0.027,
+        "cascade_accuracy": 0.987,
+        "expected_latency_ms": 269.2261806715105,
+        "routed_without_verdict": 0
+      },
+      {
+        "threshold": 0.45,
+        "routed_fraction": 0.052,
+        "cascade_accuracy": 0.991,
+        "expected_latency_ms": 507.5064711087616,
+        "routed_without_verdict": 0
+      }
+    ],
+    "recommended": {
+      "threshold": 0.0,
+      "routed_fraction": 0.0,
+      "cascade_accuracy": 0.986,
+      "expected_latency_ms": 11.883466999279335,
+      "routed_without_verdict": 0,
+      "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+    },
+    "label_noise": {
+      "rule": "judge prefers the rejected response in both orders AND gate's order-averaged P(chosen) <= 0.30",
+      "n_suspected": 1,
+      "fraction_of_sample": 0.002,
+      "pair_ids": [
+        "417d6c26140cee3f"
+      ]
+    }
+  },
+  "tests": {
+    "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
+    "total": 82,
+    "passed": 82,
+    "failed": 0,
+    "errors": 0,
+    "skipped": 0,
+    "skipped_tests": {},
+    "all_passed": true,
+    "coverage_percent": 70.7,
+    "coverage_per_module": {
+      "__init__.py": 100.0,
+      "benchmark.py": 63.2,
+      "calibrate.py": 63.8,
+      "data.py": 71.4,
+      "judge.py": 79.3,
+      "predictor.py": 97.9,
+      "publish.py": 51.9,
+      "readme.py": 93.3,
+      "testing.py": 0.0,
+      "train.py": 37.3,
+      "utils.py": 100.0
+    }
+  },
+  "publish": {
+    "status": "skipped",
+    "reason": "upload skipped: the Hub refused to create `joenaess/laya-swedish-preference-gate` (HTTP 403); the HF_TOKEN in use cannot write to that namespace. Set HF_REPO_ID to a namespace the token can write to, or use a token for the intended account, and rerun `python -m laya_gate.publish`."
+  }
+}

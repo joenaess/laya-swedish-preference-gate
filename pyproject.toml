@@ -1,0 +1,52 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "laya-swedish-preference-gate"
+version = "0.1.0"
+description = "Sub-35ms Swedish DPO preference discriminator using Laya"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "laya>=0.3.3",
+    "torch>=2.2.0",
+    "transformers>=4.40.0",
+    "datasets>=2.18.0",
+    "huggingface_hub>=0.23.0",
+    "openai>=1.30.0",
+    "scikit-learn>=1.4.0",
+    "numpy>=1.26.0",
+    "pydantic>=2.6.0",
+    "rich>=13.7.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.3.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/laya_gate"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "gpu: requires a CUDA device",
+    "network: requires Hugging Face Hub access",
+    "judge: requires the live Kimi-k3 endpoint (API_KEY, BASE_URL)",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Markdown table templates: wrapping them would change the rendered README.
+"src/laya_gate/readme.py" = ["E501"]

@@ -1,0 +1,370 @@
+# Laya Swedish Preference Gate
+
+A fast pairwise judge for Swedish text. Give it a Swedish prompt and two candidate responses
+and it returns a calibrated probability that the first is better, in one forward pass of a
+fine-tuned [Laya](https://github.com/NandhaKishorM/laya) decision model (mmBERT-base backbone).
+It is meant as a "System 1" filter: it settles the easy comparisons in milliseconds and hands
+the uncertain ones to a slower "System 2" LLM judge. It was trained on
+[`jonasaise/dpo-swedish-interpreted`](https://huggingface.co/datasets/jonasaise/dpo-swedish-interpreted),
+where the preferred answer is idiomatic, localized Swedish and the rejected one is a
+deliberately poor translation. What it has learned is mainly to tell **authentic Swedish from
+translationese**, and it is compared against self-hosted Kimi-k3 on 8× NVIDIA B300 (HGX).
+
+Weights are not published on the Hub: the Hub refused to create `joenaess/laya-swedish-preference-gate` (HTTP 403); the HF_TOKEN in use cannot write to that namespace. Set HF_REPO_ID to a namespace the token can write to, or use a token for the intended account, and rerun `python -m laya_gate.publish`.
+
+## Results at a glance
+
+| Metric | Value | Target |
+|---|---|---|
+| Validation accuracy (val_eval, held out) | 98.4% | — |
+| ECE before calibration | 0.013 | — |
+| ECE after calibration | 0.006 | ✅ target ≤ 0.085 |
+| Fitted temperature T | 1.967 | — |
+| GPU latency, batch 1 (median / p95) | 9.9 ms / 11.2 ms | ✅ target < 35 ms (median) |
+| Gate accuracy on judge sample (order-averaged) | 98.6% | — |
+| Kimi-k3 accuracy on judge sample (order-averaged) | 95.5% | — |
+
+All numbers are generated from [`results/metrics.json`](results/metrics.json) by
+`python -m laya_gate.readme`.
+
+## Installation
+
+```bash
+git clone https://github.com/joenaess/laya-swedish-preference-gate.git
+cd laya-swedish-preference-gate
+uv sync --extra dev
+```
+
+Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for training.
+
+## Quickstart
+
+The weights are not on the Hub (see [License](#license) and the publish notes), so run `./run.sh` first to produce `checkpoints/best_model`.
+
+```python
+from laya_gate.predictor import SwedishPreferenceGate
+
+gate = SwedishPreferenceGate(checkpoint_path="checkpoints/best_model")
+result = gate.predict_preference(
+    prompt="Hur fungerar fotosyntesen?",
+    chosen_candidate="Fotosyntesen är den process där växter omvandlar ljusenergi till kemisk energi...",
+    rejected_candidate="Det är när solen lyser på träd och gör magi.",
+)
+print(result)
+# {"preference": "candidate_a", "p_chosen": <float>, "is_valid_margin": <bool>,
+#  "probabilities": {"candidate_a": <float>, "candidate_b": <float>}}
+```
+
+`chosen_candidate` is shown to the model as `candidate_a` and `rejected_candidate` as
+`candidate_b`; the names describe your hypothesis, not ground truth. `p_chosen` is the
+temperature-calibrated probability that `candidate_a` is the better response.
+`is_valid_margin` is `True` when `|p_chosen − 0.5| ≥ margin`; the constructor argument `margin`
+defaults to **0.2** (i.e. calibrated probability ≥ 0.7 for
+either side). The extra `probabilities` key holds both option probabilities (they sum to 1).
+
+Batched scoring (length-sorted internally, results returned in input order):
+
+```python
+results = gate.predict_preference_batch(
+    prompts=["Vad är huvudstaden i Sverige?", "Skriv en mening om hösten."],
+    chosen_candidates=["Stockholm.", "Löven blir röda och gula."],
+    rejected_candidates=["Göteborg är huvudstaden.", "Höst."],
+    batch_size=32,
+)
+```
+
+Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>` and `margin=<float>` are
+accepted. The checkpoint is in the standard Laya layout, so `laya.load(path)` opens it too
+(the fitted temperature is stored in its `rl_agent_config.json`).
+
+## How it works
+
+- **`choice` primitive.** Each pair becomes a Laya state
+  `{"prompt", "candidate_a", "candidate_b"}` and one `choice` question with options
+  `candidate_a: response A is superior` and `candidate_b: response B is superior`. The encoder
+  reads `[CLS] question [SEP] [MASK] option A [MASK] option B [SEP] state [SEP]`, and the
+  decision head scores each `[MASK]`: one forward pass, no generation.
+- **Symmetrization.** With a fixed seed, exactly half of the pairs put the chosen response in
+  slot A and half in slot B, so the model cannot learn a positional shortcut.
+- **Truncation.** Inputs are limited to 1024 tokens. When a pair is longer, it is cut at
+  token boundaries using the model's own tokenizer: the *tail* of the prompt (the most recent
+  context) and the *head* of each response are kept. The budget is shared max-min fairly in
+  serialized-token space, so short fields are untouched and neither response is cut to
+  nothing.
+- **Temperature scaling.** A single temperature `T` is fitted on a calibration half of the
+  validation set and applied as `softmax(logits / T)`. It changes confidence, not the
+  predicted winner.
+- **Pipeline.** `./run.sh` runs data → train → calibrate → benchmark → judge → tests →
+  readme → publish.
+
+## Detailed results
+
+### Dataset
+
+Source: [`jonasaise/dpo-swedish-interpreted`](https://huggingface.co/datasets/jonasaise/dpo-swedish-interpreted).
+The repository's single `train` split is stored as parquet files with two different
+schemas (the dataset card declares only one), so `datasets.load_dataset` fails with a cast
+error; `data.py` reads the files one by one and keeps `prompt`, `chosen`, `rejected`.
+
+| | |
+|---|---|
+| Raw pairs | 14986 |
+| Dropped (empty / identical / duplicate) | {"empty_field": 0, "identical_responses": 0, "duplicate": 0} |
+| Train / val_calib / val_eval | 12750 / 1118 / 1118 |
+| Val pairs moved to train (prompt also in train) | 12 |
+| Fraction with chosen in slot B (train / calib / eval) | 0.500 / 0.499 / 0.498 |
+| Pairs truncated to fit 1024 tokens | 6336 (42.3%) |
+| Untruncated input length, tokens (median / p95 / max) | 858.0 / 2423.75 / 11276 |
+| Question head / state budget, tokens | 32 / 991 |
+
+**How the pairs were made.** The dataset card says kimi-k3 localized each UltraFeedback prompt
+and chosen response into idiomatic Swedish and deliberately generated the rejected response
+with poor translation, excessive English loan words or US-centric content. The preference
+signal is therefore mostly *authentic vs. translated Swedish*. Two non-neural baselines on
+val_eval show how lexical it is:
+
+| Baseline (val_eval) | Accuracy |
+|---|---|
+| Longer response wins | 71.3% |
+| Logistic regression on TF-IDF(A) − TF-IDF(B) | 98.4% |
+
+Words the TF-IDF model associates with the *chosen* side: *alltså*, *gärna*, *utifrån*, *innebär*, *stället*, *svenska*, *exempel*, *sverige*, *samt*, *däremot*.
+With the *rejected* side: *denna*, *detta*, *konfidens*, *såsom*, *kommer*, *av*, *baserat*, *inkluderar*, *hjälpa*, *är*.
+
+### Training
+
+Base: `convaiinnovations/laya (subfolder=multilingual)` (backbone `jhu-clsp/mmBERT-base`), adapted from the
+reference recipe in [NandhaKishorM/laya](https://github.com/NandhaKishorM/laya) (`laya.train`).
+
+| Hyperparameter | Value |
+|---|---|
+| Precision | bfloat16 autocast |
+| Micro-batch × accumulation (effective) | 8 × 2 (16) |
+| OOM fallback used | none (gradient checkpointing: False) |
+| Learning rate / schedule | 2e-05, linear warmup 10% of 2391 updates, cosine decay |
+| Optimizer | AdamW, weight decay 0.01, grad-norm clip 1.0 |
+| Epochs | 3 |
+| Loss | soft cross-entropy over the two choice options |
+| Sequence budget | max_len 1024, head_max_len 256 |
+
+| Epoch | Train loss | Val loss (calib / eval) | Val acc (calib / eval) | Time |
+|---|---|---|---|---|
+| 1 | 0.3167 | 0.1283 / 0.1201 | 97.4% / 97.5% | 10.2 min |
+| 2 **(best)** | 0.0360 | 0.0772 / 0.0651 | 97.9% / 98.5% | 10.5 min |
+| 3 | 0.0017 | 0.0968 / 0.0781 | 98.3% / 98.6% | 10.6 min |
+
+- Zero-shot base checkpoint (before fine-tuning): val_eval accuracy 51.6%, loss 1.238.
+- Best epoch: **2**, chosen by lowest loss on the val_calib half; val_eval is never used for selection.
+- Training wall-clock: 31.4 min total
+  (10.2, 10.5, 10.6 min per epoch, including per-epoch validation).
+- Peak GPU memory: 10.73 GiB allocated / 10.84 GiB reserved.
+- Hardware: NVIDIA GeForce RTX 4080 Laptop GPU, PyTorch 2.14.1+cu130.
+
+### Calibration
+
+Temperature scaling with a single scalar `T = exp(log_T)`, fitted by L-BFGS on the NLL of the
+**val_calib** half; all headline numbers below are on the **val_eval** half, which neither the
+fit, checkpoint selection nor training saw. ECE uses 15 equal-width bins over
+the top-1 confidence.
+
+| | Before | After |
+|---|---|---|
+| ECE (val_eval) | 0.013 | 0.006 |
+| NLL (val_eval) | 0.066 | 0.046 |
+| ECE (val_calib, in-sample for the fit) | 0.016 | 0.009 |
+
+Fitted temperature: **T = 1.967**
+(T > 1: the raw logits were over-confident).
+Target ECE ≤ 0.085: ✅.
+
+Reliability table (val_eval; empty bins omitted; for two options the top-1 confidence is ≥ 0.5):
+
+| Confidence bin | n (pre) | Conf. / acc. (pre) | n (post) | Conf. / acc. (post) |
+|---|---|---|---|---|
+| 0.467–0.533 | 0 | — | 1 | 0.520 / 1.000 |
+| 0.533–0.600 | 1 | 0.539 / 1.000 | 1 | 0.579 / 0.000 |
+| 0.600–0.667 | 1 | 0.651 / 0.000 | 5 | 0.643 / 0.600 |
+| 0.667–0.733 | 1 | 0.731 / 0.000 | 5 | 0.709 / 0.600 |
+| 0.733–0.800 | 4 | 0.767 / 0.750 | 7 | 0.781 / 0.286 |
+| 0.800–0.867 | 4 | 0.846 / 0.750 | 7 | 0.833 / 0.857 |
+| 0.867–0.933 | 7 | 0.915 / 0.143 | 12 | 0.906 / 0.917 |
+| 0.933–1.000 | 1100 | 0.999 / 0.993 | 1080 | 0.993 / 0.994 |
+
+### Latency and throughput
+
+Method: batch size 1, 20 warm-up passes, then 200 timed passes over 200 distinct val_eval pairs; torch.cuda.synchronize() before and after each timed pass; forward = host->device copy + model + logits back to host; tokenization = token-level truncation + laya sequence building.
+Inputs are real validation pairs (median 878 tokens, p95 1024).
+GPU: NVIDIA GeForce RTX 4080 Laptop GPU (torch.bfloat16 weights). CPU: 24 threads, torch.float32.
+
+| Measurement (batch 1) | Median | p95 | n |
+|---|---|---|---|
+| GPU forward pass | 9.9 ms | 11.2 ms | 200 |
+| GPU forward, full 1024-token input (1024 tokens) | 11.4 ms | 11.6 ms | 200 |
+| Tokenization + truncation (CPU) | 1.5 ms | 9.2 ms | 200 |
+| GPU end-to-end `predict_preference` | 11.9 ms | 21.1 ms | 200 |
+| CPU forward pass | 606.8 ms | 760.3 ms | 30 |
+
+| Throughput (length-sorted batches, 512 val_eval pairs) | Pairs/s | Per pair |
+|---|---|---|
+| GPU, batch 1 | 106.3 pairs/s | 9.4 ms/pair |
+| GPU, batch 8 | 119.9 pairs/s | 8.3 ms/pair |
+| GPU, batch 32 | 100.0 pairs/s | 10.0 ms/pair |
+
+Batch 32 is slower than batch 8: at up to 1024 tokens per pair, 32-pair batches push the 12 GB laptop GPU to its memory limit (the CUDA allocator logged failed allocations and retries), so throughput peaks at batch 8 on this card.
+
+Target: median GPU forward pass < 35 ms at batch 1 → ✅
+(p95 under target: ✅).
+
+### Positional consistency
+
+Every val_eval pair (1118) scored in both orders (A/B and B/A).
+
+| | |
+|---|---|
+| Same winner in both orders | 98.4% |
+| Accuracy with chosen in slot A | 98.0% |
+| Accuracy with chosen in slot B | 98.9% |
+| Gap (A − B) | -0.9 pp |
+| Mean P(slot A wins) | 0.494 |
+| Accuracy, averaging P over both orders | 98.7% |
+
+### Accuracy at the margin threshold
+
+At the default `margin=0.2`, **99.4%** of
+predictions pass `is_valid_margin`, with accuracy **98.6%** on that
+subset (vs 98.5% on all predictions; both orders counted).
+
+| Margin | Fraction passing | Accuracy on passing |
+|---|---|---|
+| 0.00 | 100.0% | 98.5% |
+| 0.05 | 100.0% | 98.5% |
+| 0.10 | 99.8% | 98.5% |
+| 0.15 | 99.7% | 98.6% |
+| 0.20 | 99.4% | 98.6% |
+| 0.25 | 99.1% | 98.8% |
+| 0.30 | 98.5% | 99.0% |
+| 0.35 | 98.0% | 99.1% |
+| 0.40 | 97.6% | 99.1% |
+| 0.45 | 95.2% | 99.5% |
+
+### System 1 vs System 2
+
+Judge: self-hosted Kimi-k3 on 8× NVIDIA B300 (HGX), model id `kimi-k3`, temperature 0, reasoning allowed
+(only the final answer is parsed). Sample: 500 fixed-seed pairs from val_eval,
+each queried in both orders (1000 requests, concurrency
+16). The judge sees the full, untruncated texts; the gate sees
+its 1024-token window.
+
+| | Gate (System 1) | Kimi-k3 (System 2) |
+|---|---|---|
+| Accuracy, order A/B | 98.8% | 95.6% |
+| Accuracy, order B/A | 98.4% | 95.4% |
+| Accuracy, order-averaged | 98.6% | 95.5% |
+| Positional consistency | 98.8% | 98.2% |
+| Median latency per pair | 11.9 ms | 9531.2 ms (p95 34626.1 ms) |
+
+- Gate–judge agreement: **94.7%** of instances. On the 53
+  disagreements the gate is right 79.2% of the time and the judge
+  20.8%.
+- Judge parse failures: 0 (0.00%); request failures after retries: 0.
+  Judge accuracy counting parse failures as wrong: 95.5%.
+- Judge throughput: 0.99 requests/s at concurrency 16.
+  Tokens used: 1770631 total (1272393 prompt, 498238 completion, reasoning included).
+- Latency ratio (judge median / gate end-to-end median): **802×**.
+
+### Cascade (System 1 → System 2)
+
+An instance goes to the judge when `|p_chosen − 0.5| < threshold`; otherwise the gate's answer
+stands. Expected latency = gate latency + routed fraction × judge median latency. Routed
+instances without a parseable judge verdict keep the gate's answer.
+
+| Threshold | Routed to judge | Cascade accuracy | Expected latency / pair |
+|---|---|---|---|
+| **0.00** | **0.0%** | **98.6%** | **11.9 ms** |
+| 0.05 | 0.0% | 98.6% | 11.9 ms |
+| 0.10 | 0.2% | 98.6% | 30.9 ms |
+| 0.15 | 0.3% | 98.6% | 40.5 ms |
+| 0.20 | 0.7% | 98.6% | 78.6 ms |
+| 0.25 | 1.1% | 98.6% | 116.7 ms |
+| 0.30 | 1.6% | 98.9% | 164.4 ms |
+| 0.35 | 2.3% | 98.7% | 231.1 ms |
+| 0.40 | 2.7% | 98.7% | 269.2 ms |
+| 0.45 | 5.2% | 99.1% | 507.5 ms |
+
+Recommended threshold (**bold**): **0.00** — lowest routed fraction within 0.5% of the best cascade accuracy in the sweep:
+0.0% routed, 98.6% accuracy.
+
+### Label-noise findings
+
+Rule: judge prefers the rejected response in both orders AND gate's order-averaged P(chosen) <= 0.30. **1** of 500 sampled pairs
+(0.2%) meet it. Their ids are in `results/metrics.json`
+(`judge.label_noise.pair_ids`). These are candidates for mislabeled or ambiguous pairs, not
+confirmed errors: both "judges" may share a bias, for example toward longer answers.
+
+### Tests
+
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **82 passed, 0 failed,
+0 errors, 0 skipped** of 82.
+Coverage: **70.7%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 71.4% · `judge.py` 79.3% · `predictor.py` 97.9% · `publish.py` 51.9% · `readme.py` 93.3% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0%.
+
+
+## Limitations
+
+- **The labels encode translation quality, by construction.** Per the dataset card, kimi-k3 localized each prompt and chosen response into idiomatic Swedish and *deliberately* wrote the rejected response as poor translation (literal phrasing, English loan words, US-centric content). A TF-IDF logistic regression reaches 98.4% on the same held-out pairs, so most of the gate's accuracy is detecting translationese. Do not read it as a general helpfulness or correctness judge for two *fluent* Swedish answers.
+- **The judge generated the data.** Kimi-k3 wrote both sides of every pair, so its agreement with the labels measures self-consistency, not independent quality judgement.
+- **Pairwise preference, not fact-checking.** The gate predicts which of two responses the dataset labels as chosen. It does not verify factual correctness, and a fluent wrong answer can beat a terse correct one.
+- **1024-token window.** 42.3% of pairs exceed it; the gate then sees only the end of the prompt and the start of each response, so differences late in long answers are invisible to it.
+- **Kimi-k3 is a reference, not ground truth.** The judge is a strong but imperfect model; agreement with it is not correctness.
+- **Single seed, single run.** Numbers come from one training run; seed-to-seed variance was not measured.
+- **Not on the Hub:** upload skipped: the Hub refused to create `joenaess/laya-swedish-preference-gate` (HTTP 403); the HF_TOKEN in use cannot write to that namespace. Set HF_REPO_ID to a namespace the token can write to, or use a token for the intended account, and rerun `python -m laya_gate.publish`.
+
+## Conclusion
+
+The fine-tuned gate reaches 98.4% accuracy on held-out pairs (the zero-shot base checkpoint: 51.6%), with calibrated probabilities (ECE 0.006, meeting the ≤ 0.085 target) and a median single-pair GPU forward pass of 9.9 ms (meeting the 35 ms target). It picks the same winner in both presentation orders for 98.4% of pairs. When it is confident (margin ≥ 0.2, 99.4% of predictions) it is right 98.6% of the time, so its confidence is usable for routing. That accuracy should be read next to the lexical baseline: a TF-IDF logistic regression scores 98.4% on the same pairs, because the dataset contrasts idiomatic Swedish with deliberately poor translation. The gate does not measurably beat that baseline (+0.0 points); what it adds is calibrated confidence, order-robustness and a single model that also reads the prompt. The gate is a strong translationese detector; how well it ranks two equally fluent answers by helpfulness was not measured and should not be assumed.
+
+Against these labels Kimi-k3 is *less* accurate than the gate (95.5% vs 98.6%) and 802× slower, which is expected: the labels mark translationese, which the gate was trained on, while the judge was also asked about helpfulness and correctness, and it generated these pairs itself. The judge still helps where the gate is unsure: routing the 5.2% least-confident instances (threshold 0.45) lifts accuracy from 98.6% to 99.1% at an expected 507.5 ms per pair. The pre-registered rule (cheapest threshold within 0.5 points of the best) picks 0.00, i.e. 0.0% routed, because the gain is that small. For its intended System 1 role on data like this, settling confident comparisons in milliseconds and escalating the rest, the gate is fit for purpose (latency target met, ECE target met, confident-subset accuracy 98.6% vs judge 95.5%). It should not be the only judge for high-stakes decisions.
+
+## Usage ideas
+
+- **Best-of-N reranking:** generate N Swedish candidates from an LLM, run a pairwise knockout
+  or round-robin with `predict_preference_batch` (score both orders and average), and keep the
+  winner; N=8 round-robin is 56 ordered pairs, one batched call.
+- **LLM-as-judge cascade:** score every pair with the gate and only send pairs with
+  `is_valid_margin == False` to an expensive judge such as Kimi-k3. In our measurement the recommended threshold 0.00 routes 0.0% at 98.6% accuracy, and the most accurate setting (0.45) routes 5.2% for 99.1% at 507.5 ms expected per pair (see the cascade table).
+- **DPO data curation:** score a Swedish preference dataset in both orders and flag pairs where
+  the gate confidently prefers the rejected response; if an LLM judge agrees, drop or relabel the
+  pair (the label-noise check above flagged 1 such pair(s) in the judge sample).
+- **Checkpoint A/B evaluation:** answer a fixed Swedish prompt set with two model versions and
+  report the order-averaged win rate of the new one, to catch regressions between releases.
+- **Active learning:** send the lowest-margin pairs to human annotators first; they are the ones
+  where a label changes the model most.
+- **Production monitoring:** compare live responses against a reference answer per prompt and
+  track the daily share where the reference is confidently preferred, to detect quality drift.
+
+## Citation and acknowledgements
+
+- **Laya:** decision model, `choice` primitive and training recipe:
+  [NandhaKishorM/laya](https://github.com/NandhaKishorM/laya), checkpoint
+  [`convaiinnovations/laya`](https://huggingface.co/convaiinnovations/laya) (`multilingual`).
+- **mmBERT:** multilingual ModernBERT encoder
+  [`jhu-clsp/mmBERT-base`](https://huggingface.co/jhu-clsp/mmBERT-base).
+- **Dataset:** [`jonasaise/dpo-swedish-interpreted`](https://huggingface.co/datasets/jonasaise/dpo-swedish-interpreted),
+  derived from `argilla/ultrafeedback-binarized-preferences-cleaned`.
+- **Judge:** Kimi-k3 (Moonshot AI), served on a self-hosted endpoint (8× NVIDIA B300, HGX).
+
+```bibtex
+@software{laya_swedish_preference_gate,
+  title  = {Laya Swedish Preference Gate},
+  author = {Lind, Jonas},
+  year   = {2026},
+  url    = {https://github.com/joenaess/laya-swedish-preference-gate}
+}
+```
+
+## License
+
+Code and fine-tuned weights: **Apache-2.0**. The base model `convaiinnovations/laya` is
+licensed apache-2.0; the dataset `jonasaise/dpo-swedish-interpreted` is
+licensed mit (licenses read from the Hub on
+this run). Both permit redistributing a fine-tuned derivative with attribution.
+The dataset is derived from UltraFeedback; check the upstream terms before commercial use.
