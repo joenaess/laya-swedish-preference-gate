@@ -141,9 +141,30 @@ results = gate.predict_preference_batch(
 )
 ```
 
-Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>` and `margin=<float>` are
-accepted. The checkpoint is in the standard Laya layout, so `laya.load(path)` opens it too
+{v2_quickstart(m)}Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>`, `margin=<float>` and
+`revision=<Hub branch or tag>` are accepted. The checkpoint is in the standard Laya layout, so `laya.load(path)` opens it too
 (the fitted temperature is stored in its `rl_agent_config.json`)."""
+
+
+def v2_quickstart(m: dict) -> str:
+    if get(m, "publish.checkpoint") != "v2":
+        return ""
+    repo = get(m, "publish.repo_id")
+    return f"""The Hub checkpoint is **v2**, which also answers a second question, *which response is
+written in more natural, idiomatic Swedish*:
+
+```python
+r = gate.predict_naturalness(
+    prompt="Vad ska jag göra i Stockholm en regnig dag?",
+    candidate_a="Gå på Fotografiska eller Vasamuseet, och fika på något mysigt kafé.",
+    candidate_b="Du kan besöka ett museum, vänligen notera att det är en bra aktivitet för regn.",
+)
+# {{"more_natural": "candidate_a", "p_a_more_natural": <float>, "probabilities": {{...}}}}
+
+gate_v1 = SwedishPreferenceGate("{repo}", revision="v1")  # the first release
+```
+
+"""
 
 
 def dataset_section(m: dict) -> str:
@@ -559,7 +580,7 @@ def v2_summary(m: dict) -> str | None:
         t2, key=lambda r: abs(r["routed_fraction"] - r1.get("routed_fraction", 0)), default={}
     )
     return (
-        f"An experimental **v2** checkpoint (`python -m laya_gate.v2`, see "
+        f"A **v2** checkpoint (`python -m laya_gate.v2`, see "
         f"[v2](#v2-training-on-fluent-pairs-too)) adds {get(m, 'fluent_data.splits.train', NM)} "
         "fluent-vs-fluent training pairs and a separate naturalness question. On the probe it "
         f"reaches {pct(a(ev))} (95% CI {pct(get(ev, f'{k}.accuracy_order_averaged_prob.ci95.0'))}"
@@ -573,7 +594,12 @@ def v2_summary(m: dict) -> str | None:
         "on the original held-out pairs (both orders averaged), and the probe is still "
         f"{num(100 * ((get(m, 'probe.judge.order_averaged.accuracy') or 0) - (a(ev) or 0)), 1)} "
         "percentage points "
-        "behind Kimi-k3. v2 is not on the Hub yet."
+        "behind Kimi-k3. "
+        + (
+            'v2 is the default checkpoint on the Hub; v1 stays available as `revision="v1"`.'
+            if get(m, "publish.checkpoint") == "v2"
+            else "v2 is not on the Hub yet."
+        )
     )
 
 
@@ -581,7 +607,8 @@ def _v2_row(label: str, v1: Any, v2: Any, fmt=pct) -> str:
     return f"| {label} | {fmt(v1)} | {fmt(v2)} |"
 
 
-def v2_section(m: dict) -> str:
+def v2_section(m: dict, intro: bool = True) -> str:
+    """The v2 README section; `intro=False` drops the motivation and data generation."""
     ev, v1 = m.get("v2_eval"), m.get("v1_eval")
     tr, cal = m.get("v2_training"), m.get("v2_calibration")
     if not (isinstance(ev, dict) and ev.get("checkpoint") and isinstance(tr, dict)):
@@ -668,7 +695,9 @@ def v2_section(m: dict) -> str:
     hist_rows = "\n".join(
         f"| {h['epoch']} | {num(h['train_loss'])} | "
         + " | ".join(
-            f"{num(h['val_calib'][g]['loss'])} / {pct(h['val_calib'][g]['acc'])}" for g in groups
+            f"{num(h['val_calib'][g]['loss'])} / "
+            + (pct(h["val_calib"][g]["acc"]) if h["val_calib"][g]["acc"] is not None else "n/a")
+            for g in groups
         )
         + f" | {h['epoch_seconds'] / 60:.1f} min |"
         for h in hist
@@ -703,7 +732,7 @@ def v2_section(m: dict) -> str:
         f"{num(f.get('nll_post'))}, fit on {f.get('fit_on', NM)})"
         for q, f in (cal or {}).items()
     )
-    return f"""**Why:** the probe showed that v1 mostly detects translationese. v2 keeps the original
+    why = f"""**Why:** the probe showed that v1 mostly detects translationese. v2 keeps the original
 data and adds pairs where *both* answers are fluent Swedish and only quality differs, so the
 preference head has to learn more than style. A second `choice` question, **naturalness**
 ("Which candidate response is written in more natural, idiomatic Swedish?"), keeps the
@@ -715,7 +744,10 @@ pick a side).
 
 {generation_section(m)}
 
-#### Training
+"""
+    return (
+        (why if intro else "")
+        + f"""#### Training
 
 Initialized from the base `convaiinnovations/laya` multilingual checkpoint (not from v1), same
 recipe as v1 (lr {hp.get("lr", NM)}, micro-batch {hp.get("micro_batch", NM)} × accumulation
@@ -723,6 +755,8 @@ recipe as v1 (lr {hp.get("lr", NM)}, micro-batch {hp.get("micro_batch", NM)} × 
 {tr.get("train_units", NM)} (pair, question) units; {tr.get("order_resampling", "")}. Best epoch:
 **{tr.get("best_epoch", NM)}** ({tr.get("selection", NM)}). Total {num((tr.get("total_seconds") or 0) / 60, 1)} min on
 {tr.get("hardware", NM)}; peak GPU memory {num(tr.get("peak_gpu_memory_allocated_gib"), 2)} GiB.
+
+Accuracy is n/a for fluent/naturalness, whose target is 50/50.
 
 | Epoch | Train loss | {head} | Time |
 |---|---|{"---|" * len(groups)}---|
@@ -761,6 +795,7 @@ a separate instance here, so threshold 0 differs slightly from the order-average
 Recommended for v2 ({r2.get("rule", NM)}): threshold {num(r2.get("threshold"), 2)}, routing
 {pct(r2.get("routed_fraction"))} for {pct(r2.get("cascade_accuracy"))}; for v1 the same rule gives
 {num(r1.get("threshold"), 2)} → {pct(r1.get("routed_fraction"))} routed, {pct(r1.get("cascade_accuracy"))}."""
+    )
 
 
 def tests_section(m: dict) -> str:
@@ -1046,8 +1081,8 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 - **Temperature scaling.** A single temperature `T` is fitted on a calibration half of the
   validation set and applied as `softmax(logits / T)`. It changes confidence, not the
   predicted winner.
-- **Pipeline.** `./run.sh` runs data → train → calibrate → benchmark → judge → tests →
-  readme → publish.
+- **Pipeline.** `./run.sh` runs data → train → calibrate → benchmark → judge → probe →
+  fluent pairs → v2 train / calibrate / evaluate → tests → readme → publish.
 
 ## Detailed results
 

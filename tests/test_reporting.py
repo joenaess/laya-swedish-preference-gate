@@ -419,3 +419,29 @@ def test_pair_metrics_order_averaged_fields():
     dm = m["default_margin_order_averaged"]
     assert dm["coverage"] == 0.5 and dm["accuracy_on_covered"] == 1.0
     assert 0.0 <= m["ece_order_averaged"] <= 1.0
+
+
+def test_model_card_v2_and_blockers(monkeypatch, tmp_path):
+    m = _v2_metrics()
+    m["v2_eval"]["original/preference"]["ece_both_orders"] = 0.01
+    m["v2_eval"]["fluent/preference"]["ece_both_orders"] = 0.2
+    m["data"]["licenses"]["redistribution_allowed"] = True
+    m["tests"] = {"all_passed": True}
+    monkeypatch.setenv("HF_TOKEN", "x")
+    monkeypatch.setattr(publish, "V2_CHECKPOINT_DIR", tmp_path)
+    problems = publish.blockers(m, "v2")
+    assert any("fluent val_eval ECE" in p for p in problems)
+    assert any("source data" in p for p in problems)
+    assert any("no trained v2 checkpoint" in p for p in problems)
+    card = publish.model_card_v2(m, "me/model")
+    assert card.startswith("---\nlanguage: [sv]")
+    assert 'revision="v1"' in card and "predict_naturalness" in card
+    assert "80.0% [75.0%, 85.0%]" in card
+
+
+def test_readme_mentions_v2_on_hub():
+    m = _v2_metrics()
+    m["publish"] = {"status": "uploaded", "repo_id": "me/model", "checkpoint": "v2"}
+    text = readme.render(m)
+    assert "v2 is the default checkpoint on the Hub" in text
+    assert 'SwedishPreferenceGate("me/model", revision="v1")' in text

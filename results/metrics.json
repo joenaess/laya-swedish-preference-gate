@@ -502,25 +502,25 @@
   },
   "tests": {
     "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
-    "total": 105,
-    "passed": 105,
+    "total": 108,
+    "passed": 108,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "skipped_tests": {},
     "all_passed": true,
-    "coverage_percent": 61.9,
+    "coverage_percent": 62.3,
     "coverage_per_module": {
       "__init__.py": 100.0,
       "benchmark.py": 63.2,
       "calibrate.py": 63.8,
       "data.py": 70.2,
-      "fluent.py": 21.6,
+      "fluent.py": 20.6,
       "judge.py": 79.3,
-      "predictor.py": 97.5,
+      "predictor.py": 99.2,
       "probe.py": 46.0,
-      "publish.py": 57.7,
-      "readme.py": 95.0,
+      "publish.py": 66.2,
+      "readme.py": 95.1,
       "testing.py": 0.0,
       "train.py": 37.3,
       "utils.py": 100.0,
@@ -532,11 +532,17 @@
     "repo_id": "jonasaise/laya-swedish-preference-gate",
     "url": "https://huggingface.co/jonasaise/laya-swedish-preference-gate",
     "visibility": "public",
-    "commit": "c4cc3a379a05bef843997be7ee13eaa6811ef070",
+    "commit": "075c9322f6177cdaa7f621ea314b814b008577dc",
+    "checkpoint": "v2",
+    "previous_revision_tag": {
+      "tag": "v1",
+      "revision": "c4cc3a379a05bef843997be7ee13eaa6811ef070"
+    },
     "files": [
       "README.md",
       "encoder",
       "model.safetensors",
+      "questions.json",
       "results/metrics.json",
       "rl_agent_config.json",
       "temperature.json",
@@ -1290,7 +1296,8 @@
         "output_tokens_per_second": 1157.9465839294771,
         "latency_p50_s": 33.81996536749648
       }
-    ]
+    ],
+    "source_license": "mit"
   },
   "fluent_fidelity": {
     "n_pairs": 100,

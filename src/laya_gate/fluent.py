@@ -46,6 +46,15 @@ def sample_training_pairs(n: int) -> tuple[list[dict[str, Any]], int]:
     return picked, len(rows)
 
 
+def source_license() -> str | None:
+    """License of the UltraFeedback source dataset, read from the Hub (anonymous)."""
+    from huggingface_hub import HfApi
+
+    from .probe import SOURCE
+
+    return HfApi(token=False).dataset_info(SOURCE).card_data.get("license")
+
+
 def near_duplicates(prompts: list[str], references: list[str]) -> np.ndarray:
     """True where a prompt's char 3-5-gram TF-IDF cosine to any reference is >= threshold."""
     from sklearn.feature_extraction.text import TfidfVectorizer
@@ -206,10 +215,20 @@ def main(argv=None) -> None:
     parser.add_argument("--chunk", type=int, default=1000)
     parser.add_argument("--concurrency", type=int, nargs="+", default=[64, 128])
     parser.add_argument(
+        "--record-license", action="store_true", help="only add the source license to metrics"
+    )
+    parser.add_argument(
         "--fidelity", type=int, metavar="N", help="only run the reasoning-off fidelity check"
     )
     args = parser.parse_args(argv)
     quiet_http_logs()
+    if args.record_license:
+        from .utils import load_metrics
+
+        data = load_metrics().get("fluent_data")
+        if isinstance(data, dict):
+            update_metrics("fluent_data", {**data, "source_license": source_license()})
+        return
     missing = [v for v in ("BASE_URL", "API_KEY") if not os.environ.get(v)]
     if missing:
         print(f"fluent data skipped: {missing[0]} not set")
@@ -241,6 +260,7 @@ def main(argv=None) -> None:
 
     out = {
         "source": "argilla/ultrafeedback-binarized-preferences-cleaned",
+        "source_license": source_license(),
         "translator": f"{model}, reasoning off, prompt = probe.TRANSLATE_SYSTEM",
         "eligible_pool_excluding_probe": n_pool,
         "requested": len(pairs),

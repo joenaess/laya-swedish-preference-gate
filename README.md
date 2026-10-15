@@ -12,7 +12,7 @@ translationese**, and it is compared against self-hosted Kimi-k3 on 8× NVIDIA B
 
 Weights: [huggingface.co/jonasaise/laya-swedish-preference-gate](https://huggingface.co/jonasaise/laya-swedish-preference-gate) (public).
 
-An experimental **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is not on the Hub yet.
+A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is the default checkpoint on the Hub; v1 stays available as `revision="v1"`.
 
 ## Results at a glance
 
@@ -75,8 +75,22 @@ results = gate.predict_preference_batch(
 )
 ```
 
-Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>` and `margin=<float>` are
-accepted. The checkpoint is in the standard Laya layout, so `laya.load(path)` opens it too
+The Hub checkpoint is **v2**, which also answers a second question, *which response is
+written in more natural, idiomatic Swedish*:
+
+```python
+r = gate.predict_naturalness(
+    prompt="Vad ska jag göra i Stockholm en regnig dag?",
+    candidate_a="Gå på Fotografiska eller Vasamuseet, och fika på något mysigt kafé.",
+    candidate_b="Du kan besöka ett museum, vänligen notera att det är en bra aktivitet för regn.",
+)
+# {"more_natural": "candidate_a", "p_a_more_natural": <float>, "probabilities": {...}}
+
+gate_v1 = SwedishPreferenceGate("jonasaise/laya-swedish-preference-gate", revision="v1")  # the first release
+```
+
+Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>`, `margin=<float>` and
+`revision=<Hub branch or tag>` are accepted. The checkpoint is in the standard Laya layout, so `laya.load(path)` opens it too
 (the fitted temperature is stored in its `rl_agent_config.json`).
 
 ## How it works
@@ -96,8 +110,8 @@ accepted. The checkpoint is in the standard Laya layout, so `laya.load(path)` op
 - **Temperature scaling.** A single temperature `T` is fitted on a calibration half of the
   validation set and applied as `softmax(logits / T)`. It changes confidence, not the
   predicted winner.
-- **Pipeline.** `./run.sh` runs data → train → calibrate → benchmark → judge → tests →
-  readme → publish.
+- **Pipeline.** `./run.sh` runs data → train → calibrate → benchmark → judge → probe →
+  fluent pairs → v2 train / calibrate / evaluate → tests → readme → publish.
 
 ## Detailed results
 
@@ -402,11 +416,13 @@ recipe as v1 (lr 2e-05, micro-batch 8 × accumulation
 **1** (lowest mean val_calib loss over (source, question) groups). Total 108.7 min on
 NVIDIA GeForce RTX 4080 Laptop GPU; peak GPU memory 10.73 GiB.
 
+Accuracy is n/a for fluent/naturalness, whose target is 50/50.
+
 | Epoch | Train loss | original/preference loss / acc | original/naturalness loss / acc | fluent/preference loss / acc | fluent/naturalness loss / acc | Time |
 |---|---|---|---|---|---|---|
-| 1 | 0.421 | 0.055 / 97.8% | 0.066 / 98.1% | 0.551 / 75.3% | 0.748 / not measured | 35.9 min |
-| 2 | 0.266 | 0.046 / 98.7% | 0.042 / 98.7% | 0.700 / 76.5% | 0.743 / not measured | 36.4 min |
-| 3 | 0.197 | 0.088 / 98.6% | 0.046 / 98.6% | 1.322 / 73.9% | 0.755 / not measured | 36.4 min |
+| 1 | 0.421 | 0.055 / 97.8% | 0.066 / 98.1% | 0.551 / 75.3% | 0.748 / n/a | 35.9 min |
+| 2 | 0.266 | 0.046 / 98.7% | 0.042 / 98.7% | 0.700 / 76.5% | 0.743 / n/a | 36.4 min |
+| 3 | 0.197 | 0.088 / 98.6% | 0.046 / 98.6% | 1.322 / 73.9% | 0.755 / n/a | 36.4 min |
 
 Temperatures were fitted per question on val_calib, both orders:
 `preference` T = 1.446 (NLL 0.280 → 0.265, fit on val_calib original+fluent, both orders), `naturalness` T = 0.575 (NLL 0.066 → 0.057, fit on val_calib original, both orders).
@@ -463,9 +479,9 @@ Recommended for v2 (lowest routed fraction within 0.5% of the best cascade accur
 
 ### Tests
 
-`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **105 passed, 0 failed,
-0 errors, 0 skipped** of 105.
-Coverage: **61.9%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 70.2% · `fluent.py` 21.6% · `judge.py` 79.3% · `predictor.py` 97.5% · `probe.py` 46.0% · `publish.py` 57.7% · `readme.py` 95.0% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 30.1%.
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **108 passed, 0 failed,
+0 errors, 0 skipped** of 108.
+Coverage: **62.3%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 70.2% · `fluent.py` 20.6% · `judge.py` 79.3% · `predictor.py` 99.2% · `probe.py` 46.0% · `publish.py` 66.2% · `readme.py` 95.1% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 30.1%.
 
 
 ## Limitations
@@ -483,7 +499,7 @@ The fine-tuned gate reaches 98.4% accuracy on held-out pairs (the zero-shot base
 
 Against these labels Kimi-k3 is *less* accurate than the gate (95.5% vs 98.6%) and 802× slower, which is expected: the labels mark translationese, which the gate was trained on, while the judge was also asked about helpfulness and correctness, and it generated these pairs itself. The judge still helps where the gate is unsure: routing the 5.2% least-confident instances (threshold 0.45) lifts accuracy from 98.6% to 99.1% at an expected 507.5 ms per pair. The pre-registered rule (cheapest threshold within 0.5 points of the best) picks 0.00, i.e. 0.0% routed, because the gain is that small. For its intended System 1 role on data like this, settling confident comparisons in milliseconds and escalating the rest, the gate is fit for purpose (latency target met, ECE target met, confident-subset accuracy 98.6% vs judge 95.5%). It should not be the only judge for high-stakes decisions.
 
-An experimental **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is not on the Hub yet.
+A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is the default checkpoint on the Hub; v1 stays available as `revision="v1"`.
 
 ## Usage ideas
 

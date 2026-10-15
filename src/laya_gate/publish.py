@@ -1,6 +1,9 @@
 """Upload the calibrated checkpoint to the Hugging Face Hub with a model card.
 
 The repo is created private; `--public` makes it public after a successful upload.
+`--checkpoint v2` uploads the v2 checkpoint (preference + naturalness questions) with its own
+card; `--tag-previous v1` first tags the revision currently on the Hub so it stays loadable
+with `revision="v1"`.
 
 Runs only when HF_TOKEN is set, the licenses allow redistribution, every test passed and
 post-calibration ECE meets the target. `huggingface_hub` reads HF_TOKEN from the environment
@@ -23,15 +26,17 @@ from .utils import (
     ECE_TARGET,
     GITHUB_REPO,
     METRICS_PATH,
+    QUESTIONS_FILE,
     load_metrics,
     update_metrics,
 )
 
 UPLOAD_FILES = ("model.safetensors", "rl_agent_config.json", "temperature.json")
 UPLOAD_DIRS = ("encoder", "tokenizer")
+V2_CHECKPOINT_DIR = CHECKPOINT_DIR.parent / "v2"
 
 
-def blockers(m: dict) -> list[str]:
+def blockers(m: dict, which: str = "v1") -> list[str]:
     out = []
     if not os.environ.get("HF_TOKEN"):
         out.append("HF_TOKEN not set")
@@ -40,12 +45,24 @@ def blockers(m: dict) -> list[str]:
     tests = m.get("tests")
     if not (isinstance(tests, dict) and tests.get("all_passed")):
         out.append("not all tests passed (or tests were not run)")
-    ece = readme.get(m, "calibration.ece_post")
-    if not (isinstance(ece, float) and ece <= ECE_TARGET):
-        out.append(f"post-calibration ECE {ece} is not <= {ECE_TARGET}")
-    if not (CHECKPOINT_DIR / "model.safetensors").exists():
-        out.append("no trained checkpoint")
+    if which == "v2":
+        if readme.get(m, "fluent_data.source_license") not in ("mit", "apache-2.0", "cc-by-4.0"):
+            out.append("license of the fluent-pair source data not recorded as permissive")
+        for src in ("original", "fluent"):
+            ece = readme.get(m, f"v2_eval.{src}/preference.ece_both_orders")
+            if not (isinstance(ece, float) and ece <= ECE_TARGET):
+                out.append(f"v2 {src} val_eval ECE {ece} is not <= {ECE_TARGET}")
+    else:
+        ece = readme.get(m, "calibration.ece_post")
+        if not (isinstance(ece, float) and ece <= ECE_TARGET):
+            out.append(f"post-calibration ECE {ece} is not <= {ECE_TARGET}")
+    if not (checkpoint_dir(which) / "model.safetensors").exists():
+        out.append(f"no trained {which} checkpoint")
     return out
+
+
+def checkpoint_dir(which: str) -> Path:
+    return V2_CHECKPOINT_DIR if which == "v2" else CHECKPOINT_DIR
 
 
 def model_card(m: dict, repo_id: str) -> str:
@@ -313,6 +330,313 @@ UltraFeedback; check the upstream terms before commercial use.
 """
 
 
+def v2_results_table(m: dict) -> str:
+    g, pct, num, ms = readme.get, readme.pct, readme.num, readme.ms
+    ev, v1 = m.get("v2_eval", {}), m.get("v1_eval", {})
+
+    def acc(d, key, kind="accuracy_both_orders"):
+        return g(d, f"{key}.{kind}.accuracy")
+
+    def ci(d, key):
+        lo = g(d, f"{key}.accuracy_order_averaged_prob.ci95.0")
+        hi = g(d, f"{key}.accuracy_order_averaged_prob.ci95.1")
+        return f"{pct(acc(d, key, 'accuracy_order_averaged_prob'))} [{pct(lo)}, {pct(hi)}]"
+
+    lat = g(ev, "latency_gpu_forward_ms", {})
+    ece_o = g(ev, "original/preference.ece_both_orders")
+    ece_f = g(ev, "fluent/preference.ece_both_orders")
+    rows = [
+        (
+            "Original held-out pairs: idiomatic vs translationese (one call)",
+            pct(acc(v1, "original/preference")),
+            pct(acc(ev, "original/preference")),
+            "—",
+        ),
+        (
+            "Fluent held-out pairs: both natural Swedish (one call)",
+            pct(acc(v1, "fluent/preference")),
+            pct(acc(ev, "fluent/preference")),
+            "—",
+        ),
+        (
+            "**Probe**: 299 fluent pairs, both orders averaged [95% CI]",
+            ci(v1, "probe/preference"),
+            ci(ev, "probe/preference"),
+            f"Kimi-k3 judge: {pct(g(m, 'probe.judge.order_averaged.accuracy'))}",
+        ),
+        (
+            "ECE, original / fluent held-out (one call, 15 bins)",
+            f"{num(g(v1, 'original/preference.ece_both_orders'))} / "
+            f"{num(g(v1, 'fluent/preference.ece_both_orders'))}",
+            f"{num(ece_o)} / {num(ece_f)}",
+            f"{readme.mark(isinstance(ece_o, float) and isinstance(ece_f, float) and max(ece_o, ece_f) <= ECE_TARGET)} ≤ {ECE_TARGET}",
+        ),
+        (
+            "ECE on the probe (both orders averaged)",
+            num(g(v1, "probe/preference.ece_order_averaged")),
+            num(g(ev, "probe/preference.ece_order_averaged")),
+            "—",
+        ),
+        (
+            f"Probe accuracy on pairs passing margin {readme.DEFAULT_MARGIN} (share passing)",
+            f"{pct(g(v1, 'probe/preference.default_margin.accuracy_on_covered'))} "
+            f"({pct(g(v1, 'probe/preference.default_margin.coverage'))})",
+            f"{pct(g(ev, 'probe/preference.default_margin.accuracy_on_covered'))} "
+            f"({pct(g(ev, 'probe/preference.default_margin.coverage'))})",
+            "—",
+        ),
+        (
+            "Naturalness question: idiomatic vs translationese (one call)",
+            "—",
+            pct(acc(ev, "original/naturalness")),
+            "—",
+        ),
+        (
+            "GPU forward, batch 1, median / p95",
+            f"{ms(g(v1, 'latency_gpu_forward_ms.p50'))} / {ms(g(v1, 'latency_gpu_forward_ms.p95'))}",
+            f"{ms(lat.get('p50'))} / {ms(lat.get('p95'))}",
+            f"{readme.mark(isinstance(lat.get('p50'), float) and lat['p50'] < readme.LATENCY_TARGET_MS)} < {readme.LATENCY_TARGET_MS:.0f} ms",
+        ),
+    ]
+    out = ["| Metric | v1 | **v2 (this revision)** | Reference / target |", "|---|---|---|---|"]
+    out += [f"| {a} | {b} | {c} | {d} |" for a, b, c, d in rows]
+    return "\n".join(out)
+
+
+def model_card_v2(m: dict, repo_id: str) -> str:
+    g, pct, num = readme.get, readme.pct, readme.num
+    ev = m.get("v2_eval", {})
+    lic = g(m, "data.licenses", {})
+    probe_acc = g(ev, "probe/preference.accuracy_order_averaged_prob.accuracy")
+    lat = g(ev, "latency_gpu_forward_ms.p50")
+    rec = g(ev, "probe/cascade.recommended", {})
+    t_pref = g(m, "v2_calibration.preference.temperature")
+    t_nat = g(m, "v2_calibration.naturalness.temperature")
+    header = f"""---
+language: [sv]
+license: apache-2.0
+base_model: convaiinnovations/laya
+datasets: [jonasaise/dpo-swedish-interpreted, argilla/ultrafeedback-binarized-preferences-cleaned]
+pipeline_tag: text-classification
+tags: [preference-model, reward-model, dpo, swedish, laya, mmbert, llm-as-judge]
+model-index:
+- name: laya-swedish-preference-gate
+  results:
+  - task: {{type: text-classification, name: Pairwise preference (fluent Swedish pairs)}}
+    dataset: {{type: argilla/ultrafeedback-binarized-preferences-cleaned, name: Fluent-vs-fluent probe (299 pairs translated to Swedish)}}
+    metrics:
+    - {{type: accuracy, value: {probe_acc if probe_acc is not None else "null"}}}
+    - {{type: ece, value: {g(ev, "probe/preference.ece_order_averaged") or "null"}, name: Expected calibration error (15 bins)}}
+---
+"""
+    return f"""{header}
+# Laya Swedish Preference Gate (v2)
+
+**A ~{num(lat, 0)} ms pairwise judge for Swedish text.** Give it a Swedish prompt and two
+candidate responses; it returns a calibrated probability that the first one is better, from a
+single forward pass of a fine-tuned [Laya](https://github.com/NandhaKishorM/laya) decision model
+(mmBERT-base backbone). It is built as a "System 1" filter: settle the confident comparisons in
+milliseconds and escalate the uncertain ones to a slow LLM judge ("System 2").
+
+v2 answers two questions:
+
+- **preference**: which response better answers the prompt. On 299 held-out pairs where *both*
+  answers are fluent Swedish and only quality differs, it is right {pct(probe_acc)} of the time
+  (v1: {pct(g(m, "v1_eval.probe/preference.accuracy_order_averaged_prob.accuracy"))}; Kimi-k3 as
+  judge: {pct(g(m, "probe.judge.order_averaged.accuracy"))}) and its confidence is calibrated
+  there too.
+- **naturalness**: which response is written in more natural, idiomatic Swedish (the
+  translationese detector that v1 effectively was, now as an explicit question).
+
+> **v1 is still available:** `SwedishPreferenceGate("{repo_id}", revision="v1")`. v1 is
+> slightly better on the original translationese-vs-idiomatic pairs but much weaker and
+> over-confident on fluent pairs; see the comparison below.
+
+Code, pipeline and full results: [github.com/{GITHUB_REPO}](https://github.com/{GITHUB_REPO}).
+
+## Results at a glance
+
+{v2_results_table(m)}
+
+"One call" scores each pair once, in the stored order and in the swapped order, and counts both;
+"both orders averaged" averages the two probabilities per pair (more robust, two calls). CPU latency
+was measured for v1 only ({num(g(m, "benchmark.latency.cpu_forward_ms.p50"), 0)} ms per pair); v2
+has the same architecture and size.
+
+## How to use
+
+### Install
+
+```bash
+pip install "git+https://github.com/{GITHUB_REPO}"
+# or: uv pip install "git+https://github.com/{GITHUB_REPO}"
+```
+
+### Which answer is better?
+
+```python
+from laya_gate.predictor import SwedishPreferenceGate
+
+gate = SwedishPreferenceGate("{repo_id}")  # margin=0.2, CUDA if available
+
+result = gate.predict_preference(
+    prompt="Hur fungerar fotosyntesen?",
+    chosen_candidate="Växter tar upp ljus med klorofyll och använder energin för att bygga "
+                     "socker av koldioxid och vatten. Syre bildas som en restprodukt.",
+    rejected_candidate="Växter gör mat av solljus.",
+)
+print(result)
+# {{'preference': 'candidate_a', 'p_chosen': <float>, 'is_valid_margin': <bool>,
+#  'probabilities': {{'candidate_a': <float>, 'candidate_b': <float>}}}}
+```
+
+| Key | Type | Meaning |
+|---|---|---|
+| `preference` | `"candidate_a"` / `"candidate_b"` | the response the model prefers |
+| `p_chosen` | float in [0, 1] | calibrated probability that `candidate_a` (your `chosen_candidate`) is better |
+| `is_valid_margin` | bool | `abs(p_chosen - 0.5) >= margin`; with the default `margin=0.2`, true when either side has ≥ 0.70 |
+| `probabilities` | dict | both option probabilities (sum to 1) |
+
+`chosen_candidate` / `rejected_candidate` are just slot A and slot B: the names describe your
+hypothesis, not ground truth. Batched: `gate.predict_preference_batch(prompts, chosen_candidates,
+rejected_candidates, batch_size=8)`.
+
+### Which answer reads more naturally?
+
+```python
+r = gate.predict_naturalness(
+    prompt="Vad ska jag göra i Stockholm en regnig dag?",
+    candidate_a="Gå på Fotografiska eller Vasamuseet, och fika på något mysigt kafé.",
+    candidate_b="Du kan besöka ett museum, vänligen notera att det är en bra aktivitet för regn.",
+)
+print(r)  # {{'more_natural': 'candidate_a', 'p_a_more_natural': <float>, 'probabilities': {{...}}}}
+```
+
+Batched: `gate.predict_naturalness_batch(prompts, candidates_a, candidates_b)`. When both answers
+are fluent, this question stays near 0.5 (within 0.2 of 0.5 for
+{pct(ev.get("probe/naturalness", {}).get("fraction_within_0.2"))} of probe pairs), so a confident
+naturalness verdict is a sign that one side is translationese.
+
+### Score both orders (recommended for fluent answers)
+
+```python
+ab = gate.predict_preference(prompt, resp_1, resp_2)["p_chosen"]
+ba = gate.predict_preference(prompt, resp_2, resp_1)["p_chosen"]
+p_resp_1_better = (ab + (1 - ba)) / 2
+```
+
+The model picks the same winner in both orders for
+{pct(g(ev, "probe/preference.positional_consistency"))} of probe pairs; averaging removes the rest
+of the position effect.
+
+### Cascade: gate first, LLM judge only when unsure
+
+```python
+def judge_pair(prompt, a, b, llm_judge, gate=gate, margin=0.2):
+    r = gate.predict_preference(prompt, a, b)
+    if abs(r["p_chosen"] - 0.5) >= margin:
+        return r["preference"], "gate"
+    return llm_judge(prompt, a, b), "llm"     # your own (slow) LLM-as-judge call
+```
+
+On the probe, with Kimi-k3 as the judge, see the cascade table below: higher margins route more
+pairs to the judge and get closer to its accuracy. The pre-registered rule (cheapest threshold
+within 0.5 points of the best) picks {num(rec.get("threshold"), 2)}, routing
+{pct(rec.get("routed_fraction"))} for {pct(rec.get("cascade_accuracy"))}.
+
+### Pin a version
+
+```python
+gate_v1 = SwedishPreferenceGate("{repo_id}", revision="v1")   # first release
+```
+
+With plain `laya`: `laya.load("{repo_id}")` opens the checkpoint; the two question definitions it
+was trained on are in `questions.json` and must be used verbatim.
+
+## Intended use
+
+- Fast first-pass ranking of Swedish LLM outputs (best-of-N, A/B comparisons of model versions),
+  with low-margin pairs escalated to an LLM judge or a human.
+- Detecting translationese, English loan-word overuse, literal phrasing or US-centric answers
+  (naturalness question).
+- Flagging suspicious pairs in Swedish preference datasets.
+
+**Out of scope:** fact-checking; safety or toxicity classification; languages other than
+Swedish; any high-stakes decision without human review. On fluent pairs it is still
+{num(100 * ((g(m, "probe.judge.order_averaged.accuracy") or 0) - (probe_acc or 0)), 1)} percentage
+points behind an LLM judge.
+
+## Training data
+
+1. **Original pairs** (`jonasaise/dpo-swedish-interpreted`): idiomatic, localized Swedish
+   (chosen) vs a deliberately poor translation (rejected). Used for both questions.
+
+{readme.dataset_section(m)}
+
+2. **Fluent pairs** (new in v2): UltraFeedback pairs with a clear GPT-4 rating gap, both answers
+   rewritten into natural Swedish by Kimi-k3 with identical instructions, so the two sides differ
+   in quality, not style. Preference target = the higher-rated answer; naturalness target =
+   50/50.
+
+{readme.generation_section(m)}
+
+## Training, calibration and evaluation
+
+{readme.v2_section(m, intro=False)}
+
+Fitted temperatures: preference T = {num(t_pref)}, naturalness T = {num(t_nat)} (in
+`temperature.json`).
+
+## Limitations
+
+- **Still behind an LLM judge on fluent pairs**, and the probe has only 299 pairs (see the CI).
+- **Translated, not native, data.** All training and test text was written or rewritten into
+  Swedish by Kimi-k3. Native Swedish preferences were not measured.
+- **The judge is also the translator.** Kimi-k3 generated all Swedish text and is the reference
+  judge, so agreement with it is not independent evidence.
+- **Pairwise preference, not fact-checking.** A fluent wrong answer can beat a terse correct one.
+- **1024-token window.** Long prompts keep their tail and long answers their head; differences
+  late in long answers are invisible.
+- **Labels are GPT-4 ratings (UltraFeedback) and Kimi-k3's construction**, not human judgements.
+- **Single seed, single run.**
+
+## Files
+
+| File | Contents |
+|---|---|
+| `model.safetensors` | decision-model weights (encoder + head) |
+| `rl_agent_config.json` | Laya config: `max_len` 1024, `head_max_len` 256 |
+| `questions.json` | the two `choice` questions (`preference`, `naturalness`) |
+| `temperature.json` | fitted temperature per question, read by `SwedishPreferenceGate` |
+| `encoder/config.json` | ModernBERT (mmBERT-base) encoder config |
+| `tokenizer/` | tokenizer files |
+| `results/metrics.json` | every number on this card |
+
+## Citation and acknowledgements
+
+- Laya decision models and training recipe: [NandhaKishorM/laya](https://github.com/NandhaKishorM/laya), base checkpoint [`convaiinnovations/laya`](https://huggingface.co/convaiinnovations/laya).
+- Encoder: [`jhu-clsp/mmBERT-base`](https://huggingface.co/jhu-clsp/mmBERT-base).
+- Data: [`jonasaise/dpo-swedish-interpreted`](https://huggingface.co/datasets/jonasaise/dpo-swedish-interpreted) and [`argilla/ultrafeedback-binarized-preferences-cleaned`](https://huggingface.co/datasets/argilla/ultrafeedback-binarized-preferences-cleaned) (UltraFeedback).
+- Translation and judge model: Kimi-k3, self-hosted (8× NVIDIA B300, HGX).
+
+```bibtex
+@software{{laya_swedish_preference_gate,
+  title  = {{Laya Swedish Preference Gate}},
+  author = {{Lind, Jonas}},
+  year   = {{2026}},
+  url    = {{https://huggingface.co/{repo_id}}}
+}}
+```
+
+## License
+
+Apache-2.0. Base model license: {lic.get("convaiinnovations/laya", "see repo")}; dataset licenses:
+`jonasaise/dpo-swedish-interpreted` {lic.get("jonasaise/dpo-swedish-interpreted", "see repo")},
+`argilla/ultrafeedback-binarized-preferences-cleaned` {g(m, "fluent_data.source_license", "see repo")}.
+Check the upstream UltraFeedback terms before commercial use.
+"""
+
+
 def _probe_line(m: dict) -> str:
     summary = readme.probe_summary(m)
     if summary:
@@ -340,9 +664,17 @@ def main(argv=None) -> None:
     parser.add_argument(
         "--public", action="store_true", help="make the repo public after a successful upload"
     )
+    parser.add_argument("--checkpoint", choices=["v1", "v2"], default="v1")
+    parser.add_argument(
+        "--tag-previous",
+        metavar="TAG",
+        help="tag the revision currently on the Hub (e.g. v1) before uploading over it",
+    )
     args = parser.parse_args(argv)
     m = load_metrics()
-    problems = blockers(m)
+    which = args.checkpoint
+    src_dir = checkpoint_dir(which)
+    problems = blockers(m, which)
     if problems:
         reason = "upload skipped: " + "; ".join(problems)
         print(reason)
@@ -358,6 +690,15 @@ def main(argv=None) -> None:
     try:
         api.create_repo(repo_id, private=True, exist_ok=True, repo_type="model")
         info = api.repo_info(repo_id)
+        tagged = None
+        if args.tag_previous:
+            refs = api.list_repo_refs(repo_id)
+            if any(t.name == args.tag_previous for t in refs.tags):
+                print(f"tag {args.tag_previous} already exists; leaving it")
+            else:
+                api.create_tag(repo_id, tag=args.tag_previous, revision=info.sha)
+                print(f"tagged {info.sha[:8]} as {args.tag_previous}")
+            tagged = {"tag": args.tag_previous, "revision": info.sha}
     except HfHubHTTPError as exc:
         status = getattr(exc.response, "status_code", None)
         reason = (
@@ -373,13 +714,15 @@ def main(argv=None) -> None:
 
     with tempfile.TemporaryDirectory() as tmp:
         stage = Path(tmp)
-        for name in UPLOAD_FILES:
-            shutil.copy2(CHECKPOINT_DIR / name, stage / name)
+        files = [*UPLOAD_FILES, QUESTIONS_FILE] if which == "v2" else list(UPLOAD_FILES)
+        for name in files:
+            shutil.copy2(src_dir / name, stage / name)
         for name in UPLOAD_DIRS:
-            shutil.copytree(CHECKPOINT_DIR / name, stage / name)
+            shutil.copytree(src_dir / name, stage / name)
         (stage / "results").mkdir()
         shutil.copy2(METRICS_PATH, stage / "results" / "metrics.json")
-        (stage / "README.md").write_text(model_card(m, repo_id), encoding="utf-8")
+        card = model_card_v2(m, repo_id) if which == "v2" else model_card(m, repo_id)
+        (stage / "README.md").write_text(card, encoding="utf-8")
         for f in stage.rglob("*"):  # nothing from the judge cache or the environment
             if f.is_file():
                 text = f.read_bytes()
@@ -391,7 +734,7 @@ def main(argv=None) -> None:
             folder_path=str(stage),
             repo_id=repo_id,
             repo_type="model",
-            commit_message="Upload Laya Swedish preference gate checkpoint",
+            commit_message=f"Upload Laya Swedish preference gate checkpoint ({which})",
         )
 
     if args.public:
@@ -403,7 +746,9 @@ def main(argv=None) -> None:
         "url": f"https://huggingface.co/{repo_id}",
         "visibility": "private" if info.private else "public",
         "commit": getattr(commit, "oid", None),
-        "files": sorted([*UPLOAD_FILES, *UPLOAD_DIRS, "results/metrics.json", "README.md"]),
+        "checkpoint": which,
+        "previous_revision_tag": tagged,
+        "files": sorted([*files, *UPLOAD_DIRS, "results/metrics.json", "README.md"]),
     }
     update_metrics("publish", out)
     readme.main()  # adds the Hub link and Hub quickstart to the GitHub README

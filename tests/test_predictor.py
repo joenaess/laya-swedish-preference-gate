@@ -129,3 +129,20 @@ def test_trained_gpu(trained_checkpoint):
     gate = SwedishPreferenceGate(trained_checkpoint, device="cuda")
     # bf16 with different padding in a batch moves logits slightly.
     _check_gate(gate, atol=2e-2)
+
+
+def test_resolve_checkpoint_passes_revision(monkeypatch, tmp_path):
+    import huggingface_hub
+
+    from laya_gate import predictor
+
+    seen = {}
+
+    def fake_download(repo_id, revision=None, allow_patterns=None):
+        seen.update(repo_id=repo_id, revision=revision, patterns=allow_patterns)
+        return str(tmp_path)
+
+    monkeypatch.setattr(huggingface_hub, "snapshot_download", fake_download)
+    assert predictor.resolve_checkpoint("me/model", revision="v1") == tmp_path
+    assert seen["repo_id"] == "me/model" and seen["revision"] == "v1"
+    assert "questions.json" in seen["patterns"]

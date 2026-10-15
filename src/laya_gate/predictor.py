@@ -31,8 +31,8 @@ from .utils import (
 TEMPERATURE_FILE = "temperature.json"
 
 
-def resolve_checkpoint(checkpoint_path: str | os.PathLike) -> Path:
-    """A local directory, or a Hugging Face Hub repo id downloaded to the local cache."""
+def resolve_checkpoint(checkpoint_path: str | os.PathLike, revision: str | None = None) -> Path:
+    """A local directory, or a Hugging Face Hub repo id (at `revision`) downloaded to the cache."""
     path = Path(checkpoint_path)
     if path.is_dir():
         return path
@@ -43,6 +43,7 @@ def resolve_checkpoint(checkpoint_path: str | os.PathLike) -> Path:
     return Path(
         snapshot_download(
             str(checkpoint_path),
+            revision=revision,
             allow_patterns=[
                 "rl_agent_config.json",
                 "model.safetensors",
@@ -97,6 +98,8 @@ class SwedishPreferenceGate:
         dtype: weights/activation dtype. Defaults to bfloat16 on CUDA and float32 elsewhere.
         temperature: override the fitted `preference` temperature (otherwise read from
             `temperature.json`; 1.0 when the checkpoint has none).
+        revision: Hub branch, tag or commit (e.g. "v1" for the first release); ignored for
+            local directories.
 
     A checkpoint that ships `questions.json` with a `naturalness` question (v2) also supports
     `predict_naturalness` / `predict_naturalness_batch`.
@@ -109,11 +112,12 @@ class SwedishPreferenceGate:
         device: str | None = None,
         dtype: torch.dtype | None = None,
         temperature: float | None = None,
+        revision: str | None = None,
     ):
         if not 0.0 <= margin < 0.5:
             raise ValueError("margin must be in [0, 0.5)")
         self.margin = float(margin)
-        self.model_dir = resolve_checkpoint(checkpoint_path)
+        self.model_dir = resolve_checkpoint(checkpoint_path, revision)
         self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
         if dtype is None:
             dtype = torch.bfloat16 if self.device.type == "cuda" else torch.float32
