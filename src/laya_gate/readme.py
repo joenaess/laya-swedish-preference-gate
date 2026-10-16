@@ -855,6 +855,147 @@ a millisecond-scale filter. int8 saves little time at 1024 tokens and costs a fe
 the 512-token cap is the only large speed-up, at a larger accuracy cost."""
 
 
+def liu_section(m: dict) -> str:
+    L = m.get("liu_translationese")
+    if not isinstance(L, dict) or not L.get("models"):
+        return "Not measured: run `python -m laya_gate.liu_eval gate` (and `judge`)."
+    setups = ("no_prompt", "context_0", "context_10")
+    ref = get(L, "paper_reference.setups", {})
+    j = L.get("judge") if isinstance(L.get("judge"), dict) else {}
+    lb = L.get("length_baseline", {})
+
+    def acc(model, qid, setup, comp="opus"):
+        return get(L, f"models.{model}.setups.{qid}.{setup}.{comp}.accuracy")
+
+    def jacc(setup, comp="opus"):
+        return get(j, f"setups.{setup}.{comp}.human_preferred_both_orders")
+
+    gate_rows = [
+        (m_, q) for m_, res in L["models"].items() if isinstance(res, dict) for q in res["setups"]
+    ]
+    rows = [
+        "| Paper: best of its 16 LLMs | "
+        + " | ".join(
+            f"{pct(get(ref, f'{s}.opus.best_accuracy'))} "
+            f"({str(get(ref, f'{s}.opus.best_model', '')).split('/')[-1]})"
+            for s in setups
+        )
+        + " |",
+        "| Paper: median of its 16 LLMs | "
+        + " | ".join(pct(get(ref, f"{s}.opus.median_accuracy")) for s in setups)
+        + " |",
+        "| Paper: AI Sweden Llama-3-8B | "
+        + " | ".join(pct(get(ref, f"{s}.opus.ai_sweden_llama3_8b")) for s in setups)
+        + " |",
+        f"| Longer candidate wins (no model) | {pct(get(lb, 'opus.accuracy_longer_wins'))} | "
+        f"{pct(get(lb, 'opus.accuracy_longer_wins'))} | {pct(get(lb, 'opus.accuracy_longer_wins'))} |",
+        *(
+            f"| {m_} `{q}` | " + " | ".join(pct(acc(m_, q, s)) for s in setups) + " |"
+            for m_, q in gate_rows
+        ),
+        f"| Kimi-k3 judge (both orders agree) | {pct(jacc('no_prompt'))} | — | "
+        f"{pct(jacc('context_10'))} |",
+    ]
+    gpt_rows = [
+        f"| Longer candidate wins | {pct(get(lb, 'gpt.accuracy_longer_wins'))} | "
+        f"{pct(get(lb, 'gpt_unacceptable.accuracy_longer_wins'))} | — | — |",
+        *(
+            f"| {m_} `{q}` | {pct(acc(m_, q, 'no_prompt', 'gpt'))} | "
+            f"{pct(acc(m_, q, 'no_prompt', 'gpt_unacceptable'))} | "
+            f"{pct(acc(m_, q, 'context_10', 'gpt'))} | "
+            f"{pct(acc(m_, q, 'context_10', 'gpt_unacceptable'))} |"
+            for m_, q in gate_rows
+            if m_ == "v3"
+        ),
+        f"| Kimi-k3 judge | {pct(jacc('no_prompt', 'gpt'))} | "
+        f"{pct(jacc('no_prompt', 'gpt_unacceptable'))} | {pct(jacc('context_10', 'gpt'))} | "
+        f"{pct(jacc('context_10', 'gpt_unacceptable'))} |",
+    ]
+    tag_cols = [
+        ("v3 `naturalness`", get(L, "models.v3.error_tags.naturalness.no_prompt", {})),
+        ("v3 `natural_swedish`", get(L, "models.v3.error_tags.natural_swedish.no_prompt", {})),
+        ("v3 `preference`, 10 lines", get(L, "models.v3.error_tags.preference.context_10", {})),
+        ("Kimi-k3", get(j, "setups.no_prompt.error_tags", {})),
+        ("Kimi-k3, 10 lines", get(j, "setups.context_10.error_tags", {})),
+    ]
+    tags = sorted(tag_cols[0][1], key=lambda t: -tag_cols[0][1][t]["n"])
+    tag_rows = "\n".join(
+        f"| {t} | {tag_cols[0][1][t]['n']} | "
+        + " | ".join(pct(get(c, f"{t}.opus_preferred"), 0) for _, c in tag_cols)
+        + " |"
+        for t in tags
+    )
+    ends = L.get("candidates_ending_in_punctuation", {})
+    v3_raw = get(L, "models.v3.unstripped_no_prompt.natural_swedish.opus.accuracy")
+    v3_str = acc("v3", "natural_swedish", "no_prompt")
+    return f"""An external, human-annotated test: [`{L.get("dataset")}`](https://huggingface.co/datasets/{L.get("dataset")})
+({L.get("paper")}; Apache-2.0). {L.get("n_pairs", NM)} English subtitle lines from OpenSubtitles, each
+with an OPUS-MT translation, a GPT translation and an idiomatic alternative written by a native
+speaker, plus error tags for the OPUS translation and the 10 preceding English lines. No Kimi-k3
+model touched it. `python -m laya_gate.liu_eval gate|judge`.
+
+**Method.** The setups are the paper's: `no_prompt` scores the Swedish sentences alone;
+`context_N` puts the paper's instruction ("Översätt följande mening till svenska …") with N
+preceding English lines in the state's `prompt` field. Trailing punctuation is stripped from
+every candidate as in the paper: only {pct(ends.get("human"), 0)} of the human versions end in
+punctuation vs {pct(ends.get("opus"), 0)} of the OPUS ones, so without stripping the final period
+would be a giveaway. The metric is the paper's: the share of pairs where the human version is
+preferred (gate: order-averaged P > 0.5; single-response questions: strictly higher score;
+Kimi-k3: preferred in both slot orders). Pairs whose candidates are identical after stripping
+are dropped ({get(L, "n_compared.gpt", NM)} of {L.get("n_pairs", NM)} GPT pairs remain). The
+paper's LLM numbers rank sentences by mean log-probability, the gates and Kimi-k3 classify, so
+the comparison is of outcomes, not of methods. All 8 setups are in `metrics.json`; the table shows
+three. Kimi-k3's "10 lines" setup is a judge prompt with the same context, not the paper's
+instruction.
+
+**Human vs OPUS-MT** ({get(L, "n_compared.opus", NM)} pairs; 50% = chance, 95% CI about ±4 points):
+
+| Model | No prompt | Instruction, no context | Instruction + 10 lines |
+|---|---|---|---|
+{chr(10).join(rows)}
+
+**Every gate prefers the OPUS-MT translationese**, as the paper's LLMs mostly do, and adding the
+English source makes it worse (v3 `preference`: {pct(acc("v3", "preference", "no_prompt"))} →
+{pct(acc("v3", "preference", "context_0"))}), the paper's main finding repeated in a classifier.
+The best gate result, v3's single-response `natural_swedish` check without a prompt
+({pct(v3_str)}; unstripped {pct(v3_raw)}), is at chance, and no gate beats the trivial
+"longer candidate wins" rule. Kimi-k3 does: {pct(jacc("context_10"))} with context, above every
+LLM in the paper.
+
+**Human vs GPT translation** (all non-identical pairs / only pairs where annotators judged GPT
+worse than the human):
+
+| Model | No prompt, all | No prompt, GPT worse | 10 lines, all | 10 lines, GPT worse |
+|---|---|---|---|---|
+{chr(10).join(gpt_rows)}
+
+The paper's GPT column counts identical pairs as losses, so it is not comparable and is omitted.
+Kimi-k3 prefers the GPT translation overall (the human version wins in both orders for
+{pct(jacc("no_prompt", "gpt"))} / {pct(jacc("context_10", "gpt"))} of pairs) and is split roughly
+evenly on the pairs annotators judged GPT worse ({pct(jacc("context_10", "gpt_unacceptable"))} human
+vs {pct(get(j, "setups.context_10.gpt_unacceptable.mt_preferred_both_orders"))} GPT with context),
+consistent with the paper's finding that larger LLMs lean toward LLM-produced translations.
+
+**Per OPUS error tag:** share of pairs where OPUS-MT is preferred (lower is better; tags sorted
+by frequency):
+
+| Tag | n | {" | ".join(name for name, _ in tag_cols)} |
+|---|---|{"---|" * len(tag_cols)}
+{tag_rows}
+
+Tags: SEM semantic shift, BET loss of meaning, PR lexical preference, LF incorrect word, DIR direct
+translation, SAK missing words, GR grammar, SL slang, ST domain style, ID idiom, ADD added words.
+The gate prefers OPUS most where OPUS *omits* words (SAK), even with the English source in the
+prompt, so it does not check the translation against the source. The Kimi-k3 columns count
+pairs where it picks OPUS in *both* orders (a split verdict counts for neither side); in every
+category that happens far less often than the gate's OPUS preference.
+
+**What this means.** The gate's "naturalness" is a detector for the kind of translationese Kimi-k3
+wrote into the training data, not for the translationese real MT systems produce. Improving that
+needs training pairs with real MT output against native or idiomatic Swedish; this benchmark
+should stay held out to measure it."""
+
+
 def mt_section(m: dict) -> str:
     mt = m.get("mt_naturalness")
     if not isinstance(mt, dict) or not mt.get("models"):
@@ -1131,6 +1272,13 @@ def limitations(m: dict) -> str:
             "`opus-mt-en-sv` translations of FLORES+ sentences no version separates the two usefully "
             "(AUC ≤ 0.56, see the machine-translation test); it detects Kimi-k3-style "
             "translationese, not machine translation in general."
+            + (
+                " The same holds on the human-annotated translationese benchmark "
+                f"({get(m, 'liu_translationese.dataset')}): every gate prefers the OPUS-MT "
+                "translation over the native speaker's alternative."
+                if get(m, "liu_translationese.models")
+                else ""
+            )
         )
     cpu = get(m, "cpu_inference.variants.torch-fp32.latency_ms.p50")
     if isinstance(cpu, float):
@@ -1417,6 +1565,10 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 ### Machine-translation test (a negative result)
 
 {mt_section(m)}
+
+### Human-annotated translationese benchmark (a negative result)
+
+{liu_section(m)}
 
 ### Tests
 

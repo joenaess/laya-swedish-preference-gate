@@ -548,3 +548,30 @@ def test_readme_mentions_v3_on_hub():
     assert "v3 is the default checkpoint on the Hub" in text
     assert 'v2 is on the Hub as `revision="v2"`' in text
     assert "rank_by_quality" in text
+
+
+def test_liu_section_renders_and_is_optional():
+    assert "Not measured" in readme.liu_section({})
+    acc = {"accuracy": 0.45, "ci95": [0.41, 0.49], "n": 600}
+    setup = {"opus": acc, "gpt": acc, "gpt_unacceptable": acc}
+    m = {
+        "liu_translationese": {
+            "dataset": "liu-nlp/translationese-opensubtitles",
+            "n_pairs": 600,
+            "n_compared": {"opus": 600, "gpt": 513},
+            "length_baseline": {"opus": {"accuracy_longer_wins": 0.62}},
+            "models": {
+                "v3": {
+                    "setups": {
+                        "preference": {s: setup for s in ("no_prompt", "context_0", "context_10")}
+                    },
+                    "error_tags": {
+                        "preference": {"context_10": {"SAK": {"n": 5, "opus_preferred": 0.8}}}
+                    },
+                }
+            },
+        }
+    }
+    text = readme.liu_section(m)
+    assert "| v3 `preference` | 45.0% | 45.0% | 45.0% |" in text
+    assert "| Longer candidate wins (no model) | 62.0%" in text

@@ -90,9 +90,7 @@ r = gate.predict_naturalness(
 ```
 
 ```python
-gate_v1 = SwedishPreferenceGate(
-    "jonasaise/laya-swedish-preference-gate", revision="v1"
-)  # the first release
+gate_v1 = SwedishPreferenceGate("jonasaise/laya-swedish-preference-gate", revision="v1")  # the first release
 ```
 
 Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>`, `margin=<float>` and
@@ -632,11 +630,106 @@ data, but the result means the gate's "naturalness" is specific to Kimi-k3-style
 (literal phrasing, English loan words, US-centric content). Do not use it as a general
 machine-translation quality estimator.
 
+### Human-annotated translationese benchmark (a negative result)
+
+An external, human-annotated test: [`liu-nlp/translationese-opensubtitles`](https://huggingface.co/datasets/liu-nlp/translationese-opensubtitles)
+(arXiv:2603.08450 (Kunz, Jarochenko & Bollmann); Apache-2.0). 600 English subtitle lines from OpenSubtitles, each
+with an OPUS-MT translation, a GPT translation and an idiomatic alternative written by a native
+speaker, plus error tags for the OPUS translation and the 10 preceding English lines. No Kimi-k3
+model touched it. `python -m laya_gate.liu_eval gate|judge`.
+
+**Method.** The setups are the paper's: `no_prompt` scores the Swedish sentences alone;
+`context_N` puts the paper's instruction ("Översätt följande mening till svenska …") with N
+preceding English lines in the state's `prompt` field. Trailing punctuation is stripped from
+every candidate as in the paper: only 39% of the human versions end in
+punctuation vs 98% of the OPUS ones, so without stripping the final period
+would be a giveaway. The metric is the paper's: the share of pairs where the human version is
+preferred (gate: order-averaged P > 0.5; single-response questions: strictly higher score;
+Kimi-k3: preferred in both slot orders). Pairs whose candidates are identical after stripping
+are dropped (513 of 600 GPT pairs remain). The
+paper's LLM numbers rank sentences by mean log-probability, the gates and Kimi-k3 classify, so
+the comparison is of outcomes, not of methods. All 8 setups are in `metrics.json`; the table shows
+three. Kimi-k3's "10 lines" setup is a judge prompt with the same context, not the paper's
+instruction.
+
+**Human vs OPUS-MT** (600 pairs; 50% = chance, 95% CI about ±4 points):
+
+| Model | No prompt | Instruction, no context | Instruction + 10 lines |
+|---|---|---|---|
+| Paper: best of its 16 LLMs | 58.3% (gemma-3-12b-it) | 48.7% (gemma-3-12b-it) | 55.7% (gemma-3-12b-it) |
+| Paper: median of its 16 LLMs | 49.8% | 39.8% | 44.3% |
+| Paper: AI Sweden Llama-3-8B | 56.7% | 43.0% | 50.7% |
+| Longer candidate wins (no model) | 62.3% | 62.3% | 62.3% |
+| v1 `preference` | 42.8% | 34.3% | 39.5% |
+| v2 `preference` | 43.5% | 35.2% | 36.2% |
+| v2 `naturalness` | 44.7% | 34.2% | 37.0% |
+| v3 `preference` | 45.0% | 37.3% | 40.5% |
+| v3 `naturalness` | 44.3% | 39.0% | 40.0% |
+| v3 `natural_swedish` | 51.3% | 45.8% | 48.0% |
+| v3 `quality` | 50.3% | 39.5% | 42.5% |
+| Kimi-k3 judge (both orders agree) | 57.5% | — | 70.7% |
+
+**Every gate prefers the OPUS-MT translationese**, as the paper's LLMs mostly do, and adding the
+English source makes it worse (v3 `preference`: 45.0% →
+37.3%), the paper's main finding repeated in a classifier.
+The best gate result, v3's single-response `natural_swedish` check without a prompt
+(51.3%; unstripped 54.5%), is at chance, and no gate beats the trivial
+"longer candidate wins" rule. Kimi-k3 does: 70.7% with context, above every
+LLM in the paper.
+
+**Human vs GPT translation** (all non-identical pairs / only pairs where annotators judged GPT
+worse than the human):
+
+| Model | No prompt, all | No prompt, GPT worse | 10 lines, all | 10 lines, GPT worse |
+|---|---|---|---|---|
+| Longer candidate wins | 56.9% | 55.1% | — | — |
+| v3 `preference` | 45.6% | 46.9% | 40.7% | 38.4% |
+| v3 `naturalness` | 44.8% | 44.0% | 39.4% | 39.3% |
+| v3 `natural_swedish` | 45.8% | 44.6% | 44.8% | 44.0% |
+| v3 `quality` | 47.4% | 47.5% | 47.2% | 43.4% |
+| Kimi-k3 judge | 36.8% | 43.1% | 34.5% | 41.3% |
+
+The paper's GPT column counts identical pairs as losses, so it is not comparable and is omitted.
+Kimi-k3 prefers the GPT translation overall (the human version wins in both orders for
+36.8% / 34.5% of pairs) and is split roughly
+evenly on the pairs annotators judged GPT worse (41.3% human
+vs 41.6% GPT with context),
+consistent with the paper's finding that larger LLMs lean toward LLM-produced translations.
+
+**Per OPUS error tag:** share of pairs where OPUS-MT is preferred (lower is better; tags sorted
+by frequency):
+
+| Tag | n | v3 `naturalness` | v3 `natural_swedish` | v3 `preference`, 10 lines | Kimi-k3 | Kimi-k3, 10 lines |
+|---|---|---|---|---|---|---|
+| SEM | 276 | 57% | 49% | 59% | 27% | 22% |
+| BET | 215 | 52% | 52% | 60% | 19% | 9% |
+| PR | 164 | 53% | 51% | 59% | 22% | 27% |
+| LF | 142 | 52% | 51% | 52% | 21% | 8% |
+| DIR | 124 | 48% | 40% | 69% | 16% | 22% |
+| SAK | 105 | 70% | 50% | 72% | 18% | 13% |
+| GR | 98 | 57% | 48% | 58% | 18% | 14% |
+| SL | 34 | 44% | 41% | 74% | 18% | 9% |
+| ST | 32 | 62% | 56% | 59% | 31% | 19% |
+| ADD | 25 | 56% | 64% | 44% | 40% | 8% |
+| ID | 25 | 52% | 48% | 56% | 16% | 12% |
+
+Tags: SEM semantic shift, BET loss of meaning, PR lexical preference, LF incorrect word, DIR direct
+translation, SAK missing words, GR grammar, SL slang, ST domain style, ID idiom, ADD added words.
+The gate prefers OPUS most where OPUS *omits* words (SAK), even with the English source in the
+prompt, so it does not check the translation against the source. The Kimi-k3 columns count
+pairs where it picks OPUS in *both* orders (a split verdict counts for neither side); in every
+category that happens far less often than the gate's OPUS preference.
+
+**What this means.** The gate's "naturalness" is a detector for the kind of translationese Kimi-k3
+wrote into the training data, not for the translationese real MT systems produce. Improving that
+needs training pairs with real MT output against native or idiomatic Swedish; this benchmark
+should stay held out to measure it.
+
 ### Tests
 
-`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **108 passed, 0 failed,
-0 errors, 0 skipped** of 108.
-Coverage: **62.3%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 63.8% · `data.py` 70.2% · `fluent.py` 20.6% · `judge.py` 79.3% · `predictor.py` 99.2% · `probe.py` 46.0% · `publish.py` 66.2% · `readme.py` 95.1% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 30.1%.
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **120 passed, 0 failed,
+0 errors, 0 skipped** of 120.
+Coverage: **53.6%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `onnx_export.py` 87.2% · `predictor.py` 84.4% · `probe.py` 46.0% · `publish.py` 68.9% · `readme.py` 93.4% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 0.0%.
 
 
 ## Limitations
@@ -647,7 +740,7 @@ Coverage: **62.3%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · 
 - **1024-token window.** 42.3% of pairs exceed it; the gate then sees only the end of the prompt and the start of each response, so differences late in long answers are invisible to it.
 - **Kimi-k3 is a reference, not ground truth.** The judge is a strong but imperfect model; agreement with it is not correctness.
 - **Single seed, single run.** Numbers come from one training run; seed-to-seed variance was not measured.
-- **Naturalness does not transfer to machine translation.** On professional vs `opus-mt-en-sv` translations of FLORES+ sentences no version separates the two usefully (AUC ≤ 0.56, see the machine-translation test); it detects Kimi-k3-style translationese, not machine translation in general.
+- **Naturalness does not transfer to machine translation.** On professional vs `opus-mt-en-sv` translations of FLORES+ sentences no version separates the two usefully (AUC ≤ 0.56, see the machine-translation test); it detects Kimi-k3-style translationese, not machine translation in general. The same holds on the human-annotated translationese benchmark (liu-nlp/translationese-opensubtitles): every gate prefers the OPUS-MT translation over the native speaker's alternative.
 - **CPU is slow.** A pair takes 506.7 ms (median) on CPU with torch fp32; int8 and ONNX do not get anywhere near the GPU's millisecond latency.
 
 ## Conclusion

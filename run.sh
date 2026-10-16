@@ -41,6 +41,8 @@ if [[ -f cache/fluent/train.jsonl ]]; then
     step "5j/8 cpu"          cpu --checkpoint checkpoints/v3
     step "5k/8 mt test"      mtqa translate
     step "5k/8 mt test"      mtqa evaluate
+    step "5l/8 translationese benchmark" liu_eval gate
+    step "5l/8 translationese benchmark" liu_eval judge   # skips without BASE_URL/API_KEY
 else
     echo "note: no fluent training pairs; skipping v2 and v3" >&2
 fi
