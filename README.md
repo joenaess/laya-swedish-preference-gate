@@ -735,11 +735,140 @@ wrote into the training data, not for the translationese real MT systems produce
 needs training pairs with real MT output against native or idiomatic Swedish; this benchmark
 should stay held out to measure it.
 
+### Grammar, relevance and Europarl (external benchmarks)
+
+Three more external tests, none used for training, scored with v1, v2 and v3
+(`python -m laya_gate.external_eval`). The metric is always the share of pairs in which the
+*reference* side wins: the corrected sentence, the question's own answer, the human Swedish.
+Pairwise questions average P over both slot orders. Single-response questions compare the two
+scores. Kimi-k3 sees a fixed-seed sample of 300 pairs per set in
+both orders (6000 requests, 0 parse failures,
+median 21.3 s, reasoning on); its accuracy counts a split verdict
+as half.
+
+- **DaLAJ-GED** ([Superlim 2](https://huggingface.co/datasets/sbx/superlim-2), test split, CC BY
+  4.0): Swedish learner sentences with exactly one error, paired with the same sentence with
+  that error corrected, rebuilt from the annotated span (181
+  word-order corrections that cannot be rebuilt are dropped). Prompt: none. Natively written
+  Swedish; the only difference is the error.
+- **SweFAQ** (Superlim 2, dev + test, CC BY-SA 4.0): 219 questions
+  from Swedish public-agency FAQ pages; each question's own answer is paired with every other
+  answer on the same page. Natively written; the only difference is relevance.
+- **Europarl sv/en** ([Språkbanken](https://spraakbanken.gu.se/en/resources/europarl-sven)):
+  paragraphs aligned by id, kept when both sides have 1-4 sentences and similar length. Only
+  1,587 of 1,162,185 Swedish paragraphs are tagged as *spoken in Swedish*
+  (`speakerlang="SV"`), so almost all Swedish Europarl text is itself translation. Two sets:
+  English-original speeches (a fixed sample of 1000), with their
+  professional Swedish translation against machine translation of the English; and every usable
+  Swedish-original speech (1022), native Swedish against a machine
+  translation of its English version (a round trip). Machine translation: `opus-mt-en-sv`
+  (sentence by sentence) and Kimi-k3 (reasoning off, median 3.1
+  s). OPUS-MT's training data includes Europarl; Kimi-k3's is unknown. Prompt: the English
+  text with "Översätt följande text till svenska:".
+
+| Set | Pairs | v1 `preference` | v3 `preference` | v3 `naturalness` | v3 `natural_swedish` | v3 `quality` | Baseline | Kimi-k3 |
+|---|---|---|---|---|---|---|---|---|
+| DaLAJ: corrected vs learner sentence | 1971 | 50.8% | 60.8% | 55.9% | 68.8% | 63.6% | frequency 65.1% | 90.3% |
+| SweFAQ: own answer vs other answer | 3240 | 56.7% | 60.3% | 55.8% | 56.1% | 66.8% | overlap 79.7% | 99.0% |
+| Europarl EN-original: human vs OPUS-MT | 994 | 43.4% | 40.6% | 41.8% | 48.0% | 36.7% | longer 64.8% | 34.5% |
+| Europarl EN-original: human vs Kimi-k3 MT | 995 | 40.1% | 38.7% | 40.0% | 47.8% | 33.8% | longer 61.2% | 17.3% |
+| Europarl SV-original: native vs OPUS-MT round trip | 1008 | 46.4% | 40.8% | 43.8% | 51.5% | 36.4% | longer 50.8% | 25.2% |
+| Europarl SV-original: native vs Kimi-k3 round trip | 1010 | 45.8% | 37.2% | 39.9% | 48.3% | 32.5% | longer 49.6% | 13.2% |
+
+Baselines: DaLAJ, the sentence with the higher mean unigram log-frequency in Språkbanken's
+Europarl-SV word statistics; SweFAQ, the answer sharing more of the question's words; Europarl,
+the longer side. Kimi-k3 prompts: a grammar prompt for DaLAJ, the standard judge prompt for
+SweFAQ, a translation-quality prompt (English shown) for Europarl. 95% CIs for the gate are about
+±2 points (DaLAJ, SweFAQ) and ±3 points (Europarl) and are in `metrics.json`.
+
+**Grammar errors barely register.** v1 is at chance on DaLAJ
+(50.8%) and v3's pairwise questions reach
+55.9% (`naturalness`) and
+60.8% (`preference`). v3's single-response `natural_swedish` check is best at 68.8%,
+close to the unigram-frequency baseline (65.1%), while
+Kimi-k3 reaches 90.3%. By error type (v3; a sentence can carry two):
+
+| Error type | Pairs | `natural_swedish` | `naturalness` | `preference` |
+|---|---|---|---|---|
+| M (morphology) | 764 | 72.3% | 59.9% | 63.9% |
+| S (syntax) | 402 | 70.4% | 39.3% | 45.5% |
+| L (lexical) | 446 | 64.8% | 62.1% | 64.3% |
+| O (orthography) | 344 | 82.4% | 79.4% | 81.7% |
+| P (punctuation) | 179 | 46.1% | 36.3% | 50.8% |
+
+Spelling errors are the easiest. Punctuation errors are at or below chance, and syntax errors
+are below chance for the pairwise question.
+
+**Relevance is weak too.** On SweFAQ the gate does worse than a bag-of-words overlap count
+(79.7%); Kimi-k3 is near perfect. Ranking every answer on the
+page by v3's `quality` score puts the right one first for 20.1% of
+questions (MRR 0.385; chance 9.1%; word overlap
+32.9%, MRR 0.488). With pairwise `preference`, the
+right answer beats every other answer on its page for 16.0% of questions. On natively
+written Swedish where style is held constant, the gate mostly cannot tell a relevant answer
+from an irrelevant one.
+
+**Europarl is not a usable "human beats machine" test.** Share of pairs in which the human side
+wins:
+
+| Set | v3 `preference`, no prompt | v3 `natural_swedish`, no prompt | Kimi-k3, translation | Kimi-k3, naturalness | Kimi-k3 picks MT in both orders |
+|---|---|---|---|---|---|
+| Europarl EN-original: human vs OPUS-MT | 51.5% | 51.5% | 34.5% | 56.0% | 59.3% |
+| Europarl EN-original: human vs Kimi-k3 MT | 49.4% | 49.9% | 17.3% | 37.0% | 75.7% |
+| Europarl SV-original: native vs OPUS-MT round trip | 50.9% | 55.1% | 25.2% | 50.3% | 70.7% |
+| Europarl SV-original: native vs Kimi-k3 round trip | 49.3% | 50.1% | 13.2% | 35.2% | 82.3% |
+
+Under the translation prompt Kimi-k3 prefers the machine translation in most pairs, most
+strongly against its own output (self-preference), and even for native Swedish speeches against
+their round trip. Under the naturalness prompt it is split against OPUS-MT and still prefers its
+own output. For those, the translation prompt is confounded: the English was translated *from*
+the Swedish, so a back-translation follows it more closely. The 1997-2006 parliamentary Swedish
+is often loose or dated ("skall"), so modern MT plausibly reads as at least as good. With the English
+source shown, the gate also prefers the MT (v3 `preference`
+38.7% vs Kimi-k3 MT). Without it, it is at chance.
+Europarl's human side therefore cannot serve as the "better" label for naturalness or
+preference training.
+
+**What this means for training.** The gate's two weak spots on natively written Swedish are
+grammar and relevance, and both have usable training data in Superlim: DaLAJ-GED train
+(35,581 sentences, 18,109
+of them with an error) and SweFAQ train (781 questions,
+with hard negatives from the same page). Europarl is not worth training on as a
+preference signal.
+
+### Context length (1024 vs longer windows)
+
+mmBERT's position embeddings go to 8,192 tokens, but Laya and all three gates were
+trained at 1024. Does a longer window help without retraining? Each
+checkpoint scored `val_eval` (both orders, `preference`) at 1024, 2048, 4096 tokens
+(`python -m laya_gate.external_eval length`). "Truncated" columns are the pairs that do not fit
+in 1024 tokens (489 original pairs for v3). Latency is the batch-1 GPU
+forward pass on the 50 longest original pairs at that limit (bf16, `sdpa` attention).
+
+| Model | Max tokens | Original truncated | Original acc. | on truncated | Fluent acc. | on truncated | Input tokens | Forward p50 / p95 |
+|---|---|---|---|---|---|---|---|---|
+| v1 | 1024 | 41.9% | 98.7% | 99.1% | 63.4% | 72.0% | 1024 | 10.9 ms / 11.9 ms |
+| v1 | 2048 | 10.4% | 98.9% | 99.6% | 63.4% | 72.0% | 2048 | 26.0 ms / 31.4 ms |
+| v1 | 4096 | 0.0% | 99.0% | 99.8% | 63.4% | 72.0% | 2970 | 50.1 ms / 76.0 ms |
+| v2 | 1024 | 42.2% | 97.6% | 98.5% | 78.8% | 86.3% | 1017 | 11.1 ms / 11.7 ms |
+| v2 | 2048 | 10.4% | 97.6% | 98.5% | 78.7% | 84.3% | 2041 | 26.7 ms / 31.8 ms |
+| v2 | 4096 | 0.0% | 97.6% | 98.5% | 78.7% | 84.3% | 2970 | 51.0 ms / 75.8 ms |
+| v3 | 1024 | 43.7% | 98.9% | 99.8% | 78.8% | 84.3% | 977 | 11.0 ms / 11.6 ms |
+| v3 | 2048 | 11.2% | 98.9% | 99.8% | 78.8% | 84.3% | 2001 | 26.4 ms / 31.6 ms |
+| v3 | 4096 | 0.0% | 98.9% | 99.8% | 78.8% | 84.3% | 2970 | 50.7 ms / 75.8 ms |
+
+**No meaningful gain.** Seeing the rest of long pairs changes accuracy by under a point on the
+original pairs and not at all, or slightly downward, on the fluent ones. The truncated pairs
+are already *easier* than the rest, because the first 1024 tokens settle
+them. Forward latency more than doubles at 2048, where the p95 forward pass alone leaves no
+room for tokenization within the 35 ms target; at 4096 the forward pass alone exceeds it. The window
+stays at 1024; fine-tuning at a longer length was not tried.
+
 ### Tests
 
-`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **120 passed, 0 failed,
-0 errors, 0 skipped** of 120.
-Coverage: **53.6%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `onnx_export.py` 87.2% · `predictor.py` 84.4% · `probe.py` 46.0% · `publish.py` 68.9% · `readme.py` 93.4% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 0.0%.
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **134 passed, 0 failed,
+0 errors, 0 skipped** of 134.
+Coverage: **50.8%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `external_eval.py` 38.0% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `onnx_export.py` 87.2% · `predictor.py` 84.4% · `probe.py` 46.0% · `publish.py` 68.9% · `readme.py` 84.8% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 0.0%.
 
 
 ## Limitations
@@ -747,10 +876,11 @@ Coverage: **53.6%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · 
 - **The labels encode translation quality, by construction.** Per the dataset card, kimi-k3 localized each prompt and chosen response into idiomatic Swedish and *deliberately* wrote the rejected response as poor translation (literal phrasing, English loan words, US-centric content). A TF-IDF logistic regression reaches 98.4% on the same held-out pairs, so most of the gate's accuracy is detecting translationese. Measured directly: on 299 pairs where *both* answers are natural Swedish and only quality differs, the gate is right 64.2% of the time (95% CI 58.9%–69.6%) versus 87.3% for Kimi-k3, and its calibration breaks down (ECE 0.230). Do not use it as a general helpfulness or correctness judge for two *fluent* Swedish answers.
 - **The judge generated the data.** Kimi-k3 wrote both sides of every pair, so its agreement with the labels measures self-consistency, not independent quality judgement.
 - **Pairwise preference, not fact-checking.** The gate predicts which of two responses the dataset labels as chosen. It does not verify factual correctness, and a fluent wrong answer can beat a terse correct one.
-- **1024-token window.** 42.3% of pairs exceed it; the gate then sees only the end of the prompt and the start of each response, so differences late in long answers are invisible to it.
+- **1024-token window.** 42.3% of pairs exceed it; the gate then sees only the end of the prompt and the start of each response, so differences late in long answers are invisible to it. Scoring at 2048 or 4096 tokens without retraining did not help (see Context length) and costs latency.
 - **Kimi-k3 is a reference, not ground truth.** The judge is a strong but imperfect model; agreement with it is not correctness.
 - **Single seed, single run.** Numbers come from one training run; seed-to-seed variance was not measured.
 - **Naturalness does not transfer to machine translation.** On professional vs `opus-mt-en-sv` translations of FLORES+ sentences no version separates the two usefully (AUC ≤ 0.56, see the machine-translation test); it detects Kimi-k3-style translationese, not machine translation in general. The same holds on the human-annotated translationese benchmark (liu-nlp/translationese-opensubtitles): every gate prefers the OPUS-MT translation over the native speaker's alternative.
+- **Grammar and relevance are weak spots.** On natively written Swedish the gate barely prefers a corrected sentence over a learner error (DaLAJ, best v3 question 68.8%) and loses to a word-overlap baseline at picking a question's own FAQ answer (SweFAQ, v3 `quality` 66.8% vs 79.7%); Kimi-k3 gets 90.3% and 99.0%.
 - **CPU is slow.** A pair takes 506.7 ms (median) on CPU with torch fp32; int8 and ONNX do not get anywhere near the GPU's millisecond latency.
 
 ## Conclusion

@@ -2,7 +2,8 @@
 # End-to-end pipeline: data -> train -> calibrate -> benchmark -> judge -> tests -> readme -> publish.
 # v2 (5c-5f): fluent-vs-fluent training pairs from Kimi-k3, then the two-question v2 gate.
 # v3 (5g-5i): v2's questions plus single-response quality and natural-Swedish questions;
-# then the CPU benchmark (5j) and the machine-translation test (5k).
+# then the CPU benchmark (5j), the machine-translation test (5k), the translationese benchmark
+# (5l), the DaLAJ/SweFAQ/Europarl benchmarks (5m) and the context-length check (5n).
 # Secrets are loaded from .env by uv and read from the environment; nothing here prints them.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -43,6 +44,11 @@ if [[ -f cache/fluent/train.jsonl ]]; then
     step "5k/8 mt test"      mtqa evaluate
     step "5l/8 translationese benchmark" liu_eval gate
     step "5l/8 translationese benchmark" liu_eval judge   # skips without BASE_URL/API_KEY
+    step "5m/8 external benchmarks" external_eval prepare    # DaLAJ, SweFAQ, Europarl + OPUS-MT
+    step "5m/8 external benchmarks" external_eval translate  # Kimi-k3 MT; skips without BASE_URL/API_KEY
+    step "5m/8 external benchmarks" external_eval gate
+    step "5m/8 external benchmarks" external_eval judge      # skips without BASE_URL/API_KEY
+    step "5n/8 context length"      external_eval length
 else
     echo "note: no fluent training pairs; skipping v2 and v3" >&2
 fi

@@ -996,6 +996,196 @@ needs training pairs with real MT output against native or idiomatic Swedish; th
 should stay held out to measure it."""
 
 
+def external_section(m: dict) -> str:
+    E = m.get("external_eval")
+    if not isinstance(E, dict) or not E.get("models"):
+        return "Not measured: run `python -m laya_gate.external_eval prepare|translate|gate|judge`."
+    D, J, B = m.get("external_data", {}), E.get("judge") or {}, E.get("baselines", {})
+    n = E.get("n_pairs", {})
+
+    def acc(model, s, q):
+        return get(E, f"models.{model}.{s}.{q}.accuracy")
+
+    def jacc(s, setup):
+        return get(J, f"sets.{s}.{setup}.accuracy")
+
+    sets = [
+        ("dalaj", "DaLAJ: corrected vs learner sentence", "grammar"),
+        ("swefaq", "SweFAQ: own answer vs other answer", "preference"),
+        ("europarl_en/opus", "Europarl EN-original: human vs OPUS-MT", "translation"),
+        ("europarl_en/kimi", "Europarl EN-original: human vs Kimi-k3 MT", "translation"),
+        ("europarl_sv/opus", "Europarl SV-original: native vs OPUS-MT round trip", "translation"),
+        ("europarl_sv/kimi", "Europarl SV-original: native vs Kimi-k3 round trip", "translation"),
+    ]
+    qs = ["preference", "naturalness", "natural_swedish", "quality"]
+    rows = []
+    for s, label, setup in sets:
+        cells = [pct(acc("v1", s, "preference"))] + [pct(acc("v3", s, q)) for q in qs]
+        b = B.get(s, {})
+        base = (
+            f"overlap {pct(b.get('word_overlap_wins'))}"
+            if s == "swefaq"
+            else f"frequency {pct(b.get('unigram_frequency_wins'))}"
+            if s == "dalaj"
+            else f"longer {pct(b.get('longer_wins'))}"
+        )
+        rows.append(
+            f"| {label} | {n.get(s, NM)} | " + " | ".join(cells) + f" | {base} | "
+            f"{pct(jacc(s, setup))} |"
+        )
+    ep_rows = []
+    for s, label, _ in sets[2:]:
+        ep_rows.append(
+            f"| {label} | {pct(acc('v3', s, 'preference/no_prompt'))} | "
+            f"{pct(acc('v3', s, 'natural_swedish/no_prompt'))} | "
+            f"{pct(jacc(s, 'translation'))} | {pct(jacc(s, 'naturalness'))} | "
+            f"{pct(get(J, f'sets.{s}.translation.other_preferred_both_orders'))} |"
+        )
+    groups = get(E, "models.v3.dalaj.natural_swedish.by_group", {})
+    nat_groups = get(E, "models.v3.dalaj.naturalness.by_group", {})
+    g_rows = "\n".join(
+        f"| {g} | {x['n']} | {pct(x['accuracy'])} | {pct(get(nat_groups, f'{g}.accuracy'))} | "
+        f"{pct(get(E, f'models.v3.dalaj.preference.by_group.{g}.accuracy'))} |"
+        for g, x in groups.items()
+    )
+    rank = get(E, "models.v3.swefaq.quality.ranking", {})
+    orank = get(B, "swefaq.word_overlap_ranking", {})
+    strict = get(E, "models.v3.swefaq.preference.strict_top1.accuracy")
+    ep = get(D, "europarl", {})
+    langs = ep.get("paragraphs_by_speakerlang", {})
+    n_par = sum(langs.values()) if langs else None
+    km = D.get("kimi_mt", {})
+    return f"""Three more external tests, none used for training, scored with v1, v2 and v3
+(`python -m laya_gate.external_eval`). The metric is always the share of pairs in which the
+*reference* side wins: the corrected sentence, the question's own answer, the human Swedish.
+Pairwise questions average P over both slot orders. Single-response questions compare the two
+scores. Kimi-k3 sees a fixed-seed sample of {get(J, "sets.dalaj.n_pairs", NM)} pairs per set in
+both orders ({J.get("requests", NM)} requests, {J.get("parse_failures", NM)} parse failures,
+median {num(J.get("latency_s_median"), 1)} s, reasoning on); its accuracy counts a split verdict
+as half.
+
+- **DaLAJ-GED** ([Superlim 2](https://huggingface.co/datasets/sbx/superlim-2), test split, CC BY
+  4.0): Swedish learner sentences with exactly one error, paired with the same sentence with
+  that error corrected, rebuilt from the annotated span ({get(D, "dalaj.dropped.unchanged", NM)}
+  word-order corrections that cannot be rebuilt are dropped). Prompt: none. Natively written
+  Swedish; the only difference is the error.
+- **SweFAQ** (Superlim 2, dev + test, CC BY-SA 4.0): {get(D, "swefaq.n_questions", NM)} questions
+  from Swedish public-agency FAQ pages; each question's own answer is paired with every other
+  answer on the same page. Natively written; the only difference is relevance.
+- **Europarl sv/en** ([Språkbanken](https://spraakbanken.gu.se/en/resources/europarl-sven)):
+  paragraphs aligned by id, kept when both sides have 1-4 sentences and similar length. Only
+  {langs.get("SV", 0):,} of {n_par or 0:,} Swedish paragraphs are tagged as *spoken in Swedish*
+  (`speakerlang="SV"`), so almost all Swedish Europarl text is itself translation. Two sets:
+  English-original speeches (a fixed sample of {get(ep, "sample.EN", NM)}), with their
+  professional Swedish translation against machine translation of the English; and every usable
+  Swedish-original speech ({get(ep, "sample.SV", NM)}), native Swedish against a machine
+  translation of its English version (a round trip). Machine translation: `opus-mt-en-sv`
+  (sentence by sentence) and Kimi-k3 (reasoning off, median {num(km.get("latency_s_median"), 1)}
+  s). OPUS-MT's training data includes Europarl; Kimi-k3's is unknown. Prompt: the English
+  text with "Översätt följande text till svenska:".
+
+| Set | Pairs | v1 `preference` | v3 `preference` | v3 `naturalness` | v3 `natural_swedish` | v3 `quality` | Baseline | Kimi-k3 |
+|---|---|---|---|---|---|---|---|---|
+{chr(10).join(rows)}
+
+Baselines: DaLAJ, the sentence with the higher mean unigram log-frequency in Språkbanken's
+Europarl-SV word statistics; SweFAQ, the answer sharing more of the question's words; Europarl,
+the longer side. Kimi-k3 prompts: a grammar prompt for DaLAJ, the standard judge prompt for
+SweFAQ, a translation-quality prompt (English shown) for Europarl. 95% CIs for the gate are about
+±2 points (DaLAJ, SweFAQ) and ±3 points (Europarl) and are in `metrics.json`.
+
+**Grammar errors barely register.** v1 is at chance on DaLAJ
+({pct(acc("v1", "dalaj", "preference"))}) and v3's pairwise questions reach
+{pct(acc("v3", "dalaj", "naturalness"))} (`naturalness`) and
+{pct(acc("v3", "dalaj", "preference"))} (`preference`). v3's single-response `natural_swedish` check is best at {pct(acc("v3", "dalaj", "natural_swedish"))},
+close to the unigram-frequency baseline ({pct(get(B, "dalaj.unigram_frequency_wins"))}), while
+Kimi-k3 reaches {pct(jacc("dalaj", "grammar"))}. By error type (v3; a sentence can carry two):
+
+| Error type | Pairs | `natural_swedish` | `naturalness` | `preference` |
+|---|---|---|---|---|
+{g_rows}
+
+Spelling errors are the easiest. Punctuation errors are at or below chance, and syntax errors
+are below chance for the pairwise question.
+
+**Relevance is weak too.** On SweFAQ the gate does worse than a bag-of-words overlap count
+({pct(get(B, "swefaq.word_overlap_wins"))}); Kimi-k3 is near perfect. Ranking every answer on the
+page by v3's `quality` score puts the right one first for {pct(get(rank, "top1.accuracy"))} of
+questions (MRR {num(rank.get("mrr"))}; chance {pct(rank.get("top1_chance"))}; word overlap
+{pct(get(orank, "top1.accuracy"))}, MRR {num(orank.get("mrr"))}). With pairwise `preference`, the
+right answer beats every other answer on its page for {pct(strict)} of questions. On natively
+written Swedish where style is held constant, the gate mostly cannot tell a relevant answer
+from an irrelevant one.
+
+**Europarl is not a usable "human beats machine" test.** Share of pairs in which the human side
+wins:
+
+| Set | v3 `preference`, no prompt | v3 `natural_swedish`, no prompt | Kimi-k3, translation | Kimi-k3, naturalness | Kimi-k3 picks MT in both orders |
+|---|---|---|---|---|---|
+{chr(10).join(ep_rows)}
+
+Under the translation prompt Kimi-k3 prefers the machine translation in most pairs, most
+strongly against its own output (self-preference), and even for native Swedish speeches against
+their round trip. Under the naturalness prompt it is split against OPUS-MT and still prefers its
+own output. For those, the translation prompt is confounded: the English was translated *from*
+the Swedish, so a back-translation follows it more closely. The 1997-2006 parliamentary Swedish
+is often loose or dated ("skall"), so modern MT plausibly reads as at least as good. With the English
+source shown, the gate also prefers the MT (v3 `preference`
+{pct(acc("v3", "europarl_en/kimi", "preference"))} vs Kimi-k3 MT). Without it, it is at chance.
+Europarl's human side therefore cannot serve as the "better" label for naturalness or
+preference training.
+
+**What this means for training.** The gate's two weak spots on natively written Swedish are
+grammar and relevance, and both have usable training data in Superlim: DaLAJ-GED train
+({get(D, "train_splits.dalaj_sentences", 0):,} sentences, {get(D, "train_splits.dalaj_incorrect", 0):,}
+of them with an error) and SweFAQ train ({get(D, "train_splits.swefaq_questions", NM)} questions,
+with hard negatives from the same page). Europarl is not worth training on as a
+preference signal."""
+
+
+def context_section(m: dict) -> str:
+    C = m.get("context_length")
+    if not isinstance(C, dict) or not C.get("models"):
+        return "Not measured: run `python -m laya_gate.external_eval length`."
+    lens = [str(x) for x in C.get("max_lens", [])]
+    rows = []
+    for name, res in C["models"].items():
+        if not isinstance(res, dict):
+            continue
+        for L in lens:
+            r = res.get(L, {})
+            lat = r.get("latency_gpu_forward_ms_longest_inputs", {})
+            rows.append(
+                f"| {name} | {L} | {pct(get(r, 'original.fraction_truncated'))} | "
+                f"{pct(get(r, 'original.accuracy.accuracy'))} | "
+                f"{pct(get(r, 'original.accuracy_truncated_at_shortest.accuracy'))} | "
+                f"{pct(get(r, 'fluent.accuracy.accuracy'))} | "
+                f"{pct(get(r, 'fluent.accuracy_truncated_at_shortest.accuracy'))} | "
+                f"{num(lat.get('input_tokens_median'), 0)} | {ms(lat.get('p50'))} / "
+                f"{ms(lat.get('p95'))} |"
+            )
+    n_long = (
+        get(C, f"models.v3.{lens[0]}.original.accuracy_truncated_at_shortest.n") if lens else None
+    )
+    return f"""mmBERT's position embeddings go to 8,192 tokens, but Laya and all three gates were
+trained at {lens[0] if lens else NM}. Does a longer window help without retraining? Each
+checkpoint scored `val_eval` (both orders, `preference`) at {", ".join(lens)} tokens
+(`python -m laya_gate.external_eval length`). "Truncated" columns are the pairs that do not fit
+in {lens[0] if lens else NM} tokens ({n_long or NM} original pairs for v3). Latency is the batch-1 GPU
+forward pass on the 50 longest original pairs at that limit (bf16, `sdpa` attention).
+
+| Model | Max tokens | Original truncated | Original acc. | on truncated | Fluent acc. | on truncated | Input tokens | Forward p50 / p95 |
+|---|---|---|---|---|---|---|---|---|
+{chr(10).join(rows)}
+
+**No meaningful gain.** Seeing the rest of long pairs changes accuracy by under a point on the
+original pairs and not at all, or slightly downward, on the fluent ones. The truncated pairs
+are already *easier* than the rest, because the first {lens[0] if lens else NM} tokens settle
+them. Forward latency more than doubles at 2048, where the p95 forward pass alone leaves no
+room for tokenization within the 35 ms target; at 4096 the forward pass alone exceeds it. The window
+stays at {lens[0] if lens else NM}; fine-tuning at a longer length was not tried."""
+
+
 def mt_section(m: dict) -> str:
     mt = m.get("mt_naturalness")
     if not isinstance(mt, dict) or not mt.get("models"):
@@ -1260,7 +1450,13 @@ def limitations(m: dict) -> str:
         "fluent wrong answer can beat a terse correct one.",
         f"**1024-token window.** {pct(get(m, 'data.fraction_truncated'))} of pairs exceed it; "
         "the gate then sees only the end of the prompt and the start of each response, so "
-        "differences late in long answers are invisible to it.",
+        "differences late in long answers are invisible to it."
+        + (
+            " Scoring at 2048 or 4096 tokens without retraining did not help (see Context "
+            "length) and costs latency."
+            if get(m, "context_length.models")
+            else ""
+        ),
         "**Kimi-k3 is a reference, not ground truth.** The judge is a strong but imperfect "
         "model; agreement with it is not correctness.",
         "**Single seed, single run.** Numbers come from one training run; seed-to-seed variance "
@@ -1279,6 +1475,17 @@ def limitations(m: dict) -> str:
                 if get(m, "liu_translationese.models")
                 else ""
             )
+        )
+    if get(m, "external_eval.models.v3"):
+        items.append(
+            "**Grammar and relevance are weak spots.** On natively written Swedish the gate "
+            "barely prefers a corrected sentence over a learner error (DaLAJ, best v3 question "
+            f"{pct(get(m, 'external_eval.models.v3.dalaj.natural_swedish.accuracy'))}) and loses "
+            "to a word-overlap baseline at picking a question's own FAQ answer (SweFAQ, v3 "
+            f"`quality` {pct(get(m, 'external_eval.models.v3.swefaq.quality.accuracy'))} vs "
+            f"{pct(get(m, 'external_eval.baselines.swefaq.word_overlap_wins'))}); Kimi-k3 gets "
+            f"{pct(get(m, 'external_eval.judge.sets.dalaj.grammar.accuracy'))} and "
+            f"{pct(get(m, 'external_eval.judge.sets.swefaq.preference.accuracy'))}."
         )
     cpu = get(m, "cpu_inference.variants.torch-fp32.latency_ms.p50")
     if isinstance(cpu, float):
@@ -1569,6 +1776,14 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 ### Human-annotated translationese benchmark (a negative result)
 
 {liu_section(m)}
+
+### Grammar, relevance and Europarl (external benchmarks)
+
+{external_section(m)}
+
+### Context length (1024 vs longer windows)
+
+{context_section(m)}
 
 ### Tests
 
