@@ -502,21 +502,21 @@
   },
   "tests": {
     "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
-    "total": 134,
-    "passed": 134,
+    "total": 144,
+    "passed": 144,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "skipped_tests": {},
     "all_passed": true,
-    "coverage_percent": 50.8,
+    "coverage_percent": 49.2,
     "coverage_per_module": {
       "__init__.py": 100.0,
       "benchmark.py": 63.2,
       "calibrate.py": 64.3,
       "cpu.py": 0.0,
       "data.py": 70.9,
-      "external_eval.py": 38.0,
+      "external_eval.py": 37.7,
       "fluent.py": 20.6,
       "judge.py": 79.3,
       "liu_eval.py": 36.6,
@@ -525,12 +525,13 @@
       "predictor.py": 84.4,
       "probe.py": 46.0,
       "publish.py": 68.9,
-      "readme.py": 84.8,
+      "readme.py": 78.8,
       "testing.py": 0.0,
       "train.py": 37.3,
       "utils.py": 100.0,
       "v2.py": 29.4,
-      "v3.py": 0.0
+      "v3.py": 18.0,
+      "v4.py": 29.1
     }
   },
   "publish": {
@@ -5272,6 +5273,36 @@
       "dalaj_sentences": 35581,
       "dalaj_incorrect": 18109,
       "swefaq_questions": 781
+    },
+    "euroeval": {
+      "scala": {
+        "test": 2048,
+        "val": 256,
+        "source": "mteb/scala_sv_classification"
+      },
+      "gerlangmod": {
+        "talbanken": 844,
+        "lines": 748,
+        "pud": 757
+      },
+      "wmt24pp": {
+        "segments": 960,
+        "domains": {
+          "news": 149,
+          "social": 494,
+          "speech": 111,
+          "literary": 206
+        },
+        "kimi_mt": {
+          "model": "kimi-k3",
+          "reasoning": "off",
+          "requests": 960,
+          "live_requests": 960,
+          "failed": 0,
+          "empty": 0,
+          "latency_s_median": 4.222777343493362
+        }
+      }
     }
   },
   "context_length": {
@@ -7005,11 +7036,11 @@
     "judge": {
       "model": "kimi-k3",
       "hardware": "self-hosted Kimi-k3 on 8× NVIDIA B300 (HGX)",
-      "requests": 6000,
-      "live_requests": 6000,
+      "requests": 9000,
+      "live_requests": 0,
       "failed_requests": 0,
       "parse_failures": 0,
-      "latency_s_median": 21.259362411998154,
+      "latency_s_median": 20.783962819994485,
       "metric": "per pair, the share of the two slot orders in which the reference won; accuracy counts pairs where both orders pick it, split pairs count 0.5",
       "sets": {
         "dalaj": {
@@ -7050,38 +7081,127 @@
             }
           }
         },
+        "gerlangmod": {
+          "n_pairs": 300,
+          "grammar": {
+            "accuracy": 0.9866666666666667,
+            "ref_preferred_both_orders": 0.9833333333333333,
+            "other_preferred_both_orders": 0.01,
+            "positional_consistency": 0.9933333333333333,
+            "ci95": [
+              0.9733333333333334,
+              0.9966666666666667
+            ],
+            "n": 300,
+            "v3_same_sample": {
+              "question": "naturalness",
+              "accuracy": 0.8133333333333334,
+              "agreement_with_judge": 0.8120805369127517
+            }
+          }
+        },
+        "wmt24pp/opus": {
+          "n_pairs": 300,
+          "translation_generic": {
+            "accuracy": 0.81,
+            "ref_preferred_both_orders": 0.7766666666666666,
+            "other_preferred_both_orders": 0.15666666666666668,
+            "positional_consistency": 0.9333333333333333,
+            "ci95": [
+              0.7666666666666667,
+              0.8516666666666667
+            ],
+            "n": 300,
+            "v3_same_sample": {
+              "question": "preference",
+              "accuracy": 0.57,
+              "agreement_with_judge": 0.625
+            }
+          },
+          "naturalness": {
+            "accuracy": 0.8383333333333334,
+            "ref_preferred_both_orders": 0.79,
+            "other_preferred_both_orders": 0.11333333333333333,
+            "positional_consistency": 0.9033333333333333,
+            "ci95": [
+              0.8,
+              0.875
+            ],
+            "n": 300,
+            "v3_same_sample": {
+              "question": "naturalness",
+              "accuracy": 0.6233333333333333,
+              "agreement_with_judge": 0.6789667896678967
+            }
+          }
+        },
+        "wmt24pp/kimi": {
+          "n_pairs": 300,
+          "translation_generic": {
+            "accuracy": 0.245,
+            "ref_preferred_both_orders": 0.16333333333333333,
+            "other_preferred_both_orders": 0.6733333333333333,
+            "positional_consistency": 0.8366666666666667,
+            "ci95": [
+              0.2,
+              0.2917083333333331
+            ],
+            "n": 300,
+            "v3_same_sample": {
+              "question": "preference",
+              "accuracy": 0.45666666666666667,
+              "agreement_with_judge": 0.5737051792828686
+            }
+          },
+          "naturalness": {
+            "accuracy": 0.4266666666666667,
+            "ref_preferred_both_orders": 0.3333333333333333,
+            "other_preferred_both_orders": 0.48,
+            "positional_consistency": 0.8133333333333334,
+            "ci95": [
+              0.38,
+              0.4766666666666667
+            ],
+            "n": 300,
+            "v3_same_sample": {
+              "question": "naturalness",
+              "accuracy": 0.5166666666666667,
+              "agreement_with_judge": 0.5942622950819673
+            }
+          }
+        },
         "europarl_en/opus": {
           "n_pairs": 300,
           "translation": {
-            "accuracy": 0.345,
+            "accuracy": 0.3433333333333333,
             "ref_preferred_both_orders": 0.2833333333333333,
-            "other_preferred_both_orders": 0.5933333333333334,
-            "positional_consistency": 0.8766666666666667,
+            "other_preferred_both_orders": 0.5966666666666667,
+            "positional_consistency": 0.88,
             "ci95": [
-              0.29833333333333334,
-              0.3933333333333333
+              0.2966666666666667,
+              0.39166666666666666
             ],
             "n": 300,
             "v3_same_sample": {
               "question": "preference",
               "accuracy": 0.38333333333333336,
-              "agreement_with_judge": 0.5893536121673004
+              "agreement_with_judge": 0.5871212121212122
             }
           },
           "naturalness": {
-            "accuracy": 0.56,
+            "accuracy": 0.5616666666666666,
             "ref_preferred_both_orders": 0.46,
-            "other_preferred_both_orders": 0.34,
-            "positional_consistency": 0.8,
+            "other_preferred_both_orders": 0.33666666666666667,
+            "positional_consistency": 0.7966666666666666,
             "ci95": [
-              0.51,
-              0.6116666666666667
+              0.5116666666666667,
+              0.6133333333333333
             ],
             "n": 300,
             "v3_same_sample": {
               "question": "naturalness",
               "accuracy": 0.4766666666666667,
-              "agreement_with_judge": 0.5541666666666667
+              "agreement_with_judge": 0.5523012552301255
             }
           }
         },
@@ -7128,14 +7248,14 @@
             "other_preferred_both_orders": 0.7066666666666667,
             "positional_consistency": 0.9166666666666666,
             "ci95": [
-              0.20666666666666667,
+              0.205,
               0.29833333333333334
             ],
             "n": 300,
             "v3_same_sample": {
               "question": "preference",
               "accuracy": 0.43666666666666665,
-              "agreement_with_judge": 0.5672727272727273
+              "agreement_with_judge": 0.5636363636363636
             }
           },
           "naturalness": {
@@ -7145,13 +7265,13 @@
             "positional_consistency": 0.7733333333333333,
             "ci95": [
               0.45666666666666667,
-              0.5500416666666664
+              0.5517083333333331
             ],
             "n": 300,
             "v3_same_sample": {
               "question": "naturalness",
               "accuracy": 0.5133333333333333,
-              "agreement_with_judge": 0.5517241379310345
+              "agreement_with_judge": 0.5474137931034483
             }
           }
         },
@@ -7188,6 +7308,5444 @@
               "accuracy": 0.46,
               "agreement_with_judge": 0.5066079295154186
             }
+          }
+        }
+      }
+    }
+  },
+  "v4": {
+    "data": {
+      "dalaj": {
+        "pairs": 16365,
+        "dropped": {
+          "unchanged": 1744
+        },
+        "question": "naturalness"
+      },
+      "swefaq": {
+        "pairs": 3074,
+        "questions": 781,
+        "question": "preference"
+      },
+      "europarl_mt": {
+        "model": "kimi-k3",
+        "reasoning": "off",
+        "requests": 18000,
+        "live_requests": 18000,
+        "failed": 0,
+        "empty": 0,
+        "latency_s_median": 3.2805670950037893
+      },
+      "europarl": {
+        "paragraphs_translated": 18000,
+        "dropped": {
+          "no_mt": 0,
+          "near_duplicate": 604
+        },
+        "candidates": 17396,
+        "kept": 12000,
+        "ref_longer_in_candidates": 0.5728903196137043,
+        "ref_longer_in_kept": 0.5,
+        "questions": {
+          "preference": "English source in the prompt",
+          "naturalness": "no prompt"
+        },
+        "negatives": "Kimi-k3 translations (reasoning off); OPUS-MT never used in training"
+      }
+    },
+    "arms": {
+      "v3": {
+        "tests": {
+          "original/preference": {
+            "mean": 0.9892665474060823,
+            "ci95": [
+              0.983005366726297,
+              0.9946332737030411
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.7865296803652968,
+            "ci95": [
+              0.7579908675799086,
+              0.8139269406392694
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.7993311036789298,
+            "ci95": [
+              0.7491638795986622,
+              0.842809364548495
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.44333333333333336,
+            "ci95": [
+              0.40166666666666667,
+              0.4833749999999998
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.5158333333333334,
+            "ci95": [
+              0.4766666666666667,
+              0.5558333333333333
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.37333333333333335,
+            "ci95": [
+              0.335,
+              0.4116666666666667
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.5811965811965812,
+            "ci95": [
+              0.5600678733031674,
+              0.6028154851684263
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.579185520361991,
+            "ci95": [
+              0.5583207642031172,
+              0.6003016591251885
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.48466566113624937,
+            "ci95": [
+              0.4635369532428356,
+              0.5067873303167421
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.558599695585997,
+            "ci95": [
+              0.5372907153729072,
+              0.5799086757990868
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.6884830035514967,
+            "ci95": [
+              0.6689497716894978,
+              0.709290969051243
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.6033950617283951,
+            "ci95": [
+              0.5864197530864198,
+              0.6203703703703703
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.667283950617284,
+            "ci95": [
+              0.6512345679012346,
+              0.6839506172839506
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.8329383886255924,
+            "ci95": [
+              0.8092417061611374,
+              0.8566350710900474
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.8341232227488151,
+            "ci95": [
+              0.8080568720379147,
+              0.8584123222748815
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.5427350427350427,
+            "ci95": [
+              0.5106837606837606,
+              0.5747863247863247
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6314102564102564,
+            "ci95": [
+              0.6004006410256411,
+              0.6634615384615384
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.4306326304106548,
+            "ci95": [
+              0.3973362930077691,
+              0.462819089900111
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.4827968923418424,
+            "ci95": [
+              0.4506104328523862,
+              0.5149833518312985
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.40643863179074446,
+            "ci95": [
+              0.3772635814889336,
+              0.43762575452716296
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.5070422535211268,
+            "ci95": [
+              0.4768611670020121,
+              0.5362173038229376
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.3869346733668342,
+            "ci95": [
+              0.35678391959798994,
+              0.4161055276381908
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.4964824120603015,
+            "ci95": [
+              0.4653266331658292,
+              0.5276381909547738
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.40773809523809523,
+            "ci95": [
+              0.3769593253968254,
+              0.4365079365079365
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.5079365079365079,
+            "ci95": [
+              0.4761656746031746,
+              0.5386904761904762
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.3722772277227723,
+            "ci95": [
+              0.3415841584158416,
+              0.401980198019802
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.48118811881188117,
+            "ci95": [
+              0.4504950495049505,
+              0.5138613861386139
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.2009132420091324,
+            "ci95": [
+              0.1461187214611872,
+              0.2557077625570776
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.55224609375,
+            "ci95": [
+              0.52978515625,
+              0.57275390625
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.58154296875,
+            "ci95": [
+              0.55859375,
+              0.6025390625
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "fluent_flagged_translationese": {
+            "mean": 0.03881278538812785,
+            "ci95": [
+              0.030251141552511414,
+              0.04794520547945205
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.14596702175711204,
+            "mcc@val_threshold": 0.17599913992928487,
+            "val_threshold": 0.7515493254098468,
+            "auc": 0.6058478355407715,
+            "flagged_incorrect": 0.15087890625,
+            "n": 2048
+          }
+        }
+      },
+      "control": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": false,
+            "eval_batch": 32,
+            "seed": 20261014,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "none"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 110526,
+          "train_units_by_source_question": {
+            "original/preference": 12750,
+            "original/naturalness": 12750,
+            "fluent/preference": 9921,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842
+          },
+          "optimizer_updates": 6908,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.48620138561011633,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.09812769228499793,
+                  "acc": 0.9657142857142857,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.1663670299716481,
+                  "acc": 0.9396243291592129,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.03388541959322462,
+                  "acc": 0.9892665474060823,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.05158526670661057,
+                  "acc": 0.9874776386404294,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.362782016178593,
+                  "acc": 0.4512937595129376,
+                  "n": 1750,
+                  "mae": 0.857192712094402
+                },
+                "fluent/preference": {
+                  "loss": 0.5620129940111801,
+                  "acc": 0.7497142857142857,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.7457892754403448,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.43150709916951413
+              },
+              "epoch_seconds": 4686.094245936998
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 4686.772961416005,
+          "per_epoch_seconds": [
+            4686.094245936998
+          ],
+          "peak_gpu_memory_allocated_gib": 10.725080966949463,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.665914951815083,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.26449408232740373,
+            "nll_post": 0.23956175221525094,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.3500760995596636,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.05101707649617439,
+            "nll_post": 0.03627638417945096,
+            "within_laya_clamp": false
+          },
+          "quality": {
+            "temperature": 1.229231157116828,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.3628921481977339,
+            "nll_post": 1.35521827720889,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.4333766841196847,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.1362622920742628,
+            "nll_post": 0.12558064436417615,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_control_eval",
+          "temperatures": {
+            "preference": 1.665914951815083,
+            "naturalness": 0.3500760995596636,
+            "quality": 1.229231157116828,
+            "natural_swedish": 1.4333766841196847
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9856887298747764,
+              "ci95": [
+                0.9803220035778175,
+                0.9901610017889088
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9892665474060823,
+              "ci95": [
+                0.983005366726297,
+                0.9946332737030411
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9865831842576028,
+            "accuracy_chosen_in_b": 0.9847942754919499,
+            "positional_consistency": 0.9874776386404294,
+            "ece_both_orders": 0.011983537950327802,
+            "mean_confidence": 0.9773422326520692,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9794275491949911,
+              "accuracy_on_covered": 0.9949771689497717
+            },
+            "ece_order_averaged": 0.01453005961474851,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9785330948121646,
+              "accuracy_on_covered": 0.9954296160877514,
+              "accuracy_on_routed": 0.7083333333333334
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9870304114490162,
+              "ci95": [
+                0.9821109123434705,
+                0.9915026833631485
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9892665474060823,
+              "ci95": [
+                0.983005366726297,
+                0.9946332737030411
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9919499105545617,
+            "accuracy_chosen_in_b": 0.9821109123434705,
+            "positional_consistency": 0.9803220035778175,
+            "ece_both_orders": 0.0073899934952141,
+            "mean_confidence": 0.9811216228477557,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9700357781753131,
+              "accuracy_on_covered": 0.995850622406639
+            },
+            "ece_order_averaged": 0.013927783081384213,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9686940966010733,
+              "accuracy_on_covered": 0.9981532779316713,
+              "accuracy_on_routed": 0.7142857142857143
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.773972602739726,
+              "ci95": [
+                0.7545662100456622,
+                0.7945205479452054
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7773972602739726,
+              "ci95": [
+                0.7488584474885844,
+                0.8059360730593608
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.75,
+            "accuracy_chosen_in_b": 0.797945205479452,
+            "positional_consistency": 0.8550228310502284,
+            "ece_both_orders": 0.027764427875216647,
+            "mean_confidence": 0.7807679474035585,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6678082191780822,
+              "accuracy_on_covered": 0.8589743589743589
+            },
+            "ece_order_averaged": 0.030909109747574715,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.636986301369863,
+              "accuracy_on_covered": 0.8763440860215054,
+              "accuracy_on_routed": 0.6037735849056604
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.08295945491235816,
+            "fraction_within_0.2": 0.8664383561643836
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.7709030100334449,
+              "ci95": [
+                0.7374581939799331,
+                0.8060200668896321
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.782608695652174,
+              "ci95": [
+                0.7357859531772575,
+                0.8294314381270903
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.745819397993311,
+            "accuracy_chosen_in_b": 0.7959866220735786,
+            "positional_consistency": 0.8361204013377926,
+            "ece_both_orders": 0.04326515921878676,
+            "mean_confidence": 0.7763795126470806,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6605351170568562,
+              "accuracy_on_covered": 0.8835443037974684
+            },
+            "ece_order_averaged": 0.052412726973309544,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6421404682274248,
+              "accuracy_on_covered": 0.9010416666666666,
+              "accuracy_on_routed": 0.5700934579439252
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.35785953177257523,
+                "accuracy": 0.5700934579439252
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.35785953177257523,
+                "accuracy": 0.8504672897196262
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.2842809364548495,
+                "accuracy": 0.9647058823529412
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.08921264052785202,
+            "fraction_within_0.2": 0.8662207357859532
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.7709030100334449,
+                "expected_latency_ms": 10.625907496432774,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.1020066889632107,
+                "cascade_accuracy": 0.8177257525083612,
+                "expected_latency_ms": 982.87324640428,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.19063545150501673,
+                "cascade_accuracy": 0.8528428093645485,
+                "expected_latency_ms": 1827.612737586508,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.2508361204013378,
+                "cascade_accuracy": 0.8695652173913043,
+                "expected_latency_ms": 2401.398052351795,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.3394648829431438,
+                "cascade_accuracy": 0.882943143812709,
+                "expected_latency_ms": 3246.137543534023,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.41638795986622074,
+                "cascade_accuracy": 0.8862876254180602,
+                "expected_latency_ms": 3979.307667956334,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.5,
+                "cascade_accuracy": 0.8979933110367893,
+                "expected_latency_ms": 4776.231716241455,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.5852842809364549,
+                "cascade_accuracy": 0.8896321070234113,
+                "expected_latency_ms": 5589.094245492279,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.705685618729097,
+                "cascade_accuracy": 0.8846153846153846,
+                "expected_latency_ms": 6736.664875022851,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.8795986622073578,
+                "cascade_accuracy": 0.8762541806020067,
+                "expected_latency_ms": 8394.266895455903,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.3,
+              "routed_fraction": 0.5,
+              "cascade_accuracy": 0.8979933110367893,
+              "expected_latency_ms": 4776.231716241455,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 10.625907496432774,
+            "p95": 11.281998604681576,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.665914951815083,
+            "naturalness": 0.3500760995596636,
+            "quality": 1.229231157116828,
+            "natural_swedish": 1.4333766841196847
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.7785388127853882,
+              "ci95": [
+                0.7511415525114156,
+                0.8059360730593608
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.11017530761615356,
+            "mean_score_chosen": 3.78843500825666,
+            "mean_score_rejected": 3.132001883109167,
+            "spearman_vs_rating": 0.5591423313622332,
+            "pearson_vs_rating": 0.5703724230524547,
+            "mae_vs_rating": 0.8552389599699729
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.7993311036789298,
+              "ci95": [
+                0.7525083612040134,
+                0.842809364548495
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.10448152741083787,
+            "mean_score_chosen": 3.8201944560915857,
+            "mean_score_rejected": 3.149542575997152,
+            "spearman_vs_rating": 0.5474032859148533
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.9929867735958346,
+            "accuracy": {
+              "accuracy": 0.936046511627907,
+              "ci95": [
+                0.9262075134168157,
+                0.945438282647585
+              ],
+              "n": 2236
+            },
+            "ece": 0.01695368948085191,
+            "natural_flagged_translationese": 0.014311270125223614,
+            "translationese_passed_as_natural": 0.11359570661896243,
+            "within_pair_natural_scores_higher": 0.9874776386404294
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.04452054794520548,
+            "mean_p_natural": 0.9295524848567108
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.016722408026755852,
+            "mean_p_natural": 0.952805862408553
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 6.029361000400968,
+            "p95": 11.003428709227592,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9892665474060823,
+            "ci95": [
+              0.983005366726297,
+              0.9946332737030411
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.7773972602739726,
+            "ci95": [
+              0.7488584474885844,
+              0.8059360730593608
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.782608695652174,
+            "ci95": [
+              0.7357859531772575,
+              0.8294314381270903
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.435,
+            "ci95": [
+              0.39495833333333336,
+              0.47337499999999977
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.495,
+            "ci95": [
+              0.4566458333333333,
+              0.5341666666666667
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.365,
+            "ci95": [
+              0.326625,
+              0.4033333333333333
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.555052790346908,
+            "ci95": [
+              0.5334213172448466,
+              0.5771744595274007
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.6028154851684263,
+            "ci95": [
+              0.5816993464052288,
+              0.6246857717445953
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.47159376571141276,
+            "ci95": [
+              0.4494720965309201,
+              0.49321266968325794
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.604261796042618,
+            "ci95": [
+              0.5824454591577879,
+              0.6260908168442414
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.6676813800101471,
+            "ci95": [
+              0.6473871131405378,
+              0.6879756468797564
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.6080246913580247,
+            "ci95": [
+              0.5913503086419752,
+              0.6243827160493827
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.6787037037037037,
+            "ci95": [
+              0.6623456790123456,
+              0.6950617283950618
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.8507109004739336,
+            "ci95": [
+              0.8258293838862559,
+              0.8744075829383886
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.8530805687203792,
+            "ci95": [
+              0.8281990521327014,
+              0.8767772511848341
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.5160256410256411,
+            "ci95": [
+              0.483974358974359,
+              0.5480769230769231
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6452991452991453,
+            "ci95": [
+              0.6164529914529915,
+              0.6763087606837606
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.40066592674805773,
+            "ci95": [
+              0.36847946725860153,
+              0.43174250832408434
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.48612652608213097,
+            "ci95": [
+              0.4528301886792453,
+              0.5194228634850167
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.3762575452716298,
+            "ci95": [
+              0.3470824949698189,
+              0.4074446680080483
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.48893360160965793,
+            "ci95": [
+              0.4567404426559356,
+              0.5191146881287726
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.3587939698492462,
+            "ci95": [
+              0.3306532663316583,
+              0.38695979899497474
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.4864321608040201,
+            "ci95": [
+              0.4562814070351759,
+              0.5175879396984925
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.35615079365079366,
+            "ci95": [
+              0.32636408730158734,
+              0.38492063492063494
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.49206349206349204,
+            "ci95": [
+              0.46130952380952384,
+              0.5228174603174603
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.33663366336633666,
+            "ci95": [
+              0.3079207920792079,
+              0.36534653465346534
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.4603960396039604,
+            "ci95": [
+              0.4287128712871287,
+              0.49306930693069306
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.1689497716894977,
+            "ci95": [
+              0.1232876712328767,
+              0.2191780821917808
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.52880859375,
+            "ci95": [
+              0.5068359375,
+              0.54931640625
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.5693359375,
+            "ci95": [
+              0.54833984375,
+              0.5903442382812499
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "fluent_flagged_translationese": {
+            "mean": 0.04509132420091324,
+            "ci95": [
+              0.03538812785388128,
+              0.055365296803652965
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.11690734616737843,
+            "mcc@val_threshold": 0.13889485246327724,
+            "val_threshold": 0.8304467009711846,
+            "auc": 0.5954880714416504,
+            "flagged_incorrect": 0.06494140625,
+            "n": 2048
+          }
+        }
+      },
+      "europarl": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": false,
+            "eval_batch": 32,
+            "seed": 20261014,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "none"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 134526,
+          "train_units_by_source_question": {
+            "original/preference": 12750,
+            "original/naturalness": 12750,
+            "fluent/preference": 9921,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842,
+            "europarl/preference": 12000,
+            "europarl/naturalness": 12000
+          },
+          "optimizer_updates": 8408,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.5355242841320453,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.1161542528542311,
+                  "acc": 0.9537142857142857,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.18455588162586004,
+                  "acc": 0.9271019677996423,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.0330584082645152,
+                  "acc": 0.9847942754919499,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.06713344522984482,
+                  "acc": 0.9865831842576028,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.3888677261727196,
+                  "acc": 0.4375951293759513,
+                  "n": 1750,
+                  "mae": 0.900893151428883
+                },
+                "fluent/preference": {
+                  "loss": 0.5952633147061819,
+                  "acc": 0.7085714285714285,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.7426195611765475,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.4468075128614143
+              },
+              "epoch_seconds": 5380.206278500002
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 5380.901119978997,
+          "per_epoch_seconds": [
+            5380.206278500002
+          ],
+          "peak_gpu_memory_allocated_gib": 10.725080966949463,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.5002947199314045,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.27952619836704456,
+            "nll_post": 0.26545679430487773,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.29863397086584187,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.06553896348384883,
+            "nll_post": 0.03828394186044891,
+            "within_laya_clamp": false
+          },
+          "quality": {
+            "temperature": 1.146487576543989,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.389636263270212,
+            "nll_post": 1.3867066103523986,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.446481131806652,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.15525069198370106,
+            "nll_post": 0.14486854827232976,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_europarl_eval",
+          "temperatures": {
+            "preference": 1.5002947199314045,
+            "naturalness": 0.29863397086584187,
+            "quality": 1.146487576543989,
+            "natural_swedish": 1.446481131806652
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9825581395348837,
+              "ci95": [
+                0.9771914132379249,
+                0.9879248658318426
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9874776386404294,
+              "ci95": [
+                0.981216457960644,
+                0.9928667262969587
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9847942754919499,
+            "accuracy_chosen_in_b": 0.9803220035778175,
+            "positional_consistency": 0.9794275491949911,
+            "ece_both_orders": 0.015063314258933262,
+            "mean_confidence": 0.9715015935093871,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9727191413237924,
+              "accuracy_on_covered": 0.9935632183908046
+            },
+            "ece_order_averaged": 0.019218162651682046,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9651162790697675,
+              "accuracy_on_covered": 0.9962928637627433,
+              "accuracy_on_routed": 0.7435897435897436
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.981216457960644,
+              "ci95": [
+                0.975402504472272,
+                0.9865831842576028
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9865831842576028,
+              "ci95": [
+                0.9794275491949911,
+                0.9928443649373881
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9821109123434705,
+            "accuracy_chosen_in_b": 0.9803220035778175,
+            "positional_consistency": 0.9785330948121646,
+            "ece_both_orders": 0.009117382693272854,
+            "mean_confidence": 0.9812682498449222,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9727191413237924,
+              "accuracy_on_covered": 0.9926436781609196
+            },
+            "ece_order_averaged": 0.00921392250323545,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9704830053667263,
+              "accuracy_on_covered": 0.9963133640552996,
+              "accuracy_on_routed": 0.6666666666666666
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.7414383561643836,
+              "ci95": [
+                0.7220319634703196,
+                0.76085901826484
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7465753424657534,
+              "ci95": [
+                0.7168949771689498,
+                0.7751141552511416
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.7465753424657534,
+            "accuracy_chosen_in_b": 0.7363013698630136,
+            "positional_consistency": 0.841324200913242,
+            "ece_both_orders": 0.02288025561184843,
+            "mean_confidence": 0.7520722605006199,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.5941780821917808,
+              "accuracy_on_covered": 0.8482228626320846
+            },
+            "ece_order_averaged": 0.021327600078314655,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.5627853881278538,
+              "accuracy_on_covered": 0.8620689655172413,
+              "accuracy_on_routed": 0.597911227154047
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.15206895466502598,
+            "fraction_within_0.2": 0.7100456621004566
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.7625418060200669,
+              "ci95": [
+                0.7307274247491639,
+                0.7976588628762542
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7725752508361204,
+              "ci95": [
+                0.725752508361204,
+                0.8193979933110368
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.7558528428093646,
+            "accuracy_chosen_in_b": 0.7692307692307693,
+            "positional_consistency": 0.8461538461538461,
+            "ece_both_orders": 0.03099086131799495,
+            "mean_confidence": 0.7492885837770644,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.5852842809364549,
+              "accuracy_on_covered": 0.8457142857142858
+            },
+            "ece_order_averaged": 0.053985476284093704,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.5652173913043478,
+              "accuracy_on_covered": 0.8757396449704142,
+              "accuracy_on_routed": 0.6384615384615384
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.43478260869565216,
+                "accuracy": 0.6384615384615384
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.3779264214046823,
+                "accuracy": 0.8495575221238938
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.18729096989966554,
+                "accuracy": 0.9285714285714286
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.1537758933080977,
+            "fraction_within_0.2": 0.7023411371237458
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.7625418060200669,
+                "expected_latency_ms": 9.795682490221225,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.10033444816053512,
+                "cascade_accuracy": 0.7976588628762542,
+                "expected_latency_ms": 966.1045404323661,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.2157190635451505,
+                "cascade_accuracy": 0.8177257525083612,
+                "expected_latency_ms": 2065.8597270658324,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.3210702341137124,
+                "cascade_accuracy": 0.8478260869565217,
+                "expected_latency_ms": 3069.984027905085,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.41471571906354515,
+                "cascade_accuracy": 0.8494983277591973,
+                "expected_latency_ms": 3962.53896198442,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.4983277591973244,
+                "cascade_accuracy": 0.8645484949832776,
+                "expected_latency_ms": 4759.463010269541,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.5819397993311036,
+                "cascade_accuracy": 0.862876254180602,
+                "expected_latency_ms": 5556.387058554661,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.6872909698996655,
+                "cascade_accuracy": 0.8695652173913043,
+                "expected_latency_ms": 6560.511359393913,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.7842809364548495,
+                "cascade_accuracy": 0.8745819397993311,
+                "expected_latency_ms": 7484.943255404654,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.8963210702341137,
+                "cascade_accuracy": 0.8745819397993311,
+                "expected_latency_ms": 8552.821480106715,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.4,
+              "routed_fraction": 0.7842809364548495,
+              "cascade_accuracy": 0.8745819397993311,
+              "expected_latency_ms": 7484.943255404654,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 9.795682490221225,
+            "p95": 11.054680048982846,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.5002947199314045,
+            "naturalness": 0.29863397086584187,
+            "quality": 1.146487576543989,
+            "natural_swedish": 1.446481131806652
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.7751141552511416,
+              "ci95": [
+                0.747716894977169,
+                0.8036529680365296
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.10808282545412627,
+            "mean_score_chosen": 3.7723626724846335,
+            "mean_score_rejected": 3.196135492576199,
+            "spearman_vs_rating": 0.543645091577919,
+            "pearson_vs_rating": 0.5501379147181849,
+            "mae_vs_rating": 0.8801186654125065
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.7926421404682275,
+              "ci95": [
+                0.745819397993311,
+                0.8394648829431438
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.12489248510759754,
+            "mean_score_chosen": 3.773435397500885,
+            "mean_score_rejected": 3.1861630232445606,
+            "spearman_vs_rating": 0.519238044245074
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.9871104163133119,
+            "accuracy": {
+              "accuracy": 0.9230769230769231,
+              "ci95": [
+                0.9132379248658319,
+                0.9338103756708408
+              ],
+              "n": 2236
+            },
+            "ece": 0.01550794219338087,
+            "natural_flagged_translationese": 0.018783542039355994,
+            "translationese_passed_as_natural": 0.13506261180679785,
+            "within_pair_natural_scores_higher": 0.981216457960644
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.04965753424657534,
+            "mean_p_natural": 0.9175941310192571
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.02508361204013378,
+            "mean_p_natural": 0.943140216065906
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 6.021106499247253,
+            "p95": 9.93567164914565,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9874776386404294,
+            "ci95": [
+              0.981216457960644,
+              0.9928667262969587
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.7454337899543378,
+            "ci95": [
+              0.7157248858447488,
+              0.773972602739726
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.7692307692307693,
+            "ci95": [
+              0.7224080267558528,
+              0.8160535117056856
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.5883333333333334,
+            "ci95": [
+              0.55,
+              0.6283333333333333
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.5216666666666666,
+            "ci95": [
+              0.48,
+              0.5616874999999999
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.6083333333333333,
+            "ci95": [
+              0.57,
+              0.65
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.5847159376571142,
+            "ci95": [
+              0.5641025641025641,
+              0.6053293112116641
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.5447461035696329,
+            "ci95": [
+              0.5223667672197084,
+              0.5673705379587732
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.7325289089994972,
+            "ci95": [
+              0.7134112619406737,
+              0.7521367521367521
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.5215626585489599,
+            "ci95": [
+              0.5007610350076104,
+              0.54337899543379
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.6177067478437341,
+            "ci95": [
+              0.5966514459665144,
+              0.639529426686961
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.5456790123456791,
+            "ci95": [
+              0.5287037037037037,
+              0.5626543209876543
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.6524691358024691,
+            "ci95": [
+              0.6370370370370371,
+              0.6691358024691358
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.3246445497630332,
+            "ci95": [
+              0.2938388625592417,
+              0.35545023696682465
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.8193127962085308,
+            "ci95": [
+              0.7938388625592417,
+              0.84480154028436
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.7628205128205128,
+            "ci95": [
+              0.7350427350427351,
+              0.7895299145299145
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6688034188034188,
+            "ci95": [
+              0.6388888888888888,
+              0.6976495726495726
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.6670366259711432,
+            "ci95": [
+              0.6370699223085461,
+              0.6970033296337403
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.5471698113207547,
+            "ci95": [
+              0.5149833518312985,
+              0.5804661487236404
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.8169014084507042,
+            "ci95": [
+              0.7927565392354124,
+              0.8420523138832998
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.6911468812877264,
+            "ci95": [
+              0.6629778672032193,
+              0.721327967806841
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.8542713567839196,
+            "ci95": [
+              0.8321608040201005,
+              0.8763819095477386
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.7557788944723618,
+            "ci95": [
+              0.7286432160804021,
+              0.7819095477386935
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.8630952380952381,
+            "ci95": [
+              0.8422619047619048,
+              0.8839285714285714
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.7380952380952381,
+            "ci95": [
+              0.7113095238095238,
+              0.7648809523809523
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.8881188118811881,
+            "ci95": [
+              0.8692821782178218,
+              0.907920792079208
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.7821782178217822,
+            "ci95": [
+              0.7564356435643564,
+              0.807920792079208
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.1780821917808219,
+            "ci95": [
+              0.1278538812785388,
+              0.228310502283105
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.51220703125,
+            "ci95": [
+              0.49072265625,
+              0.53271484375
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.5322265625,
+            "ci95": [
+              0.5107421875,
+              0.552734375
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "fluent_flagged_translationese": {
+            "mean": 0.04908675799086758,
+            "ci95": [
+              0.039383561643835614,
+              0.0593607305936073
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.054857416677390095,
+            "mcc@val_threshold": 0.08898305744934283,
+            "val_threshold": 0.6831160018656145,
+            "auc": 0.5644526481628418,
+            "flagged_incorrect": 0.05224609375,
+            "n": 2048
+          }
+        }
+      },
+      "native": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": false,
+            "eval_batch": 32,
+            "seed": 20261014,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "none"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 129965,
+          "train_units_by_source_question": {
+            "original/preference": 12750,
+            "original/naturalness": 12750,
+            "fluent/preference": 9921,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842,
+            "dalaj/naturalness": 16365,
+            "swefaq/preference": 3074
+          },
+          "optimizer_updates": 8123,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.47843530650468946,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.0954079375806466,
+                  "acc": 0.9594285714285714,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.17236414875285916,
+                  "acc": 0.9373881932021467,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.044266202610833784,
+                  "acc": 0.9838998211091234,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.06539660949926272,
+                  "acc": 0.9838998211091234,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.364236222770065,
+                  "acc": 0.439117199391172,
+                  "n": 1750,
+                  "mae": 0.8687679846283947
+                },
+                "fluent/preference": {
+                  "loss": 0.5747272553217481,
+                  "acc": 0.744,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.742789718108551,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.43702687066342377
+              },
+              "epoch_seconds": 5228.841711656001
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 5229.633084449,
+          "per_epoch_seconds": [
+            5228.841711656001
+          ],
+          "peak_gpu_memory_allocated_gib": 10.725080966949463,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.5650350606488608,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.27025621233134717,
+            "nll_post": 0.2501803421341654,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.45625550937124415,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.060926228186101196,
+            "nll_post": 0.049347213122209216,
+            "within_laya_clamp": false
+          },
+          "quality": {
+            "temperature": 1.1764588120381514,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.364052476240481,
+            "nll_post": 1.35954249244045,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.4089891432268487,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.13810372670932575,
+            "nll_post": 0.12816568971678974,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_native_eval",
+          "temperatures": {
+            "preference": 1.5650350606488608,
+            "naturalness": 0.45625550937124415,
+            "quality": 1.1764588120381514,
+            "natural_swedish": 1.4089891432268487
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9843470483005367,
+              "ci95": [
+                0.9789803220035778,
+                0.9892665474060823
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9901610017889088,
+              "ci95": [
+                0.9838998211091234,
+                0.9955277280858676
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.983005366726297,
+            "accuracy_chosen_in_b": 0.9856887298747764,
+            "positional_consistency": 0.9847942754919499,
+            "ece_both_orders": 0.013859928708111337,
+            "mean_confidence": 0.9724214924035993,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9767441860465116,
+              "accuracy_on_covered": 0.9917582417582418
+            },
+            "ece_order_averaged": 0.02337020302892371,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9785330948121646,
+              "accuracy_on_covered": 0.9954296160877514,
+              "accuracy_on_routed": 0.75
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9838998211091234,
+              "ci95": [
+                0.9785330948121646,
+                0.988819320214669
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9892665474060823,
+              "ci95": [
+                0.983005366726297,
+                0.9946332737030411
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9883720930232558,
+            "accuracy_chosen_in_b": 0.9794275491949911,
+            "positional_consistency": 0.9776386404293381,
+            "ece_both_orders": 0.009534946035994892,
+            "mean_confidence": 0.9745954087412942,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9610912343470484,
+              "accuracy_on_covered": 0.9962773382968823
+            },
+            "ece_order_averaged": 0.017463279444334172,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9579606440071556,
+              "accuracy_on_covered": 0.9981325863678805,
+              "accuracy_on_routed": 0.7872340425531915
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.7625570776255708,
+              "ci95": [
+                0.7431506849315068,
+                0.7819634703196348
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7785388127853882,
+              "ci95": [
+                0.7511415525114156,
+                0.8070776255707762
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.7420091324200914,
+            "accuracy_chosen_in_b": 0.7831050228310502,
+            "positional_consistency": 0.8493150684931506,
+            "ece_both_orders": 0.017218795165598412,
+            "mean_confidence": 0.7752043935422371,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6666666666666666,
+              "accuracy_on_covered": 0.851027397260274
+            },
+            "ece_order_averaged": 0.01727702615521722,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.634703196347032,
+              "accuracy_on_covered": 0.8651079136690647,
+              "accuracy_on_routed": 0.628125
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.07597220099328027,
+            "fraction_within_0.2": 0.8835616438356164
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.7709030100334449,
+              "ci95": [
+                0.7390886287625418,
+                0.8060200668896321
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7859531772575251,
+              "ci95": [
+                0.7391304347826086,
+                0.8294314381270903
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.7759197324414716,
+            "accuracy_chosen_in_b": 0.7658862876254181,
+            "positional_consistency": 0.8963210702341137,
+            "ece_both_orders": 0.037737028260136744,
+            "mean_confidence": 0.7748478206086955,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6538461538461539,
+              "accuracy_on_covered": 0.887468030690537
+            },
+            "ece_order_averaged": 0.038920170594811995,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6321070234113713,
+              "accuracy_on_covered": 0.8994708994708994,
+              "accuracy_on_routed": 0.5909090909090909
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.36789297658862874,
+                "accuracy": 0.5909090909090909
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.38127090301003347,
+                "accuracy": 0.8508771929824561
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.2508361204013378,
+                "accuracy": 0.9733333333333334
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.07787776071016952,
+            "fraction_within_0.2": 0.8862876254180602
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.7709030100334449,
+                "expected_latency_ms": 9.800126506888773,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.08361204013377926,
+                "cascade_accuracy": 0.8093645484949833,
+                "expected_latency_ms": 806.7241747920095,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.1705685618729097,
+                "cascade_accuracy": 0.8394648829431438,
+                "expected_latency_ms": 1635.5251850085351,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.25752508361204013,
+                "cascade_accuracy": 0.8545150501672241,
+                "expected_latency_ms": 2464.3261952250605,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.34615384615384615,
+                "cascade_accuracy": 0.8779264214046822,
+                "expected_latency_ms": 3309.0656864072885,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.41304347826086957,
+                "cascade_accuracy": 0.8896321070234113,
+                "expected_latency_ms": 3946.6049250353853,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.49665551839464883,
+                "cascade_accuracy": 0.8896321070234113,
+                "expected_latency_ms": 4743.528973320506,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.6103678929765887,
+                "cascade_accuracy": 0.8879598662207357,
+                "expected_latency_ms": 5827.34567898827,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.7240802675585284,
+                "cascade_accuracy": 0.8729096989966555,
+                "expected_latency_ms": 6911.162384656034,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.8729096989966555,
+                "cascade_accuracy": 0.8662207357859532,
+                "expected_latency_ms": 8329.687190603549,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.25,
+              "routed_fraction": 0.41304347826086957,
+              "cascade_accuracy": 0.8896321070234113,
+              "expected_latency_ms": 3946.6049250353853,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 9.800126506888773,
+            "p95": 11.053933096991386,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.5650350606488608,
+            "naturalness": 0.45625550937124415,
+            "quality": 1.1764588120381514,
+            "natural_swedish": 1.4089891432268487
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.8059360730593608,
+              "ci95": [
+                0.7807933789954338,
+                0.832220319634703
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.12041936366918939,
+            "mean_score_chosen": 3.8114184186464,
+            "mean_score_rejected": 3.1676219180166014,
+            "spearman_vs_rating": 0.569460231313004,
+            "pearson_vs_rating": 0.5756449895491236,
+            "mae_vs_rating": 0.8482811438332312
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.8193979933110368,
+              "ci95": [
+                0.7725752508361204,
+                0.862876254180602
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.12562516220798473,
+            "mean_score_chosen": 3.830588469023384,
+            "mean_score_rejected": 3.1403043772518235,
+            "spearman_vs_rating": 0.5604632536211389
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.9923259334167517,
+            "accuracy": {
+              "accuracy": 0.936046511627907,
+              "ci95": [
+                0.9253130590339893,
+                0.9463327370304114
+              ],
+              "n": 2236
+            },
+            "ece": 0.021822205838513378,
+            "natural_flagged_translationese": 0.013416815742397137,
+            "translationese_passed_as_natural": 0.11449016100178891,
+            "within_pair_natural_scores_higher": 0.9838998211091234
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.04052511415525114,
+            "mean_p_natural": 0.9330692755118187
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.013377926421404682,
+            "mean_p_natural": 0.9600300451883136
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 5.994803497742396,
+            "p95": 9.892261961795146,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9901610017889088,
+            "ci95": [
+              0.9838998211091234,
+              0.9955277280858676
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.776255707762557,
+            "ci95": [
+              0.7488584474885844,
+              0.8047945205479452
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.7892976588628763,
+            "ci95": [
+              0.745819397993311,
+              0.8327759197324415
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.47333333333333333,
+            "ci95": [
+              0.435,
+              0.5133333333333333
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.4841666666666667,
+            "ci95": [
+              0.4475,
+              0.5241666666666667
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.395,
+            "ci95": [
+              0.355,
+              0.43333333333333335
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.5952740070387129,
+            "ci95": [
+              0.5736551030668677,
+              0.6168929110105581
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.6148818501759679,
+            "ci95": [
+              0.5942684766214178,
+              0.6359979889391654
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.5299145299145299,
+            "ci95": [
+              0.5082956259426847,
+              0.5520361990950227
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.9081684424150177,
+            "ci95": [
+              0.8954845256215119,
+              0.920865043125317
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.7831050228310502,
+            "ci95": [
+              0.7648401826484018,
+              0.8013698630136986
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.8867283950617284,
+            "ci95": [
+              0.8762345679012346,
+              0.8978395061728395
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.766358024691358,
+            "ci95": [
+              0.7515432098765432,
+              0.7811728395061729
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.9454976303317536,
+            "ci95": [
+              0.9289099526066351,
+              0.9597156398104265
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.8862559241706162,
+            "ci95": [
+              0.8625592417061612,
+              0.9075829383886256
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.6207264957264957,
+            "ci95": [
+              0.5886752136752137,
+              0.6517094017094017
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6891025641025641,
+            "ci95": [
+              0.6602564102564102,
+              0.717948717948718
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.41731409544950054,
+            "ci95": [
+              0.3851276359600444,
+              0.44950055493895674
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.45615982241953384,
+            "ci95": [
+              0.42508324084350724,
+              0.48834628190899
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.38028169014084506,
+            "ci95": [
+              0.3501006036217304,
+              0.4124748490945674
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.5140845070422535,
+            "ci95": [
+              0.482897384305835,
+              0.5472837022132797
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.35577889447236183,
+            "ci95": [
+              0.3256281407035176,
+              0.3869346733668342
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.5055276381909548,
+            "ci95": [
+              0.47535175879396985,
+              0.535678391959799
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.36607142857142855,
+            "ci95": [
+              0.3382936507936508,
+              0.3948660714285713
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.4732142857142857,
+            "ci95": [
+              0.44146825396825395,
+              0.5039930555555554
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.36237623762376237,
+            "ci95": [
+              0.3326732673267327,
+              0.3910891089108911
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.4485148514851485,
+            "ci95": [
+              0.4178217821782178,
+              0.4792079207920792
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.2785388127853881,
+            "ci95": [
+              0.2191780821917808,
+              0.3378995433789954
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.55712890625,
+            "ci95": [
+              0.5361328125,
+              0.5771484375
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.546875,
+            "ci95": [
+              0.52537841796875,
+              0.5673828125
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "fluent_flagged_translationese": {
+            "mean": 0.04052511415525114,
+            "ci95": [
+              0.03139269406392694,
+              0.04965753424657534
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.16704623690570633,
+            "mcc@val_threshold": 0.15387460962256405,
+            "val_threshold": 0.421638437217004,
+            "auc": 0.645087718963623,
+            "flagged_incorrect": 0.13525390625,
+            "n": 2048
+          }
+        }
+      },
+      "both": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": false,
+            "eval_batch": 32,
+            "seed": 20261014,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "none"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 153965,
+          "train_units_by_source_question": {
+            "original/preference": 12750,
+            "original/naturalness": 12750,
+            "fluent/preference": 9921,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842,
+            "europarl/preference": 12000,
+            "europarl/naturalness": 12000,
+            "dalaj/naturalness": 16365,
+            "swefaq/preference": 3074
+          },
+          "optimizer_updates": 9623,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.4958075076632725,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.10265877571589979,
+                  "acc": 0.9662857142857143,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.17451280708959865,
+                  "acc": 0.9347048300536672,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.04063346737344632,
+                  "acc": 0.9838998211091234,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.06896860411158058,
+                  "acc": 0.9776386404293381,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.3766440384489085,
+                  "acc": 0.4345509893455099,
+                  "n": 1750,
+                  "mae": 0.8875849493069441
+                },
+                "fluent/preference": {
+                  "loss": 0.6049048809125546,
+                  "acc": 0.7348571428571429,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.7506373950151194,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.4455657098095868
+              },
+              "epoch_seconds": 6008.814582296996
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 6009.688530956992,
+          "per_epoch_seconds": [
+            6008.814582296996
+          ],
+          "peak_gpu_memory_allocated_gib": 10.725080966949463,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.685415321069174,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.2837649086850208,
+            "nll_post": 0.25769721875052987,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.5514446777009192,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.06526280456493419,
+            "nll_post": 0.05649716950503354,
+            "within_laya_clamp": true
+          },
+          "quality": {
+            "temperature": 1.155198948679743,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.376587783908922,
+            "nll_post": 1.3731482522846152,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.4084914574666136,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.14297290623610065,
+            "nll_post": 0.13308727556970892,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_both_eval",
+          "temperatures": {
+            "preference": 1.685415321069174,
+            "naturalness": 0.5514446777009192,
+            "quality": 1.155198948679743,
+            "natural_swedish": 1.4084914574666136
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9874776386404294,
+              "ci95": [
+                0.9825581395348837,
+                0.9915026833631485
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9892665474060823,
+              "ci95": [
+                0.9821109123434705,
+                0.9946332737030411
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9874776386404294,
+            "accuracy_chosen_in_b": 0.9874776386404294,
+            "positional_consistency": 0.9928443649373881,
+            "ece_both_orders": 0.015747640829451542,
+            "mean_confidence": 0.9726762582198499,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9758497316636852,
+              "accuracy_on_covered": 0.9931255728689276
+            },
+            "ece_order_averaged": 0.016978479450840838,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.981216457960644,
+              "accuracy_on_covered": 0.9936189608021878,
+              "accuracy_on_routed": 0.7619047619047619
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9856887298747764,
+              "ci95": [
+                0.9803220035778175,
+                0.9901610017889088
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9856887298747764,
+              "ci95": [
+                0.9785330948121646,
+                0.9919499105545617
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9856887298747764,
+            "accuracy_chosen_in_b": 0.9856887298747764,
+            "positional_consistency": 0.9919499105545617,
+            "ece_both_orders": 0.014440567117016542,
+            "mean_confidence": 0.9718220027333866,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9637745974955277,
+              "accuracy_on_covered": 0.9930394431554525
+            },
+            "ece_order_averaged": 0.016332613275333946,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9660107334525939,
+              "accuracy_on_covered": 0.9935185185185185,
+              "accuracy_on_routed": 0.7631578947368421
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.7636986301369864,
+              "ci95": [
+                0.7442922374429224,
+                0.7825342465753424
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.776255707762557,
+              "ci95": [
+                0.747716894977169,
+                0.8047945205479452
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.7648401826484018,
+            "accuracy_chosen_in_b": 0.7625570776255708,
+            "positional_consistency": 0.8595890410958904,
+            "ece_both_orders": 0.02036926493063316,
+            "mean_confidence": 0.7582387975137524,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6027397260273972,
+              "accuracy_on_covered": 0.8693181818181818
+            },
+            "ece_order_averaged": 0.02833415195218765,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.593607305936073,
+              "accuracy_on_covered": 0.8711538461538462,
+              "accuracy_on_routed": 0.6376404494382022
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.1040659390404791,
+            "fraction_within_0.2": 0.8424657534246576
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.7625418060200669,
+              "ci95": [
+                0.7290969899665551,
+                0.7976588628762542
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7692307692307693,
+              "ci95": [
+                0.7190635451505016,
+                0.8127090301003345
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.7692307692307693,
+            "accuracy_chosen_in_b": 0.7558528428093646,
+            "positional_consistency": 0.9130434782608695,
+            "ece_both_orders": 0.05374062917150016,
+            "mean_confidence": 0.7692681072830063,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6304347826086957,
+              "accuracy_on_covered": 0.8859416445623343
+            },
+            "ece_order_averaged": 0.043773443937167124,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6220735785953178,
+              "accuracy_on_covered": 0.9032258064516129,
+              "accuracy_on_routed": 0.5486725663716814
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.3779264214046823,
+                "accuracy": 0.5486725663716814
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.3745819397993311,
+                "accuracy": 0.8571428571428571
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.24749163879598662,
+                "accuracy": 0.972972972972973
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.10851155867535608,
+            "fraction_within_0.2": 0.822742474916388
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.7625418060200669,
+                "expected_latency_ms": 9.857941993686836,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.08193979933110368,
+                "cascade_accuracy": 0.802675585284281,
+                "expected_latency_ms": 790.8435093131052,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.17892976588628762,
+                "cascade_accuracy": 0.8294314381270903,
+                "expected_latency_ms": 1715.275405323845,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.27759197324414714,
+                "cascade_accuracy": 0.8561872909698997,
+                "expected_latency_ms": 2655.6457823002875,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.3695652173913043,
+                "cascade_accuracy": 0.8729096989966555,
+                "expected_latency_ms": 3532.2622354139203,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.44481605351170567,
+                "cascade_accuracy": 0.8846153846153846,
+                "expected_latency_ms": 4249.4938788705285,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.5267558528428093,
+                "cascade_accuracy": 0.8795986622073578,
+                "expected_latency_ms": 5030.479446189947,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.6086956521739131,
+                "cascade_accuracy": 0.8812709030100334,
+                "expected_latency_ms": 5811.465013509366,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.717391304347826,
+                "cascade_accuracy": 0.8795986622073578,
+                "expected_latency_ms": 6847.466276280023,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.8862876254180602,
+                "cascade_accuracy": 0.8745819397993311,
+                "expected_latency_ms": 8457.252853815966,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.25,
+              "routed_fraction": 0.44481605351170567,
+              "cascade_accuracy": 0.8846153846153846,
+              "expected_latency_ms": 4249.4938788705285,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 9.857941993686836,
+            "p95": 11.089698896830669,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.685415321069174,
+            "naturalness": 0.5514446777009192,
+            "quality": 1.155198948679743,
+            "natural_swedish": 1.4084914574666136
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.7796803652968036,
+              "ci95": [
+                0.7511415525114156,
+                0.8070776255707762
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.10759524638444395,
+            "mean_score_chosen": 3.7962991115856726,
+            "mean_score_rejected": 3.16172746896333,
+            "spearman_vs_rating": 0.5601477169166241,
+            "pearson_vs_rating": 0.5692310477265738,
+            "mae_vs_rating": 0.859853754586743
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.782608695652174,
+              "ci95": [
+                0.7357023411371237,
+                0.8294314381270903
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.11315834392511379,
+            "mean_score_chosen": 3.796626052222719,
+            "mean_score_rejected": 3.165052383653458,
+            "spearman_vs_rating": 0.5247886559109934
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.990928248437505,
+            "accuracy": {
+              "accuracy": 0.9253130590339893,
+              "ci95": [
+                0.9145796064400715,
+                0.936046511627907
+              ],
+              "n": 2236
+            },
+            "ece": 0.021534385374772702,
+            "natural_flagged_translationese": 0.013416815742397137,
+            "translationese_passed_as_natural": 0.13595706618962433,
+            "within_pair_natural_scores_higher": 0.9856887298747764
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.03767123287671233,
+            "mean_p_natural": 0.9348431940495886
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.011705685618729096,
+            "mean_p_natural": 0.9578038396942332
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 6.1359229948720895,
+            "p95": 9.908951203396999,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9901610017889088,
+            "ci95": [
+              0.9838998211091234,
+              0.9955277280858676
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.7773972602739726,
+            "ci95": [
+              0.7488584474885844,
+              0.8059360730593608
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.7692307692307693,
+            "ci95": [
+              0.7190635451505016,
+              0.8127090301003345
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.5366666666666666,
+            "ci95": [
+              0.49666666666666665,
+              0.575
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.53,
+            "ci95": [
+              0.48833333333333334,
+              0.57
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.5033333333333333,
+            "ci95": [
+              0.4633333333333333,
+              0.5433333333333333
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.6098541980894923,
+            "ci95": [
+              0.5882227249874309,
+              0.6314856711915534
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.6103569632981398,
+            "ci95": [
+              0.5897435897435898,
+              0.6317307692307692
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.7702362996480644,
+            "ci95": [
+              0.7516339869281046,
+              0.7883358471593765
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.8772196854388635,
+            "ci95": [
+              0.8630010147133435,
+              0.8914256722475901
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.7440385591070523,
+            "ci95": [
+              0.7245053272450532,
+              0.7633244545915779
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.8746913580246913,
+            "ci95": [
+              0.8638888888888889,
+              0.8864197530864197
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.6802469135802469,
+            "ci95": [
+              0.6645061728395062,
+              0.6962962962962963
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.8921800947867299,
+            "ci95": [
+              0.8708530805687204,
+              0.9111374407582938
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.8483412322274881,
+            "ci95": [
+              0.8234597156398105,
+              0.8726303317535545
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.7489316239316239,
+            "ci95": [
+              0.7211538461538461,
+              0.7745726495726496
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6666666666666666,
+            "ci95": [
+              0.6367521367521367,
+              0.6966079059829058
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.7180910099889012,
+            "ci95": [
+              0.6892341842397336,
+              0.7469478357380688
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.5194228634850167,
+            "ci95": [
+              0.4872364039955605,
+              0.5527192008879024
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.8410462776659959,
+            "ci95": [
+              0.817907444668008,
+              0.8651911468812877
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.6730382293762576,
+            "ci95": [
+              0.641851106639839,
+              0.7012072434607646
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.878391959798995,
+            "ci95": [
+              0.8562814070351759,
+              0.8974874371859296
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.7557788944723618,
+            "ci95": [
+              0.7286180904522613,
+              0.7829145728643216
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.8621031746031746,
+            "ci95": [
+              0.8402777777777778,
+              0.8819444444444444
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.7351190476190477,
+            "ci95": [
+              0.7093005952380953,
+              0.7619047619047619
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.9099009900990099,
+            "ci95": [
+              0.8920792079207921,
+              0.9277227722772278
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.7930693069306931,
+            "ci95": [
+              0.7683168316831683,
+              0.8178217821782178
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.2009132420091324,
+            "ci95": [
+              0.1506849315068493,
+              0.2557077625570776
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.52734375,
+            "ci95": [
+              0.505859375,
+              0.5478637695312499
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.578125,
+            "ci95": [
+              0.556640625,
+              0.59814453125
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "fluent_flagged_translationese": {
+            "mean": 0.03767123287671233,
+            "ci95": [
+              0.02910958904109589,
+              0.04680365296803653
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.11379575531460605,
+            "mcc@val_threshold": 0.15625268227808162,
+            "val_threshold": 0.8484190478922139,
+            "auc": 0.6089029312133789,
+            "flagged_incorrect": 0.0615234375,
+            "n": 2048
+          }
+        }
+      },
+      "control-s20261015": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": false,
+            "eval_batch": 32,
+            "seed": 20261015,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "none"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 110526,
+          "train_units_by_source_question": {
+            "original/preference": 12750,
+            "original/naturalness": 12750,
+            "fluent/preference": 9921,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842
+          },
+          "optimizer_updates": 6908,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.4903687483593365,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.1073757683735657,
+                  "acc": 0.9617142857142857,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.16901343561258003,
+                  "acc": 0.9387298747763864,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.03191041738782367,
+                  "acc": 0.9883720930232558,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.05753247811797493,
+                  "acc": 0.9874776386404294,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.382449752951307,
+                  "acc": 0.4277016742770167,
+                  "n": 1750,
+                  "mae": 0.865731112925369
+                },
+                "fluent/preference": {
+                  "loss": 0.5757652581381242,
+                  "acc": 0.7428571428571429,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.7290216249217379,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.43615267650044476
+              },
+              "epoch_seconds": 4558.030549215997
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 4558.6795707990095,
+          "per_epoch_seconds": [
+            4558.030549215997
+          ],
+          "peak_gpu_memory_allocated_gib": 10.725080966949463,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.6900182409687874,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.27159837704755924,
+            "nll_post": 0.24439524288512243,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.4206755620816308,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.05605264086794572,
+            "nll_post": 0.04463964978128899,
+            "within_laya_clamp": false
+          },
+          "quality": {
+            "temperature": 1.3217435367339125,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.3825466821132,
+            "nll_post": 1.3680652126698951,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.5159548607755746,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.1419328854821822,
+            "nll_post": 0.1274578895337657,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_control-s20261015_eval",
+          "temperatures": {
+            "preference": 1.6900182409687874,
+            "naturalness": 0.4206755620816308,
+            "quality": 1.3217435367339125,
+            "natural_swedish": 1.5159548607755746
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9861359570661896,
+              "ci95": [
+                0.981216457960644,
+                0.990608228980322
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9901610017889088,
+              "ci95": [
+                0.9838998211091234,
+                0.9955277280858676
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9803220035778175,
+            "accuracy_chosen_in_b": 0.9919499105545617,
+            "positional_consistency": 0.9865831842576028,
+            "ece_both_orders": 0.013800042375486168,
+            "mean_confidence": 0.9729574429397397,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9740608228980322,
+              "accuracy_on_covered": 0.9954086317722681
+            },
+            "ece_order_averaged": 0.018546968284567318,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9731663685152058,
+              "accuracy_on_covered": 0.9954044117647058,
+              "accuracy_on_routed": 0.8
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9856887298747764,
+              "ci95": [
+                0.9807692307692307,
+                0.990608228980322
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9892665474060823,
+              "ci95": [
+                0.983005366726297,
+                0.9946332737030411
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9838998211091234,
+            "accuracy_chosen_in_b": 0.9874776386404294,
+            "positional_consistency": 0.9838998211091234,
+            "ece_both_orders": 0.014909171950339396,
+            "mean_confidence": 0.9726340040821406,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9570661896243292,
+              "accuracy_on_covered": 0.9957943925233644
+            },
+            "ece_order_averaged": 0.02009970439996856,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9579606440071556,
+              "accuracy_on_covered": 0.9981325863678805,
+              "accuracy_on_routed": 0.7872340425531915
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.7636986301369864,
+              "ci95": [
+                0.7431506849315068,
+                0.7831192922374428
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7648401826484018,
+              "ci95": [
+                0.7363013698630136,
+                0.7922374429223744
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.7557077625570776,
+            "accuracy_chosen_in_b": 0.771689497716895,
+            "positional_consistency": 0.8835616438356164,
+            "ece_both_orders": 0.026816403989492043,
+            "mean_confidence": 0.7776814154158803,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6752283105022832,
+              "accuracy_on_covered": 0.852916314454776
+            },
+            "ece_order_averaged": 0.02765930972799271,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6415525114155252,
+              "accuracy_on_covered": 0.8629893238434164,
+              "accuracy_on_routed": 0.589171974522293
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.07835494460328778,
+            "fraction_within_0.2": 0.889269406392694
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.7575250836120402,
+              "ci95": [
+                0.7224080267558528,
+                0.794314381270903
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.782608695652174,
+              "ci95": [
+                0.7357859531772575,
+                0.8260869565217391
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.7357859531772575,
+            "accuracy_chosen_in_b": 0.7792642140468228,
+            "positional_consistency": 0.8561872909698997,
+            "ece_both_orders": 0.02158824954288649,
+            "mean_confidence": 0.7736294875194993,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6555183946488294,
+              "accuracy_on_covered": 0.8596938775510204
+            },
+            "ece_order_averaged": 0.036716983189595306,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6254180602006689,
+              "accuracy_on_covered": 0.8663101604278075,
+              "accuracy_on_routed": 0.6428571428571429
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.3745819397993311,
+                "accuracy": 0.6428571428571429
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.35785953177257523,
+                "accuracy": 0.794392523364486
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.26755852842809363,
+                "accuracy": 0.9625
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.07971211890936893,
+            "fraction_within_0.2": 0.8662207357859532
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.7575250836120402,
+                "expected_latency_ms": 9.787396003957838,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.09531772575250837,
+                "cascade_accuracy": 0.7976588628762542,
+                "expected_latency_ms": 918.2808110489955,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.17892976588628762,
+                "cascade_accuracy": 0.8327759197324415,
+                "expected_latency_ms": 1715.204859334116,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.25752508361204013,
+                "cascade_accuracy": 0.8494983277591973,
+                "expected_latency_ms": 2464.3134647221295,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.34448160535117056,
+                "cascade_accuracy": 0.8662207357859532,
+                "expected_latency_ms": 3293.1144749386553,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.41638795986622074,
+                "cascade_accuracy": 0.8762541806020067,
+                "expected_latency_ms": 3978.4691564638592,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.5,
+                "cascade_accuracy": 0.8762541806020067,
+                "expected_latency_ms": 4775.39320474898,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.5903010033444817,
+                "cascade_accuracy": 0.8779264214046822,
+                "expected_latency_ms": 5636.07117689691,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.7240802675585284,
+                "cascade_accuracy": 0.8846153846153846,
+                "expected_latency_ms": 6911.149654153103,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.9130434782608695,
+                "cascade_accuracy": 0.8795986622073578,
+                "expected_latency_ms": 8712.198003277475,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.4,
+              "routed_fraction": 0.7240802675585284,
+              "cascade_accuracy": 0.8846153846153846,
+              "expected_latency_ms": 6911.149654153103,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 9.787396003957838,
+            "p95": 11.029161699843826,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.6900182409687874,
+            "naturalness": 0.4206755620816308,
+            "quality": 1.3217435367339125,
+            "natural_swedish": 1.5159548607755746
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.776255707762557,
+              "ci95": [
+                0.7488584474885844,
+                0.8036529680365296
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.10548265912139604,
+            "mean_score_chosen": 3.79268725513985,
+            "mean_score_rejected": 3.162837287461711,
+            "spearman_vs_rating": 0.5511098910065433,
+            "pearson_vs_rating": 0.558541527239567,
+            "mae_vs_rating": 0.8655440034632226
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.7993311036789298,
+              "ci95": [
+                0.7525083612040134,
+                0.842809364548495
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.11772870873958129,
+            "mean_score_chosen": 3.8030237791427814,
+            "mean_score_rejected": 3.143780319167615,
+            "spearman_vs_rating": 0.5351176694781562
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.9917314972750343,
+            "accuracy": {
+              "accuracy": 0.9333631484794276,
+              "ci95": [
+                0.9230769230769231,
+                0.9440966010733453
+              ],
+              "n": 2236
+            },
+            "ece": 0.015730472180658994,
+            "natural_flagged_translationese": 0.007155635062611807,
+            "translationese_passed_as_natural": 0.1261180679785331,
+            "within_pair_natural_scores_higher": 0.9865831842576028
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.03824200913242009,
+            "mean_p_natural": 0.9328146513637091
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.023411371237458192,
+            "mean_p_natural": 0.9514885721766734
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 6.028916002833284,
+            "p95": 9.924330955254835,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9901610017889088,
+            "ci95": [
+              0.9838998211091234,
+              0.9955277280858676
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.7659817351598174,
+            "ci95": [
+              0.7374429223744292,
+              0.79337899543379
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.7792642140468228,
+            "ci95": [
+              0.7324414715719063,
+              0.8260869565217391
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.44333333333333336,
+            "ci95": [
+              0.4033333333333333,
+              0.485
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.5283333333333333,
+            "ci95": [
+              0.49,
+              0.57
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.3466666666666667,
+            "ci95": [
+              0.30833333333333335,
+              0.38333333333333336
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.5681246857717446,
+            "ci95": [
+              0.5469959778783309,
+              0.5897435897435898
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.6070889894419306,
+            "ci95": [
+              0.5859728506787331,
+              0.628456510809452
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.46153846153846156,
+            "ci95": [
+              0.4399195575666164,
+              0.48265460030165913
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.5712836123795028,
+            "ci95": [
+              0.549974632166413,
+              0.5931126331811263
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.6557584982242517,
+            "ci95": [
+              0.6349505327245053,
+              0.676566463723998
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.5996913580246913,
+            "ci95": [
+              0.5836342592592592,
+              0.6160493827160494
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.649074074074074,
+            "ci95": [
+              0.632091049382716,
+              0.6660493827160494
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.816350710900474,
+            "ci95": [
+              0.7890995260663507,
+              0.8424170616113744
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.8542654028436019,
+            "ci95": [
+              0.8299763033175356,
+              0.8779620853080569
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.5576923076923077,
+            "ci95": [
+              0.5267094017094017,
+              0.5886752136752137
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6420940170940171,
+            "ci95": [
+              0.6132211538461539,
+              0.6741452991452992
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.42508324084350724,
+            "ci95": [
+              0.39178690344062156,
+              0.4572697003329634
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.49278579356270813,
+            "ci95": [
+              0.4594894561598224,
+              0.5260821309655938
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.386317907444668,
+            "ci95": [
+              0.3551307847082495,
+              0.41750503018108653
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.5120724346076458,
+            "ci95": [
+              0.48088531187122735,
+              0.5432595573440644
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.39798994974874374,
+            "ci95": [
+              0.3688442211055276,
+              0.4291457286432161
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.5065326633165829,
+            "ci95": [
+              0.47738693467336685,
+              0.5386934673366834
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.38293650793650796,
+            "ci95": [
+              0.3531746031746032,
+              0.4126984126984127
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.5297619047619048,
+            "ci95": [
+              0.4990079365079365,
+              0.5595238095238095
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.3574257425742574,
+            "ci95": [
+              0.3297029702970297,
+              0.38715346534653455
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.500990099009901,
+            "ci95": [
+              0.47029702970297027,
+              0.5316831683168317
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.1643835616438356,
+            "ci95": [
+              0.1187214611872146,
+              0.2146118721461187
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.5283203125,
+            "ci95": [
+              0.5068359375,
+              0.5498046875
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.5634765625,
+            "ci95": [
+              0.54248046875,
+              0.5844848632812499
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "fluent_flagged_translationese": {
+            "mean": 0.03881278538812785,
+            "ci95": [
+              0.02968036529680365,
+              0.04794520547945205
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.09952598394883712,
+            "mcc@val_threshold": 0.12891573734869466,
+            "val_threshold": 0.8605464339147101,
+            "auc": 0.5958895683288574,
+            "flagged_incorrect": 0.0888671875,
+            "n": 2048
+          }
+        }
+      }
+    },
+    "design": {
+      "arms": {
+        "control": [],
+        "europarl": [
+          "europarl"
+        ],
+        "native": [
+          "dalaj",
+          "swefaq"
+        ],
+        "both": [
+          "europarl",
+          "dalaj",
+          "swefaq"
+        ]
+      },
+      "recipe": "v3 data and questions, 1 epoch, from the base checkpoint",
+      "europarl_train_pairs_target": 12000,
+      "swefaq_negatives_per_question": 4,
+      "near_duplicate_similarity": 0.95,
+      "seed": 20261014
+    },
+    "comparison": {
+      "against": "control",
+      "metric": "per-item difference in the share of items where the reference wins (guards: share flagged, lower is better); paired bootstrap over items",
+      "arms": {
+        "both": {
+          "original/preference": {
+            "diff": 0.0008944543828264759,
+            "ci95": [
+              -0.004472271914132379,
+              0.006261180679785331
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": 0.0,
+            "ci95": [
+              -0.0228310502283105,
+              0.0228310502283105
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": -0.013377926421404682,
+            "ci95": [
+              -0.05351170568561873,
+              0.026755852842809364
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.10166666666666667,
+            "ci95": [
+              0.04666666666666667,
+              0.155
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": 0.035,
+            "ci95": [
+              -0.014166666666666666,
+              0.08002083333333322
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": 0.13833333333333334,
+            "ci95": [
+              0.09,
+              0.185
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.05480140774258421,
+            "ci95": [
+              0.023629964806435394,
+              0.08446455505279035
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": 0.007541478129713424,
+            "ci95": [
+              -0.01483785822021116,
+              0.030165912518853696
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": 0.2986425339366516,
+            "ci95": [
+              0.2684766214177979,
+              0.3288084464555053
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": 0.27295788939624555,
+            "ci95": [
+              0.24860476915271434,
+              0.2983257229832572
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": 0.07635717909690512,
+            "ci95": [
+              0.05276509386098427,
+              0.09817351598173515
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": 0.26666666666666666,
+            "ci95": [
+              0.24906635802469138,
+              0.2845679012345679
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": 0.0015432098765432098,
+            "ci95": [
+              -0.010493827160493827,
+              0.013580246913580247
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "diff": 0.041469194312796206,
+            "ci95": [
+              0.015402843601895734,
+              0.06872037914691943
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": -0.004739336492890996,
+            "ci95": [
+              -0.0320053317535545,
+              0.02252665876777243
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.2329059829059829,
+            "ci95": [
+              0.18482905982905984,
+              0.2767094017094017
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": 0.021367521367521368,
+            "ci95": [
+              -0.019230769230769232,
+              0.06196581196581197
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.3174250832408435,
+            "ci95": [
+              0.27192008879023305,
+              0.36295782463928955
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": 0.033296337402885685,
+            "ci95": [
+              -0.011126526082130965,
+              0.07658157602663707
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.4647887323943662,
+            "ci95": [
+              0.4255533199195171,
+              0.506036217303823
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.1841046277665996,
+            "ci95": [
+              0.14084507042253522,
+              0.22738933601609643
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": 0.5195979899497487,
+            "ci95": [
+              0.48040201005025124,
+              0.5567839195979899
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.2693467336683417,
+            "ci95": [
+              0.22613065326633167,
+              0.31055276381909547
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.5059523809523809,
+            "ci95": [
+              0.4682291666666667,
+              0.5466269841269841
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": 0.24305555555555555,
+            "ci95": [
+              0.2013888888888889,
+              0.2837301587301587
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.5732673267326732,
+            "ci95": [
+              0.5386138613861386,
+              0.6099257425742572
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": 0.3326732673267327,
+            "ci95": [
+              0.29205445544554454,
+              0.3712871287128713
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": 0.0319634703196347,
+            "ci95": [
+              -0.0045662100456621,
+              0.0730593607305936
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": -0.00146484375,
+            "ci95": [
+              -0.01318359375,
+              0.009765625
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": 0.0087890625,
+            "ci95": [
+              -0.0126953125,
+              0.029296875
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": -0.007420091324200913,
+            "ci95": [
+              -0.015410958904109588,
+              0.001141552511415525
+            ],
+            "n": 1752
+          }
+        },
+        "control-s20261015": {
+          "original/preference": {
+            "diff": 0.0008944543828264759,
+            "ci95": [
+              -0.0035778175313059034,
+              0.005366726296958855
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": -0.01141552511415525,
+            "ci95": [
+              -0.03424657534246575,
+              0.011444063926940484
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": -0.0033444816053511705,
+            "ci95": [
+              -0.04013377926421405,
+              0.033444816053511704
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.008333333333333333,
+            "ci95": [
+              -0.03,
+              0.051666666666666666
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": 0.03333333333333333,
+            "ci95": [
+              -0.010833333333333334,
+              0.07583333333333334
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": -0.018333333333333333,
+            "ci95": [
+              -0.05333333333333334,
+              0.016666666666666666
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.013071895424836602,
+            "ci95": [
+              -0.007038712921065862,
+              0.033685268979386625
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": 0.004273504273504274,
+            "ci95": [
+              -0.015334338863750628,
+              0.023881347410759174
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": -0.010055304172951232,
+            "ci95": [
+              -0.03167420814479638,
+              0.011576168929110037
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": -0.03297818366311517,
+            "ci95": [
+              -0.055301877219685436,
+              -0.010641806189751465
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": -0.011922881785895484,
+            "ci95": [
+              -0.033999238964992386,
+              0.009386098427194317
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": -0.008333333333333333,
+            "ci95": [
+              -0.020061728395061727,
+              0.0030864197530864196
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": -0.02962962962962963,
+            "ci95": [
+              -0.042283950617283954,
+              -0.01728395061728395
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "diff": -0.034360189573459717,
+            "ci95": [
+              -0.0616409952606635,
+              -0.005924170616113744
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": 0.001184834123222749,
+            "ci95": [
+              -0.024881516587677725,
+              0.026673578199052052
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.041666666666666664,
+            "ci95": [
+              0.014957264957264958,
+              0.06840277777777763
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": -0.003205128205128205,
+            "ci95": [
+              -0.028846153846153848,
+              0.022462606837606692
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.0244173140954495,
+            "ci95": [
+              -0.006659267480577136,
+              0.05771365149833518
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": 0.006659267480577136,
+            "ci95": [
+              -0.025527192008879023,
+              0.041065482796892344
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.01006036217303823,
+            "ci95": [
+              -0.02012072434607646,
+              0.03724849094567391
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.023138832997987926,
+            "ci95": [
+              -0.007042253521126761,
+              0.05533199195171026
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": 0.03919597989949749,
+            "ci95": [
+              0.011055276381909548,
+              0.06633165829145729
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.020100502512562814,
+            "ci95": [
+              -0.010050251256281407,
+              0.05025125628140704
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.026785714285714284,
+            "ci95": [
+              -0.001984126984126984,
+              0.054563492063492064
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": 0.037698412698412696,
+            "ci95": [
+              0.007936507936507936,
+              0.06845238095238096
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.020792079207920793,
+            "ci95": [
+              -0.005940594059405941,
+              0.048514851485148516
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": 0.040594059405940595,
+            "ci95": [
+              0.009900990099009901,
+              0.07227722772277227
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": -0.0045662100456621,
+            "ci95": [
+              -0.045662100456621,
+              0.0365296803652968
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": -0.00048828125,
+            "ci95": [
+              -0.01171875,
+              0.0107421875
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": -0.005859375,
+            "ci95": [
+              -0.025390625,
+              0.01318359375
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": -0.006278538812785388,
+            "ci95": [
+              -0.014840182648401826,
+              0.00228310502283105
+            ],
+            "n": 1752
+          }
+        },
+        "europarl": {
+          "original/preference": {
+            "diff": -0.0017889087656529517,
+            "ci95": [
+              -0.008050089445438283,
+              0.004472271914132379
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": -0.0319634703196347,
+            "ci95": [
+              -0.05593607305936073,
+              -0.007962328767123442
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": -0.013377926421404682,
+            "ci95": [
+              -0.05016722408026756,
+              0.023494983277591516
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.15333333333333332,
+            "ci95": [
+              0.1,
+              0.21166666666666667
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": 0.02666666666666667,
+            "ci95": [
+              -0.024187499999999997,
+              0.07666666666666666
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": 0.24333333333333335,
+            "ci95": [
+              0.18833333333333332,
+              0.3
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.029663147310206132,
+            "ci95": [
+              -0.001005530417295123,
+              0.057817998994469585
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": -0.058069381598793365,
+            "ci95": [
+              -0.08220839617898441,
+              -0.03494218200100553
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": 0.2609351432880845,
+            "ci95": [
+              0.23127199597787834,
+              0.2921065862242333
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": -0.08269913749365804,
+            "ci95": [
+              -0.11619736174530694,
+              -0.04972095383054287
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": -0.049974632166412986,
+            "ci95": [
+              -0.07483510908168442,
+              -0.023839421613394248
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": -0.06234567901234568,
+            "ci95": [
+              -0.07654320987654321,
+              -0.04845679012345679
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": -0.026234567901234566,
+            "ci95": [
+              -0.03981481481481482,
+              -0.011728395061728396
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "diff": -0.5260663507109005,
+            "ci95": [
+              -0.5639810426540285,
+              -0.48578199052132703
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": -0.03376777251184834,
+            "ci95": [
+              -0.06577310426540284,
+              -0.0005924170616113745
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.2467948717948718,
+            "ci95": [
+              0.20619658119658119,
+              0.28739316239316237
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": 0.023504273504273504,
+            "ci95": [
+              -0.016025641025641024,
+              0.0641025641025641
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.2663706992230855,
+            "ci95": [
+              0.2241953385127636,
+              0.3129855715871254
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": 0.06104328523862375,
+            "ci95": [
+              0.016620421753607107,
+              0.10543840177580466
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.44064386317907445,
+            "ci95": [
+              0.4024144869215292,
+              0.4818913480885312
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.2022132796780684,
+            "ci95": [
+              0.16096579476861167,
+              0.24647887323943662
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": 0.49547738693467336,
+            "ci95": [
+              0.4562814070351759,
+              0.5346733668341709
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.2693467336683417,
+            "ci95": [
+              0.22914572864321608,
+              0.30756281407035163
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.5069444444444444,
+            "ci95": [
+              0.46825396825396826,
+              0.5466517857142855
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": 0.24603174603174602,
+            "ci95": [
+              0.20734126984126985,
+              0.2867063492063492
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.5514851485148515,
+            "ci95": [
+              0.5148514851485149,
+              0.5881188118811881
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": 0.3217821782178218,
+            "ci95": [
+              0.2831435643564356,
+              0.3613861386138614
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": 0.0091324200913242,
+            "ci95": [
+              -0.0273972602739726,
+              0.045662100456621
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": -0.0166015625,
+            "ci95": [
+              -0.0283203125,
+              -0.00439453125
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": -0.037109375,
+            "ci95": [
+              -0.064453125,
+              -0.0107421875
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": 0.003995433789954338,
+            "ci95": [
+              -0.005707762557077625,
+              0.014269406392694063
+            ],
+            "n": 1752
+          }
+        },
+        "native": {
+          "original/preference": {
+            "diff": 0.0008944543828264759,
+            "ci95": [
+              -0.0035778175313059034,
+              0.005366726296958855
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": -0.001141552511415525,
+            "ci95": [
+              -0.023972602739726026,
+              0.021689497716894976
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": 0.006688963210702341,
+            "ci95": [
+              -0.033444816053511704,
+              0.046822742474916385
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.03833333333333333,
+            "ci95": [
+              -0.01,
+              0.08833333333333333
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": -0.010833333333333334,
+            "ci95": [
+              -0.056666666666666664,
+              0.0325
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": 0.03,
+            "ci95": [
+              -0.013333333333333334,
+              0.07166666666666667
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.04022121669180493,
+            "ci95": [
+              0.01608848667672197,
+              0.06336098541980888
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": 0.012066365007541479,
+            "ci95": [
+              -0.008798391151332328,
+              0.032686023127199565
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": 0.058320764203117145,
+            "ci95": [
+              0.034175465057818,
+              0.08295625942684766
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": 0.3039066463723998,
+            "ci95": [
+              0.28055555555555556,
+              0.3287671232876712
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": 0.11542364282090309,
+            "ci95": [
+              0.09309994926433282,
+              0.13597158802638254
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": 0.27870370370370373,
+            "ci95": [
+              0.26080246913580246,
+              0.2969212962962962
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": 0.08765432098765433,
+            "ci95": [
+              0.07407407407407407,
+              0.10246913580246914
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "diff": 0.0947867298578199,
+            "ci95": [
+              0.06990521327014218,
+              0.11966824644549763
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": 0.03317535545023697,
+            "ci95": [
+              0.0071090047393364926,
+              0.05866409952606627
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.1047008547008547,
+            "ci95": [
+              0.07264957264957266,
+              0.13675213675213677
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": 0.0438034188034188,
+            "ci95": [
+              0.011752136752136752,
+              0.07371794871794872
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.016648168701442843,
+            "ci95": [
+              -0.017758046614872364,
+              0.05327413984461709
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": -0.029966703662597113,
+            "ci95": [
+              -0.06551054384017758,
+              0.00776914539400666
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.004024144869215292,
+            "ci95": [
+              -0.029175050301810865,
+              0.039235412474849095
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.025150905432595575,
+            "ci95": [
+              -0.007067404426559355,
+              0.059356136820925554
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": -0.003015075376884422,
+            "ci95": [
+              -0.034170854271356785,
+              0.03015075376884422
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.019095477386934675,
+            "ci95": [
+              -0.016080402010050253,
+              0.05226130653266332
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.00992063492063492,
+            "ci95": [
+              -0.022817460317460316,
+              0.04268353174603161
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": -0.018849206349206348,
+            "ci95": [
+              -0.05555555555555555,
+              0.018849206349206348
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.02574257425742574,
+            "ci95": [
+              -0.007920792079207921,
+              0.05841584158415842
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": -0.011881188118811881,
+            "ci95": [
+              -0.04950495049504951,
+              0.02277227722772277
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": 0.1095890410958904,
+            "ci95": [
+              0.05924657534246576,
+              0.1643835616438356
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": 0.0283203125,
+            "ci95": [
+              0.0146484375,
+              0.04248046875
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": -0.0224609375,
+            "ci95": [
+              -0.05078125,
+              0.00390625
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": -0.0045662100456621,
+            "ci95": [
+              -0.0136986301369863,
+              0.0045662100456621
+            ],
+            "n": 1752
+          }
+        },
+        "v3": {
+          "original/preference": {
+            "diff": 0.0,
+            "ci95": [
+              -0.005366726296958855,
+              0.006261180679785331
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": 0.0091324200913242,
+            "ci95": [
+              -0.012557077625570776,
+              0.030821917808219176
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": 0.016722408026755852,
+            "ci95": [
+              -0.020066889632107024,
+              0.056856187290969896
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.008333333333333333,
+            "ci95": [
+              -0.03333333333333333,
+              0.051666666666666666
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": 0.020833333333333332,
+            "ci95": [
+              -0.018333333333333333,
+              0.06166666666666667
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": 0.008333333333333333,
+            "ci95": [
+              -0.028333333333333332,
+              0.043333333333333335
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.026143790849673203,
+            "ci95": [
+              0.004524886877828055,
+              0.04675716440422323
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": -0.023629964806435394,
+            "ci95": [
+              -0.043740573152337855,
+              -0.003513071895424871
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": 0.013071895424836602,
+            "ci95": [
+              -0.008044243338360985,
+              0.03469079939668175
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": -0.045662100456621,
+            "ci95": [
+              -0.06798579401319127,
+              -0.023845763571790968
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": 0.020801623541349568,
+            "ci95": [
+              -0.0005073566717402334,
+              0.04263064434297304
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": -0.004629629629629629,
+            "ci95": [
+              -0.017901234567901235,
+              0.007716049382716049
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": -0.011419753086419753,
+            "ci95": [
+              -0.025,
+              0.0015509259259258838
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "diff": -0.017772511848341232,
+            "ci95": [
+              -0.0462085308056872,
+              0.01066350710900474
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": -0.018957345971563982,
+            "ci95": [
+              -0.046800947867298576,
+              0.007716232227488071
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.026709401709401708,
+            "ci95": [
+              -0.0010950854700854686,
+              0.05555555555555555
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": -0.013888888888888888,
+            "ci95": [
+              -0.042735042735042736,
+              0.011752136752136752
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.029966703662597113,
+            "ci95": [
+              -0.0011098779134295228,
+              0.058851276359600295
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": -0.003329633740288568,
+            "ci95": [
+              -0.03662597114317425,
+              0.02885682574916759
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.030181086519114688,
+            "ci95": [
+              0.0030181086519114686,
+              0.060362173038229376
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.018108651911468814,
+            "ci95": [
+              -0.012072434607645875,
+              0.04831488933601596
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": 0.02814070351758794,
+            "ci95": [
+              0.0,
+              0.05630653266331645
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.010050251256281407,
+            "ci95": [
+              -0.021105527638190954,
+              0.03919597989949749
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.051587301587301584,
+            "ci95": [
+              0.022817460317460316,
+              0.08134920634920635
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": 0.015873015873015872,
+            "ci95": [
+              -0.014905753968253966,
+              0.04563492063492063
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.03564356435643564,
+            "ci95": [
+              0.006930693069306931,
+              0.06534653465346535
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": 0.020792079207920793,
+            "ci95": [
+              -0.009900990099009901,
+              0.05148514851485148
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": 0.0319634703196347,
+            "ci95": [
+              -0.0182648401826484,
+              0.0776255707762557
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": 0.0234375,
+            "ci95": [
+              0.00927734375,
+              0.03759765625
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": 0.01220703125,
+            "ci95": [
+              -0.01171875,
+              0.03419189453124993
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": -0.006278538812785388,
+            "ci95": [
+              -0.014269406392694063,
+              0.0028538812785388126
+            ],
+            "n": 1752
           }
         }
       }

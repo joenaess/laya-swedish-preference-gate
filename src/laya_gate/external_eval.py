@@ -54,7 +54,7 @@ STATS_URL = "https://svn.spraakbanken.gu.se/sb-arkiv/pub/frekvens/stats_EUROPARL
 MT_MODEL = "Helsinki-NLP/opus-mt-en-sv"
 EXT_DIR = CACHE_DIR / "external"
 EP_DIR = CACHE_DIR / "europarl"
-SETS = ("dalaj", "swefaq", "europarl_en", "europarl_sv")
+SETS = ("dalaj", "swefaq", "europarl_en", "europarl_sv", "gerlangmod", "wmt24pp")
 MT_SYSTEMS = ("opus", "kimi")
 EP_SAMPLE = 1000
 SOURCE_PROMPT = "Översätt följande text till svenska:\n"
@@ -375,7 +375,7 @@ def clean_translation(content: str | None) -> str | None:
     return " ".join(text.split()) or None
 
 
-async def _kimi_translate(rows, concurrency: int) -> dict[str, Any]:
+async def _kimi_translate(rows, concurrency: int, system: str = KIMI_MT_SYSTEM) -> dict[str, Any]:
     from .fluent import NOTHINK
     from .judge import discover_model, is_retryable, make_client, quiet_http_logs, sanitize
 
@@ -389,7 +389,7 @@ async def _kimi_translate(rows, concurrency: int) -> dict[str, Any]:
 
     async def one(r):
         text = " ".join(r["en"])
-        key = hashlib.sha256(json.dumps([model, KIMI_MT_SYSTEM, text]).encode()).hexdigest()
+        key = hashlib.sha256(json.dumps([model, system, text]).encode()).hexdigest()
         if key in cache and cache[key].get("translation"):
             return cache[key]
         async with sem:
@@ -402,7 +402,7 @@ async def _kimi_translate(rows, concurrency: int) -> dict[str, Any]:
                             temperature=0,
                             max_tokens=4096,
                             messages=[
-                                {"role": "system", "content": KIMI_MT_SYSTEM},
+                                {"role": "system", "content": system},
                                 {"role": "user", "content": text},
                             ],
                             **NOTHINK,
@@ -457,6 +457,123 @@ def translate(args) -> None:
     print(json.dumps(res, indent=2))
 
 
+# ------------------------------------------------------- EuroEval-aligned sets
+
+SCALA = "mteb/scala_sv_classification"  # EuroEval's ScaLA-sv splits (1,024 / 256 / 2,048)
+WMT24PP = "google/wmt24pp"  # en-sv_SE, Apache-2.0
+GERLANGMOD_URL = (
+    "https://raw.githubusercontent.com/noahmanu/gerlangmod/HEAD/Datasets/"
+    "verb_error_datasets_v1_1/sv/sv_{treebank}_test.tsv"
+)
+GERLANGMOD_TREEBANKS = ("talbanken", "lines", "pud")
+KIMI_MT_GENERIC = (
+    "You are a professional translator. Translate the user's English text into Swedish. "
+    "Reply with the Swedish translation only, without comments, quotation marks or notes."
+)
+
+
+def load_scala(split: str = "test") -> list[dict[str, Any]]:
+    """ScaLA-sv sentences: `correct` (UD Swedish-Talbanken) or `incorrect` (a word deleted or
+    two neighbours swapped), exactly EuroEval's split."""
+    from datasets import load_dataset
+
+    ds = load_dataset(SCALA, split=split)
+    return [
+        {
+            "id": f"scala-{split}-{i}",
+            "text": r["text"],
+            "correct": r["label"] == "correct",
+            "corruption": r["corruption_type"],
+        }
+        for i, r in enumerate(ds)
+    ]
+
+
+def gerlangmod_pairs(rows, treebank: str) -> list[dict[str, Any]]:
+    """(original, verbs misplaced) pairs from GerLangMod-sv TSV rows; both sides lowercased
+    without punctuation, as the dataset ships them; unchanged permutations are dropped."""
+    out = []
+    for r in rows:
+        perm = r.get("no_punc_lower_permuted") or r.get("random") or ""  # v1.1 / naive files
+        orig, perm = r["no_punc_lower"].strip(), perm.strip()
+        if orig and perm and orig != perm:
+            out.append(
+                {
+                    "id": f"glm-{treebank}-{r['idx']}",
+                    "prompt": "",
+                    "ref": orig,
+                    "other": perm,
+                    "treebank": treebank,
+                }
+            )
+    return out
+
+
+def load_gerlangmod() -> list[dict[str, Any]]:
+    import csv
+    import io
+
+    pairs = []
+    for tb in GERLANGMOD_TREEBANKS:
+        path = _download(
+            GERLANGMOD_URL.format(treebank=tb), EP_DIR.parent / "gerlangmod" / f"{tb}.tsv"
+        )
+        text = path.read_text(encoding="utf-8")
+        pairs += gerlangmod_pairs(list(csv.DictReader(io.StringIO(text), delimiter="\t")), tb)
+    return pairs
+
+
+def wmt_rows() -> list[dict[str, Any]]:
+    """WMT24++ en->sv segments not marked bad: source, post-edited human reference, domain."""
+    from huggingface_hub import hf_hub_download
+
+    path = hf_hub_download(WMT24PP, "en-sv_SE.jsonl", repo_type="dataset")
+    return [
+        {
+            "id": f"wmt-{r['document_id']}-{r['segment_id']}",
+            "en": [r["source"]],
+            "sv": [r["target"]],
+            "domain": r["domain"],
+            "original": "EN",
+        }
+        for r in read_jsonl(Path(path))
+        if r["is_bad_source"] not in (True, "True") and r["domain"] != "canary"
+    ]
+
+
+def prepare_euroeval(args) -> None:
+    """ScaLA-sv, GerLangMod-sv and WMT24++ en->sv with OPUS-MT and Kimi-k3 translations."""
+    EXT_DIR.mkdir(parents=True, exist_ok=True)
+    write_jsonl(EXT_DIR / "scala_test.jsonl", load_scala("test"))
+    write_jsonl(EXT_DIR / "scala_val.jsonl", load_scala("val"))
+    glm = load_gerlangmod()
+    write_jsonl(EXT_DIR / "gerlangmod.jsonl", glm)
+    wmt = wmt_rows()
+    opus_translate(wmt)
+    stats: dict[str, Any] = {
+        "scala": {"test": 2048, "val": 256, "source": SCALA},
+        "gerlangmod": dict(Counter(p["treebank"] for p in glm)),
+        "wmt24pp": {"segments": len(wmt), "domains": dict(Counter(r["domain"] for r in wmt))},
+    }
+    if all(os.environ.get(v) for v in ("BASE_URL", "API_KEY")):
+        stats["wmt24pp"]["kimi_mt"] = asyncio.run(
+            _kimi_translate(wmt, args.concurrency, KIMI_MT_GENERIC)
+        )
+    else:
+        stats["wmt24pp"]["kimi_mt"] = "skipped: BASE_URL or API_KEY not set"
+    write_jsonl(EXT_DIR / "wmt24pp.jsonl", wmt)
+    data = load_metrics().get("external_data") or {}
+    update_metrics("external_data", {**data, "euroeval": stats})
+    print(json.dumps(stats, indent=2))
+
+
+def mcc(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """Matthews correlation coefficient (EuroEval's ScaLA metric); 0 when undefined."""
+    from sklearn.metrics import matthews_corrcoef
+
+    return float(matthews_corrcoef(y_true, y_pred))
+
+
 # ---------------------------------------------------------------------- the sets
 
 
@@ -481,6 +598,15 @@ def load_sets() -> dict[str, list[dict[str, Any]]]:
         "dalaj": read_jsonl(EXT_DIR / "dalaj.jsonl"),
         "swefaq": read_jsonl(EXT_DIR / "swefaq.jsonl"),
     }
+    if (EXT_DIR / "gerlangmod.jsonl").exists():
+        glm = read_jsonl(EXT_DIR / "gerlangmod.jsonl")
+        sets["gerlangmod"] = [p for p in glm if p["treebank"] == "talbanken"]
+    if (EXT_DIR / "wmt24pp.jsonl").exists():
+        wmt = read_jsonl(EXT_DIR / "wmt24pp.jsonl")
+        for mt in MT_SYSTEMS:
+            pairs = europarl_pairs(wmt, "EN", mt)
+            if pairs:
+                sets[f"wmt24pp/{mt}"] = pairs
     ep = read_jsonl(EXT_DIR / "europarl.jsonl")
     for original, name in (("EN", "europarl_en"), ("SV", "europarl_sv")):
         for mt in MT_SYSTEMS:
@@ -725,6 +851,13 @@ JUDGE_SYSTEMS = {
         "influence your decision.\n\n"
         'Reply with JSON only, exactly one of: {"preference": "A"} or {"preference": "B"}'
     ),
+    "translation_generic": (
+        "You are an expert English-to-Swedish translator. You will be given an English text "
+        "and two Swedish translations, A and B. Decide which translation is better: faithful "
+        "to the English and written in natural, idiomatic Swedish. Do not let the order of "
+        "the translations or their length by itself influence your decision.\n\n"
+        'Reply with JSON only, exactly one of: {"preference": "A"} or {"preference": "B"}'
+    ),
     "naturalness": (
         "You are an expert in the Swedish language. You will be given two Swedish versions, A "
         "and B, of the same text. Decide which version is more natural and idiomatic Swedish, "
@@ -739,6 +872,11 @@ JUDGE_PLAN = {
     "swefaq": [("preference", "preference", True)],
     "europarl_en": [("translation", "preference", True), ("naturalness", "naturalness", False)],
     "europarl_sv": [("translation", "preference", True), ("naturalness", "naturalness", False)],
+    "gerlangmod": [("grammar", "naturalness", False)],
+    "wmt24pp": [
+        ("translation_generic", "preference", True),
+        ("naturalness", "naturalness", False),
+    ],
 }
 
 
@@ -752,7 +890,7 @@ def judge_body(setup: str, p: dict[str, Any], a: str, b: str) -> str:
 
     if setup == "preference":
         return user_message(p["prompt"], a, b)
-    if setup == "translation":
+    if setup.startswith("translation"):
         en = p["prompt"].removeprefix(SOURCE_PROMPT)
         return f"## English\n{en}\n\n## Translation A\n{a}\n\n## Translation B\n{b}"
     return f"## Version A\n{a}\n\n## Version B\n{b}"
@@ -953,7 +1091,9 @@ def main(argv=None) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("command", choices=["prepare", "translate", "gate", "judge", "length"])
+    parser.add_argument(
+        "command", choices=["prepare", "translate", "prepare-euroeval", "gate", "judge", "length"]
+    )
     parser.add_argument("--n-europarl", type=int, default=EP_SAMPLE)
     parser.add_argument("--n", type=int, default=300, help="judge pairs per set")
     parser.add_argument("--concurrency", type=int, default=64)
@@ -962,6 +1102,7 @@ def main(argv=None) -> None:
     {
         "prepare": prepare,
         "translate": translate,
+        "prepare-euroeval": prepare_euroeval,
         "gate": gate_eval,
         "judge": judge_eval,
         "length": length_eval,

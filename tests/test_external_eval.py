@@ -224,3 +224,27 @@ def test_fix_colon_genitive_only_joins_abbreviations():
     assert X.fix_colon_genitive("frågan: en fråga om punkt 3: en sak") == (
         "frågan: en fråga om punkt 3: en sak"
     )
+
+
+def test_gerlangmod_pairs_drop_unchanged_and_read_both_layouts():
+    rows = [
+        {
+            "idx": "0",
+            "no_punc_lower": "folkpensionen får man",
+            "no_punc_lower_permuted": "folkpensionen man får",
+        },
+        {"idx": "1", "no_punc_lower": "det är bra", "no_punc_lower_permuted": "det är bra"},
+        {"idx": "2", "no_punc_lower": "vi går hem", "random": "vi hem går"},
+    ]
+    pairs = X.gerlangmod_pairs(rows, "talbanken")
+    assert [p["id"] for p in pairs] == ["glm-talbanken-0", "glm-talbanken-2"]
+    assert (
+        pairs[0]["ref"] == "folkpensionen får man" and pairs[0]["other"] == "folkpensionen man får"
+    )
+
+
+def test_mcc():
+    y = np.array([True, True, False, False])
+    assert X.mcc(y, y) == pytest.approx(1.0)
+    assert X.mcc(y, ~y) == pytest.approx(-1.0)
+    assert X.mcc(y, np.array([True] * 4)) == 0.0

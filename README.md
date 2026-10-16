@@ -742,8 +742,8 @@ Three more external tests, none used for training, scored with v1, v2 and v3
 *reference* side wins: the corrected sentence, the question's own answer, the human Swedish.
 Pairwise questions average P over both slot orders. Single-response questions compare the two
 scores. Kimi-k3 sees a fixed-seed sample of 300 pairs per set in
-both orders (6000 requests, 0 parse failures,
-median 21.3 s, reasoning on); its accuracy counts a split verdict
+both orders (9000 requests, 0 parse failures,
+median 20.8 s, reasoning on); its accuracy counts a split verdict
 as half.
 
 - **DaLAJ-GED** ([Superlim 2](https://huggingface.co/datasets/sbx/superlim-2), test split, CC BY
@@ -770,7 +770,7 @@ as half.
 |---|---|---|---|---|---|---|---|---|
 | DaLAJ: corrected vs learner sentence | 1971 | 50.8% | 60.8% | 55.9% | 68.8% | 63.6% | frequency 65.1% | 90.3% |
 | SweFAQ: own answer vs other answer | 3240 | 56.7% | 60.3% | 55.8% | 56.1% | 66.8% | overlap 79.7% | 99.0% |
-| Europarl EN-original: human vs OPUS-MT | 994 | 43.4% | 40.6% | 41.8% | 48.0% | 36.7% | longer 64.8% | 34.5% |
+| Europarl EN-original: human vs OPUS-MT | 994 | 43.4% | 40.6% | 41.8% | 48.0% | 36.7% | longer 64.8% | 34.3% |
 | Europarl EN-original: human vs Kimi-k3 MT | 995 | 40.1% | 38.7% | 40.0% | 47.8% | 33.8% | longer 61.2% | 17.3% |
 | Europarl SV-original: native vs OPUS-MT round trip | 1008 | 46.4% | 40.8% | 43.8% | 51.5% | 36.4% | longer 50.8% | 25.2% |
 | Europarl SV-original: native vs Kimi-k3 round trip | 1010 | 45.8% | 37.2% | 39.9% | 48.3% | 32.5% | longer 49.6% | 13.2% |
@@ -813,7 +813,7 @@ wins:
 
 | Set | v3 `preference`, no prompt | v3 `natural_swedish`, no prompt | Kimi-k3, translation | Kimi-k3, naturalness | Kimi-k3 picks MT in both orders |
 |---|---|---|---|---|---|
-| Europarl EN-original: human vs OPUS-MT | 51.5% | 51.5% | 34.5% | 56.0% | 59.3% |
+| Europarl EN-original: human vs OPUS-MT | 51.5% | 51.5% | 34.3% | 56.2% | 59.7% |
 | Europarl EN-original: human vs Kimi-k3 MT | 49.4% | 49.9% | 17.3% | 37.0% | 75.7% |
 | Europarl SV-original: native vs OPUS-MT round trip | 50.9% | 55.1% | 25.2% | 50.3% | 70.7% |
 | Europarl SV-original: native vs Kimi-k3 round trip | 49.3% | 50.1% | 13.2% | 35.2% | 82.3% |
@@ -864,11 +864,136 @@ them. Forward latency more than doubles at 2048, where the p95 forward pass alon
 room for tokenization within the 35 ms target; at 4096 the forward pass alone exceeds it. The window
 stays at 1024; fine-tuning at a longer length was not tried.
 
+### v4 ablation: Europarl, DaLAJ and SweFAQ as training data
+
+Does more training data make the gate a better judge of Swedish, and is Europarl's
+professional human Swedish a good "better" label? A controlled ablation
+(`python -m laya_gate.v4`): every arm fine-tunes the base checkpoint with the v3 recipe (v3 data
+and questions, 1 epoch, the same seed and hyperparameters); only the added data differs. A second
+control seed measures seed-to-seed noise.
+
+- **+Europarl**: 12,000 English-original speeches (none from the Europarl test
+  sample, no Swedish-original speech), professional Swedish translation > Kimi-k3 machine
+  translation, as `preference` (English source in the prompt) and `naturalness` (no prompt). The
+  negatives are Kimi-k3's only, so OPUS-MT never appears in training and the OPUS-MT tests
+  (liu-nlp, FLORES+, WMT24++/opus) measure transfer. Length-balanced: the human side is longer in
+  exactly half the pairs (it was 57.3% before balancing), so
+  "the longer one wins" cannot be learned; 604
+  near-identical pairs dropped.
+- **+DaLAJ/SweFAQ**: 16,365 DaLAJ-GED train pairs (corrected > learner
+  sentence, `naturalness`) and 3,074 SweFAQ train pairs (own answer > another
+  answer on the page, `preference`; 781 questions, no FAQ page shared
+  with the test questions).
+- **+both**: both.
+
+All tests are held out from every arm (DaLAJ and SweFAQ use their dev/test splits; ScaLA-sv is
+EuroEval's own test split, `mteb/scala_sv_classification`; GerLangMod-sv is the native
+Talbanken test file; WMT24++ en→sv is EuroEval's translation set, `google/wmt24pp`, post-edited
+references, 960 segments with OPUS-MT and Kimi-k3 translations). Each cell is the share of items
+where the reference side wins (corrected sentence, own answer, human Swedish). **\*** marks a
+difference from control whose paired-bootstrap 95% CI excludes zero; the two control seeds
+differ by up to 4.2 points on a single test, so smaller differences should be read
+as noise even when starred.
+
+| Test | v3 (published) | control | control, seed 2 | +Europarl | +DaLAJ/SweFAQ | +both |
+|---|---|---|---|---|---|---|
+| **In-domain (DPO validation, fluent pairs, probe)** | | | | | | |
+| original/preference | 98.9% | 98.9% | 99.0% | 98.7% | 99.0% | 99.0% |
+| fluent/preference | 78.7% | 77.7% | 76.6% | 74.5% * | 77.6% | 77.7% |
+| probe/preference | 79.9% | 78.3% | 77.9% | 76.9% | 78.9% | 76.9% |
+| **Native speaker vs OPUS-MT (liu-nlp, human-annotated)** | | | | | | |
+| liu/naturalness | 44.3% | 43.5% | 44.3% | 58.8% * | 47.3% | 53.7% * |
+| liu/natural_swedish | 51.6% | 49.5% | 52.8% | 52.2% | 48.4% | 53.0% |
+| liu/preference+source | 37.3% | 36.5% | 34.7% | 60.8% * | 39.5% | 50.3% * |
+| **Professional translation vs MT (FLORES+, WMT24++)** | | | | | | |
+| flores/naturalness | 58.1% * | 55.5% | 56.8% | 58.5% | 59.5% * | 61.0% * |
+| flores/preference+source | 48.5% | 47.2% | 46.2% | 73.3% * | 53.0% * | 77.0% * |
+| wmt24pp/opus/naturalness | 63.1% | 64.5% | 64.2% | 66.9% | 68.9% * | 66.7% |
+| wmt24pp/opus/preference+source | 54.3% | 51.6% | 55.8% * | 76.3% * | 62.1% * | 74.9% * |
+| wmt24pp/kimi/naturalness | 48.3% | 48.6% | 49.3% | 54.7% * | 45.6% | 51.9% |
+| wmt24pp/kimi/preference+source | 43.1% | 40.1% | 42.5% | 66.7% * | 41.7% | 71.8% * |
+| **Grammar (DaLAJ, GerLangMod-sv, ScaLA-sv)** | | | | | | |
+| dalaj/naturalness | 55.9% * | 60.4% | 57.1% * | 52.2% * | 90.8% * | 87.7% * |
+| dalaj/natural_swedish | 68.8% | 66.8% | 65.6% | 61.8% * | 78.3% * | 74.4% * |
+| gerlangmod/naturalness | 83.3% | 85.1% | 81.6% * | 32.5% * | 94.5% * | 89.2% * |
+| gerlangmod/natural_swedish | 83.4% | 85.3% | 85.4% | 81.9% * | 88.6% * | 84.8% |
+| **Relevance (SweFAQ)** | | | | | | |
+| swefaq/preference | 60.3% | 60.8% | 60.0% | 54.6% * | 88.7% * | 87.5% * |
+| swefaq/quality | 66.7% | 67.9% | 64.9% * | 65.2% * | 76.6% * | 68.0% |
+| swefaq/quality_top1 | 20.1% | 16.9% | 16.4% | 17.8% | 27.9% * | 20.1% |
+| **Europarl (in-distribution for +Europarl)** | | | | | | |
+| europarl_en/opus/preference+source | 40.6% * | 37.6% | 38.6% | 81.7% * | 38.0% | 84.1% * |
+| europarl_en/kimi/preference+source | 38.7% | 35.9% | 39.8% * | 85.4% * | 35.6% | 87.8% * |
+| europarl_sv/opus/preference+source | 40.8% * | 35.6% | 38.3% | 86.3% * | 36.6% | 86.2% * |
+| europarl_sv/kimi/preference+source | 37.2% * | 33.7% | 35.7% | 88.8% * | 36.2% | 91.0% * |
+| europarl_sv/kimi/naturalness | 48.1% | 46.0% | 50.1% * | 78.2% * | 44.9% | 79.3% * |
+| ScaLA-sv MCC (EuroEval metric), threshold 0.5 | 0.146 | 0.117 | 0.100 | 0.055 | 0.167 | 0.114 |
+| Natural responses flagged as translationese (lower is better) | 3.9% | 4.5% | 3.9% | 4.9% | 4.1% | 3.8% |
+| ECE, DPO validation `preference` | 0.0108 | 0.0120 | 0.0138 | 0.0151 | 0.0139 | 0.0157 |
+| Training units / wall-clock | 2 epochs (published) | 110,526 / 1.3 h | 110,526 / 1.3 h | 134,526 / 1.5 h | 129,965 / 1.5 h | 153,965 / 1.7 h |
+
+**Europarl human translations are a strong training signal for translation quality, and the
+gain transfers.** On the human-annotated liu-nlp benchmark, where every earlier gate preferred the
+OPUS-MT translationese, +Europarl moves the pairwise naturalness question from
+43.5% to 58.8% and the
+source-conditioned preference from 36.5% to
+60.8%, the first gate result above chance on it. The
+same holds on professional translations from other domains: FLORES+ preference
+47.2% → 73.3%,
+WMT24++ against OPUS-MT 51.6% →
+76.3% and against Kimi-k3
+40.1% →
+66.7%. None of these sets nor OPUS-MT was in
+training. Kimi-k3 as a judge preferred the machine translations on Europarl (see the external
+benchmarks above), but that verdict looks like bias, not evidence against the human
+translations: on WMT24++ (300-pair sample, both orders) it prefers the post-edited human
+translation over OPUS-MT in 81.0%
+of pairs, yet over its *own* translation in only
+24.5%. The +both gate
+picks the human translation over Kimi-k3's in 71.8%
+of WMT24++ pairs; Kimi-k3 is not a neutral reference for its own output.
+
+**On its own, Europarl costs grammar sensitivity.** +Europarl drops GerLangMod-sv
+`naturalness` from 85.1% to
+32.5%: it now prefers the sentence with the misplaced
+verbs. DaLAJ, SweFAQ, the fluent pairs and ScaLA-sv get worse too (MCC
+0.117 → 0.055). One explanation, not tested here, is word
+order: professional translations of speeches may keep a freer word order than Kimi-k3's output,
+so "the less canonical word order wins" would fit the Europarl pairs. Either way, a preference
+signal from one register needs counterweights.
+
+**DaLAJ and SweFAQ fix the two weak spots they target** (grammar
+60.4% → 90.8% on DaLAJ,
+85.1% → 94.5% on
+GerLangMod-sv; relevance 60.8% →
+88.7% on SweFAQ, top-1 among all answers on a page
+16.9% → 27.9%), with
+smaller gains on FLORES+ and WMT24++ against OPUS-MT, and leave translation against Kimi-k3
+unchanged.
+
+**Combining them keeps most of both.** +both keeps grammar (87.7%
+DaLAJ, 89.2% GerLangMod-sv) and relevance
+(87.5% SweFAQ) near the +DaLAJ/SweFAQ level and translation
+quality at about the +Europarl level (FLORES+ 77.0%,
+WMT24++ 74.9% / 71.8%),
+while the in-domain numbers, calibration and latency stay at the control level (liu-nlp
+53.7% / 50.3%).
+Its liu-nlp gain is real but smaller than +Europarl's. It is the best all-round candidate for
+a v4.
+
+**What did not move.** The single-response `natural_swedish` question was not trained on any new
+data and barely changes: liu-nlp stays at chance and ScaLA-sv's MCC stays between
+0.055 and
+0.167 across arms (AUC at most
+0.645). Teaching the single-response questions
+from the same pairs (corrected = natural, learner error = not) is the next step for a fast
+one-pass grammar check. Each arm was trained once; the seed row shows the noise floor.
+
 ### Tests
 
-`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **134 passed, 0 failed,
-0 errors, 0 skipped** of 134.
-Coverage: **50.8%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `external_eval.py` 38.0% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `onnx_export.py` 87.2% · `predictor.py` 84.4% · `probe.py` 46.0% · `publish.py` 68.9% · `readme.py` 84.8% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 0.0%.
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **144 passed, 0 failed,
+0 errors, 0 skipped** of 144.
+Coverage: **49.2%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `external_eval.py` 37.7% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `onnx_export.py` 87.2% · `predictor.py` 84.4% · `probe.py` 46.0% · `publish.py` 68.9% · `readme.py` 78.8% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 18.0% · `v4.py` 29.1%.
 
 
 ## Limitations

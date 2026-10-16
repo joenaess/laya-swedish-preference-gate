@@ -181,7 +181,8 @@ def single_logits(gate, rows) -> np.ndarray:
 def calibrate(args) -> None:
     from laya.common import TEMP_MAX, TEMP_MIN
 
-    gate = v2.uncalibrated_gate(V3_DIR)
+    path = getattr(args, "checkpoint", None) or V3_DIR
+    gate = v2.uncalibrated_gate(path)
     fits = v2.fit_pairwise_temperatures(gate)
     rows = single_rows(v2.load_rows("val_calib"), load_ratings())
     for qid in POINTWISE_QUESTIONS:
@@ -203,7 +204,7 @@ def calibrate(args) -> None:
             "nll_post": nll(logits, labels, t),
             "within_laya_clamp": bool(TEMP_MIN <= t <= TEMP_MAX),
         }
-    v2.save_temperatures(V3_DIR, fits, "v3_calibration")
+    v2.save_temperatures(path, fits, getattr(args, "section", None) or "v3_calibration")
 
 
 # ---------------------------------------------------------------------- evaluate
@@ -258,10 +259,12 @@ def evaluate(args) -> None:
     from .benchmark import time_forward
     from .predictor import SwedishPreferenceGate
 
-    # pairwise questions: exactly v2's evaluation, on the v3 checkpoint
-    v2.evaluate(argparse.Namespace(checkpoint=V3_DIR, section="v3_eval"))
+    path = getattr(args, "checkpoint", None) or V3_DIR
+    prefix = getattr(args, "section", None) or "v3"
+    # pairwise questions: exactly v2's evaluation, on this checkpoint
+    v2.evaluate(argparse.Namespace(checkpoint=path, section=f"{prefix}_eval"))
 
-    gate = SwedishPreferenceGate(V3_DIR)
+    gate = SwedishPreferenceGate(path)
     ev = v2.load_rows("val_eval")
     ratings = load_ratings()
     out: dict[str, Any] = {"temperatures": gate.temperatures}
@@ -334,7 +337,7 @@ def evaluate(args) -> None:
         "p95": float(np.percentile(lat, 95)),
         "n": len(lat),
     }
-    update_metrics("v3_pointwise", out)
+    update_metrics(f"{prefix}_pointwise", out)
     print(json.dumps(out, indent=2))
 
 

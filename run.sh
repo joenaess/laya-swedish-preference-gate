@@ -49,6 +49,12 @@ if [[ -f cache/fluent/train.jsonl ]]; then
     step "5m/8 external benchmarks" external_eval gate
     step "5m/8 external benchmarks" external_eval judge      # skips without BASE_URL/API_KEY
     step "5n/8 context length"      external_eval length
+    step "5o/8 v4 ablation"         v4 prepare   # Kimi-k3 MT of Europarl; skips Europarl without BASE_URL/API_KEY
+    for arm in control europarl native both; do
+        step "5o/8 v4 ablation: $arm" v4 run --arm "$arm"
+    done
+    step "5o/8 v4 ablation: seed"   v4 run --arm control --seed 20261015
+    step "5o/8 v4 ablation"         v4 compare
 else
     echo "note: no fluent training pairs; skipping v2 and v3" >&2
 fi

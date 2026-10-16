@@ -1186,6 +1186,212 @@ room for tokenization within the 35 ms target; at 4096 the forward pass alone ex
 stays at {lens[0] if lens else NM}; fine-tuning at a longer length was not tried."""
 
 
+V4_ORDER = (
+    ("v3", "v3 (published)"),
+    ("control", "control"),
+    ("control-s20261015", "control, seed 2"),
+    ("europarl", "+Europarl"),
+    ("native", "+DaLAJ/SweFAQ"),
+    ("both", "+both"),
+)
+V4_GROUPS = (
+    (
+        "In-domain (DPO validation, fluent pairs, probe)",
+        ("original/preference", "fluent/preference", "probe/preference"),
+    ),
+    (
+        "Native speaker vs OPUS-MT (liu-nlp, human-annotated)",
+        ("liu/naturalness", "liu/natural_swedish", "liu/preference+source"),
+    ),
+    (
+        "Professional translation vs MT (FLORES+, WMT24++)",
+        (
+            "flores/naturalness",
+            "flores/preference+source",
+            "wmt24pp/opus/naturalness",
+            "wmt24pp/opus/preference+source",
+            "wmt24pp/kimi/naturalness",
+            "wmt24pp/kimi/preference+source",
+        ),
+    ),
+    (
+        "Grammar (DaLAJ, GerLangMod-sv, ScaLA-sv)",
+        (
+            "dalaj/naturalness",
+            "dalaj/natural_swedish",
+            "gerlangmod/naturalness",
+            "gerlangmod/natural_swedish",
+            "scala/accuracy@0.5",
+        ),
+    ),
+    ("Relevance (SweFAQ)", ("swefaq/preference", "swefaq/quality", "swefaq/quality_top1")),
+    (
+        "Europarl (in-distribution for +Europarl)",
+        (
+            "europarl_en/opus/preference+source",
+            "europarl_en/kimi/preference+source",
+            "europarl_sv/opus/preference+source",
+            "europarl_sv/kimi/preference+source",
+            "europarl_sv/kimi/naturalness",
+        ),
+    ),
+)
+
+
+def v4_section(m: dict) -> str:
+    V = m.get("v4")
+    if not isinstance(V, dict) or not get(V, "arms.control.tests"):
+        return "Not measured: run `python -m laya_gate.v4 prepare`, `run --arm ...`, `compare`."
+    A, C = V["arms"], get(V, "comparison.arms", {})
+    arms = [(k, label) for k, label in V4_ORDER if get(A, f"{k}.tests")]
+
+    def val(arm, test):
+        return get(A, f"{arm}.tests.{test}.mean")
+
+    def cell(arm, test):
+        x, d = val(arm, test), get(C, f"{arm}.{test}")
+        sig = d and (d["ci95"][0] > 0 or d["ci95"][1] < 0)
+        return pct(x) + (" *" if sig else "")
+
+    def scala(arm, key="mcc@0.5"):
+        return (get(A, f"{arm}.classifiers.scala") or {}).get(key)
+
+    def ece_of(arm):
+        if arm == "v3":
+            return get(m, "v3_eval.original/preference.ece_both_orders")
+        return get(A, f"{arm}.standard_eval.original/preference.ece_both_orders")
+
+    head = "| Test | " + " | ".join(label for _, label in arms) + " |"
+    sep = "|---|" + "---|" * len(arms)
+    lines = [head, sep]
+    for title, tests in V4_GROUPS:
+        lines.append(f"| **{title}** |" + " |" * len(arms))
+        for t in tests:
+            if get(A, f"control.tests.{t}") is not None:
+                lines.append(f"| {t} | " + " | ".join(cell(k, t) for k, _ in arms) + " |")
+    lines.append(
+        "| ScaLA-sv MCC (EuroEval metric), threshold 0.5 | "
+        + " | ".join(num(scala(k)) for k, _ in arms)
+        + " |"
+    )
+    lines.append(
+        "| Natural responses flagged as translationese (lower is better) | "
+        + " | ".join(pct(get(A, f"{k}.guards.fluent_flagged_translationese.mean")) for k, _ in arms)
+        + " |"
+    )
+    lines.append(
+        "| ECE, DPO validation `preference` | "
+        + " | ".join(num(ece_of(k), 4) for k, _ in arms)
+        + " |"
+    )
+    lines.append(
+        "| Training units / wall-clock | "
+        + " | ".join(
+            f"{get(A, f'{k}.training.train_units', 0):,} / {get(A, f'{k}.training.total_seconds', 0) / 3600:.1f} h"
+            if get(A, f"{k}.training")
+            else "2 epochs (published)"
+            for k, _ in arms
+        )
+        + " |"
+    )
+    table = "\n".join(lines)
+    D = V.get("data", {})
+    ep = D.get("europarl", {})
+    seed_d = [abs(x["diff"]) for x in get(C, "control-s20261015", {}).values()]
+    seed_max = max(seed_d) if seed_d else None
+
+    def pts(x):
+        return f"{100 * x:.1f}" if isinstance(x, int | float) else NM
+
+    return f"""Does more training data make the gate a better judge of Swedish, and is Europarl's
+professional human Swedish a good "better" label? A controlled ablation
+(`python -m laya_gate.v4`): every arm fine-tunes the base checkpoint with the v3 recipe (v3 data
+and questions, 1 epoch, the same seed and hyperparameters); only the added data differs. A second
+control seed measures seed-to-seed noise.
+
+- **+Europarl**: {get(ep, "kept", 0):,} English-original speeches (none from the Europarl test
+  sample, no Swedish-original speech), professional Swedish translation > Kimi-k3 machine
+  translation, as `preference` (English source in the prompt) and `naturalness` (no prompt). The
+  negatives are Kimi-k3's only, so OPUS-MT never appears in training and the OPUS-MT tests
+  (liu-nlp, FLORES+, WMT24++/opus) measure transfer. Length-balanced: the human side is longer in
+  exactly half the pairs (it was {pct(ep.get("ref_longer_in_candidates"))} before balancing), so
+  "the longer one wins" cannot be learned; {get(ep, "dropped.near_duplicate", NM)}
+  near-identical pairs dropped.
+- **+DaLAJ/SweFAQ**: {get(D, "dalaj.pairs", 0):,} DaLAJ-GED train pairs (corrected > learner
+  sentence, `naturalness`) and {get(D, "swefaq.pairs", 0):,} SweFAQ train pairs (own answer > another
+  answer on the page, `preference`; {get(D, "swefaq.questions", NM)} questions, no FAQ page shared
+  with the test questions).
+- **+both**: both.
+
+All tests are held out from every arm (DaLAJ and SweFAQ use their dev/test splits; ScaLA-sv is
+EuroEval's own test split, `mteb/scala_sv_classification`; GerLangMod-sv is the native
+Talbanken test file; WMT24++ en→sv is EuroEval's translation set, `google/wmt24pp`, post-edited
+references, 960 segments with OPUS-MT and Kimi-k3 translations). Each cell is the share of items
+where the reference side wins (corrected sentence, own answer, human Swedish). **\\*** marks a
+difference from control whose paired-bootstrap 95% CI excludes zero; the two control seeds
+differ by up to {pts(seed_max)} points on a single test, so smaller differences should be read
+as noise even when starred.
+
+{table}
+
+**Europarl human translations are a strong training signal for translation quality, and the
+gain transfers.** On the human-annotated liu-nlp benchmark, where every earlier gate preferred the
+OPUS-MT translationese, +Europarl moves the pairwise naturalness question from
+{pct(val("control", "liu/naturalness"))} to {pct(val("europarl", "liu/naturalness"))} and the
+source-conditioned preference from {pct(val("control", "liu/preference+source"))} to
+{pct(val("europarl", "liu/preference+source"))}, the first gate result above chance on it. The
+same holds on professional translations from other domains: FLORES+ preference
+{pct(val("control", "flores/preference+source"))} → {pct(val("europarl", "flores/preference+source"))},
+WMT24++ against OPUS-MT {pct(val("control", "wmt24pp/opus/preference+source"))} →
+{pct(val("europarl", "wmt24pp/opus/preference+source"))} and against Kimi-k3
+{pct(val("control", "wmt24pp/kimi/preference+source"))} →
+{pct(val("europarl", "wmt24pp/kimi/preference+source"))}. None of these sets nor OPUS-MT was in
+training. Kimi-k3 as a judge preferred the machine translations on Europarl (see the external
+benchmarks above), but that verdict looks like bias, not evidence against the human
+translations: on WMT24++ (300-pair sample, both orders) it prefers the post-edited human
+translation over OPUS-MT in {pct(get(m, "external_eval.judge.sets.wmt24pp/opus.translation_generic.accuracy"))}
+of pairs, yet over its *own* translation in only
+{pct(get(m, "external_eval.judge.sets.wmt24pp/kimi.translation_generic.accuracy"))}. The +both gate
+picks the human translation over Kimi-k3's in {pct(val("both", "wmt24pp/kimi/preference+source"))}
+of WMT24++ pairs; Kimi-k3 is not a neutral reference for its own output.
+
+**On its own, Europarl costs grammar sensitivity.** +Europarl drops GerLangMod-sv
+`naturalness` from {pct(val("control", "gerlangmod/naturalness"))} to
+{pct(val("europarl", "gerlangmod/naturalness"))}: it now prefers the sentence with the misplaced
+verbs. DaLAJ, SweFAQ, the fluent pairs and ScaLA-sv get worse too (MCC
+{num(scala("control"))} → {num(scala("europarl"))}). One explanation, not tested here, is word
+order: professional translations of speeches may keep a freer word order than Kimi-k3's output,
+so "the less canonical word order wins" would fit the Europarl pairs. Either way, a preference
+signal from one register needs counterweights.
+
+**DaLAJ and SweFAQ fix the two weak spots they target** (grammar
+{pct(val("control", "dalaj/naturalness"))} → {pct(val("native", "dalaj/naturalness"))} on DaLAJ,
+{pct(val("control", "gerlangmod/naturalness"))} → {pct(val("native", "gerlangmod/naturalness"))} on
+GerLangMod-sv; relevance {pct(val("control", "swefaq/preference"))} →
+{pct(val("native", "swefaq/preference"))} on SweFAQ, top-1 among all answers on a page
+{pct(val("control", "swefaq/quality_top1"))} → {pct(val("native", "swefaq/quality_top1"))}), with
+smaller gains on FLORES+ and WMT24++ against OPUS-MT, and leave translation against Kimi-k3
+unchanged.
+
+**Combining them keeps most of both.** +both keeps grammar ({pct(val("both", "dalaj/naturalness"))}
+DaLAJ, {pct(val("both", "gerlangmod/naturalness"))} GerLangMod-sv) and relevance
+({pct(val("both", "swefaq/preference"))} SweFAQ) near the +DaLAJ/SweFAQ level and translation
+quality at about the +Europarl level (FLORES+ {pct(val("both", "flores/preference+source"))},
+WMT24++ {pct(val("both", "wmt24pp/opus/preference+source"))} / {pct(val("both", "wmt24pp/kimi/preference+source"))}),
+while the in-domain numbers, calibration and latency stay at the control level (liu-nlp
+{pct(val("both", "liu/naturalness"))} / {pct(val("both", "liu/preference+source"))}).
+Its liu-nlp gain is real but smaller than +Europarl's. It is the best all-round candidate for
+a v4.
+
+**What did not move.** The single-response `natural_swedish` question was not trained on any new
+data and barely changes: liu-nlp stays at chance and ScaLA-sv's MCC stays between
+{num(min(x for x in (scala(k) for k, _ in arms) if x is not None))} and
+{num(max(x for x in (scala(k) for k, _ in arms) if x is not None))} across arms (AUC at most
+{num(max(x for x in (scala(k, "auc") for k, _ in arms) if x is not None))}). Teaching the single-response questions
+from the same pairs (corrected = natural, learner error = not) is the next step for a fast
+one-pass grammar check. Each arm was trained once; the seed row shows the noise floor."""
+
+
 def mt_section(m: dict) -> str:
     mt = m.get("mt_naturalness")
     if not isinstance(mt, dict) or not mt.get("models"):
@@ -1784,6 +1990,10 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 ### Context length (1024 vs longer windows)
 
 {context_section(m)}
+
+### v4 ablation: Europarl, DaLAJ and SweFAQ as training data
+
+{v4_section(m)}
 
 ### Tests
 
