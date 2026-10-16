@@ -537,16 +537,14 @@
     "repo_id": "jonasaise/laya-swedish-preference-gate",
     "url": "https://huggingface.co/jonasaise/laya-swedish-preference-gate",
     "visibility": "public",
-    "commit": "075c9322f6177cdaa7f621ea314b814b008577dc",
-    "checkpoint": "v2",
-    "previous_revision_tag": {
-      "tag": "v1",
-      "revision": "c4cc3a379a05bef843997be7ee13eaa6811ef070"
-    },
+    "commit": "b38bea2cc2aadcb70889d53845fbf5c9c637cd82",
+    "checkpoint": "v3",
+    "previous_revision_tag": null,
     "files": [
       "README.md",
       "encoder",
       "model.safetensors",
+      "onnx/model.int8.onnx",
       "questions.json",
       "results/metrics.json",
       "rl_agent_config.json",

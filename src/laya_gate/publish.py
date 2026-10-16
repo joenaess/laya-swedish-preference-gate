@@ -837,13 +837,18 @@ above either model alone ({pct(g(ev, "probe/cascade.table.0.cascade_accuracy"))}
 ### CPU
 
 ```python
-gate = SwedishPreferenceGate("{repo_id}", backend="onnx-int8", threads=8)
+gate = SwedishPreferenceGate("{repo_id}", device="cpu")   # recommended on CPU
 ```
 
-A pair takes {ms(g(m, "cpu_inference.variants.onnx-int8.latency_ms.p50"))} (ONNX int8) or
-{ms(g(m, "cpu_inference.variants.torch-fp32.latency_ms.p50"))} (torch fp32) on a laptop i9; the
-millisecond figures above need a GPU. int8 costs a few points on the probe; see the CPU table
-in the GitHub README.
+A pair takes {ms(g(m, "cpu_inference.variants.torch-fp32.latency_ms.p50"))} (median) on a laptop
+i9; the millisecond figures above need a GPU.
+
+`backend="onnx-int8"` ({ms(g(m, "cpu_inference.variants.onnx-int8.latency_ms.p50"))}) is
+**lossy**: it costs about
+{num(100 * ((g(m, "cpu_inference.variants.torch-fp32.probe_accuracy.accuracy") or 0) - (g(m, "cpu_inference.variants.onnx-int8.probe_accuracy.accuracy") or 0)), 1)}
+points on the probe on average, but single predictions can move by up to
+{num(g(m, "cpu_inference.variants.onnx-int8.max_abs_delta_p_vs_torch_fp32"), 2)} in probability
+(a clear 0.94 can become 0.50). Use it only for coarse ranking, never for margins or cascades.
 
 ### Pin a version
 
@@ -904,7 +909,7 @@ Fitted temperatures (in `temperature.json`): {temps}.
 | `rl_agent_config.json` | Laya config: `max_len` 1024, `head_max_len` 256 |
 | `questions.json` | the four questions |
 | `temperature.json` | fitted temperature per question, read by `SwedishPreferenceGate` |
-| `onnx/model.int8.onnx` | int8 ONNX graph for `backend="onnx-int8"` |
+| `onnx/model.int8.onnx` | int8 ONNX graph for `backend="onnx-int8"` (lossy, see CPU) |
 | `encoder/config.json` | ModernBERT (mmBERT-base) encoder config |
 | `tokenizer/` | tokenizer files |
 | `results/metrics.json` | every number on this card |

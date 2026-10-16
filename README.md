@@ -12,9 +12,9 @@ translationese**, and it is compared against self-hosted Kimi-k3 on 8× NVIDIA B
 
 Weights: [huggingface.co/jonasaise/laya-swedish-preference-gate](https://huggingface.co/jonasaise/laya-swedish-preference-gate) (public).
 
-A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is the default checkpoint on the Hub; v1 stays available as `revision="v1"`.
+A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is on the Hub as `revision="v2"`.
 
-A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is not on the Hub yet.
+A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is the default checkpoint on the Hub; v2 and v1 stay available as `revision="v2"` and `revision="v1"`.
 
 ## Results at a glance
 
@@ -77,7 +77,7 @@ results = gate.predict_preference_batch(
 )
 ```
 
-The Hub checkpoint is **v2**, which also answers *which response is written in more
+The Hub checkpoint is **v3**, which also answers *which response is written in more
 natural, idiomatic Swedish*:
 
 ```python
@@ -89,9 +89,19 @@ r = gate.predict_naturalness(
 # {"more_natural": "candidate_a", "p_a_more_natural": <float>, "probabilities": {...}}
 ```
 
+v3 adds two single-response questions, so N candidates need N forward passes instead of
+N(N−1) ordered pairs:
+
 ```python
-gate_v1 = SwedishPreferenceGate("jonasaise/laya-swedish-preference-gate", revision="v1")  # the first release
+s = gate.score_quality(prompt="Hur fungerar fotosyntesen?", response="Växter gör mat av solljus.")
+# {"score": <float 1-5>, "probabilities": {1: <float>, ..., 5: <float>}}
+ranking = gate.rank_by_quality(prompt, [cand_1, cand_2, cand_3])  # [(index, score), ...] best first
+
+n = gate.score_naturalness("Du kan besöka ett museum, vänligen notera att det är bra.")
+# {"label": "natural" | "translationese", "p_natural": <float>, "is_valid_margin": <bool>}
 ```
+
+Earlier releases stay loadable: `revision="v2"` and `revision="v1"`.
 
 Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>`, `margin=<float>` and
 `revision=<Hub branch or tag>` are accepted. The checkpoint is in the standard Laya layout, so `laya.load(path)` opens it too
@@ -749,9 +759,9 @@ The fine-tuned gate reaches 98.4% accuracy on held-out pairs (the zero-shot base
 
 Against these labels Kimi-k3 is *less* accurate than the gate (95.5% vs 98.6%) and 802× slower, which is expected: the labels mark translationese, which the gate was trained on, while the judge was also asked about helpfulness and correctness, and it generated these pairs itself. The judge still helps where the gate is unsure: routing the 5.2% least-confident instances (threshold 0.45) lifts accuracy from 98.6% to 99.1% at an expected 507.5 ms per pair. The pre-registered rule (cheapest threshold within 0.5 points of the best) picks 0.00, i.e. 0.0% routed, because the gain is that small. For its intended System 1 role on data like this, settling confident comparisons in milliseconds and escalating the rest, the gate is fit for purpose (latency target met, ECE target met, confident-subset accuracy 98.6% vs judge 95.5%). It should not be the only judge for high-stakes decisions.
 
-A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is the default checkpoint on the Hub; v1 stays available as `revision="v1"`.
+A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is on the Hub as `revision="v2"`.
 
-A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is not on the Hub yet.
+A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is the default checkpoint on the Hub; v2 and v1 stay available as `revision="v2"` and `revision="v1"`.
 
 ## Usage ideas
 
