@@ -445,3 +445,106 @@ def test_readme_mentions_v2_on_hub():
     text = readme.render(m)
     assert "v2 is the default checkpoint on the Hub" in text
     assert 'SwedishPreferenceGate("me/model", revision="v1")' in text
+
+
+def _v3_metrics() -> dict:
+    m = _v2_metrics()
+    pair = {
+        "accuracy_order_averaged_prob": {"accuracy": 0.85, "ci95": [0.8, 0.9]},
+        "ece_both_orders": 0.02,
+        "ece_order_averaged": 0.03,
+        "positional_consistency": 0.9,
+    }
+    m["v3_eval"] = {
+        "original/preference": dict(pair),
+        "fluent/preference": dict(pair),
+        "probe/preference": dict(pair),
+        "probe/cascade": {
+            "table": [
+                {
+                    "threshold": 0.0,
+                    "routed_fraction": 0.0,
+                    "cascade_accuracy": 0.85,
+                    "expected_latency_ms": 10.0,
+                },
+                {
+                    "threshold": 0.3,
+                    "routed_fraction": 0.4,
+                    "cascade_accuracy": 0.9,
+                    "expected_latency_ms": 900.0,
+                },
+            ],
+            "recommended": {"threshold": 0.3, "routed_fraction": 0.4, "cascade_accuracy": 0.9},
+            "judge_accuracy": 0.88,
+        },
+        "latency_gpu_forward_ms": {"p50": 10.0, "p95": 11.0},
+    }
+    m["v3_pointwise"] = {
+        "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {"accuracy": 0.83, "ci95": [0.79, 0.87]},
+            "ece_p_chosen_beats_rejected": 0.14,
+        },
+        "original/natural_swedish": {"auc": 0.99, "accuracy": {"accuracy": 0.93}},
+        "latency_gpu_forward_ms_single_response": {"p50": 6.0},
+    }
+    m["v3_training"] = {"history": [], "hyperparameters": {"lr": 2e-5}, "train_units": 10}
+    m["mt_naturalness"] = {
+        "n_pairs": 5,
+        "models": {
+            "v3": {
+                "preference": {
+                    "human_preferred": {"accuracy": 0.48, "ci95": [0.46, 0.5]},
+                    "positional_consistency": 0.57,
+                },
+                "natural_swedish/no_prompt": {
+                    "auc_human_vs_mt": 0.55,
+                    "within_pair_human_higher": {"accuracy": 0.58, "ci95": [0.56, 0.6]},
+                },
+            }
+        },
+    }
+    return m
+
+
+def test_v3_sections_render_and_are_optional():
+    assert "Not measured" in readme.v3_section({})
+    assert "Not measured" in readme.cpu_section({})
+    assert "Not measured" in readme.mt_section({})
+    m = _v3_metrics()
+    section = readme.v3_section(m)
+    assert (
+        "| **Probe**, preference [95% CI] | 80.0% [75.0%, 85.0%] | 85.0% [80.0%, 90.0%] |"
+        in section
+    )
+    assert "**0.30** (recommended)" in section and "83.0% [79.0%, 87.0%]" in section
+    mt = readme.mt_section(m)
+    assert "| v3 | `preference` (pairwise) | 48.0% [46.0%, 50.0%] | 57.0% | — |" in mt
+    assert "AUC 0.550" in mt
+    text = readme.render(m)
+    assert "### v3: single-response questions" in text and "v3 is not on the Hub yet." in text
+
+
+def test_model_card_v3_and_blockers(monkeypatch, tmp_path):
+    m = _v3_metrics()
+    m["v3_eval"]["fluent/preference"]["ece_both_orders"] = 0.2
+    m["data"]["licenses"]["redistribution_allowed"] = True
+    m["tests"] = {"all_passed": True}
+    monkeypatch.setenv("HF_TOKEN", "x")
+    monkeypatch.setattr(publish, "V3_CHECKPOINT_DIR", tmp_path)
+    problems = publish.blockers(m, "v3")
+    assert any("v3 fluent val_eval ECE" in p for p in problems)
+    assert any("no trained v3 checkpoint" in p for p in problems)
+    card = publish.model_card_v3(m, "me/model")
+    assert card.startswith("---\nlanguage: [sv]")
+    assert 'revision="v2"' in card and "rank_by_quality" in card and "onnx-int8" in card
+    assert "82.9%" not in card and "83.0% [79.0%, 87.0%]" in card
+
+
+def test_readme_mentions_v3_on_hub():
+    m = _v3_metrics()
+    m["publish"] = {"status": "uploaded", "repo_id": "me/model", "checkpoint": "v3"}
+    text = readme.render(m)
+    assert "v3 is the default checkpoint on the Hub" in text
+    assert 'v2 is on the Hub as `revision="v2"`' in text
+    assert "rank_by_quality" in text

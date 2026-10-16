@@ -55,6 +55,35 @@ NATURALNESS_QUESTION = {
     }
 }
 QUESTIONS_V2 = {**QUESTION, **NATURALNESS_QUESTION}
+
+# v3: single-response questions, state = {"prompt", "response"}
+QUALITY_QID = "quality"
+QUALITY_LEVELS = (1, 2, 3, 4, 5)
+NATURAL_SINGLE_QID = "natural_swedish"
+POINTWISE_QUESTIONS = {
+    QUALITY_QID: {
+        "type": "score",
+        "instructions": "How well does the response answer the prompt "
+        "(helpfulness, correctness, completeness)?",
+        "criteria": [
+            "very poor: unhelpful, wrong or off-topic",
+            "poor: major errors or omissions",
+            "acceptable: partly helpful",
+            "good: helpful with minor issues",
+            "excellent: fully helpful and correct",
+        ],
+    },
+    NATURAL_SINGLE_QID: {
+        "type": "choice",
+        "instructions": "Is the response written in natural, idiomatic Swedish?",
+        "criteria": {
+            "natural": "natural, idiomatic Swedish",
+            "translationese": "reads like a literal or poor translation",
+        },
+    },
+}
+POINTWISE_QIDS = tuple(POINTWISE_QUESTIONS)
+QUESTIONS_V3 = {**QUESTIONS_V2, **POINTWISE_QUESTIONS}
 QUESTIONS_FILE = "questions.json"
 
 

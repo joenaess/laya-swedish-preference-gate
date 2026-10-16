@@ -14,6 +14,8 @@ Weights: [huggingface.co/jonasaise/laya-swedish-preference-gate](https://hugging
 
 A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is the default checkpoint on the Hub; v1 stays available as `revision="v1"`.
 
+A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is not on the Hub yet.
+
 ## Results at a glance
 
 | Metric | Value | Target |
@@ -75,8 +77,8 @@ results = gate.predict_preference_batch(
 )
 ```
 
-The Hub checkpoint is **v2**, which also answers a second question, *which response is
-written in more natural, idiomatic Swedish*:
+The Hub checkpoint is **v2**, which also answers *which response is written in more
+natural, idiomatic Swedish*:
 
 ```python
 r = gate.predict_naturalness(
@@ -85,8 +87,12 @@ r = gate.predict_naturalness(
     candidate_b="Du kan besöka ett museum, vänligen notera att det är en bra aktivitet för regn.",
 )
 # {"more_natural": "candidate_a", "p_a_more_natural": <float>, "probabilities": {...}}
+```
 
-gate_v1 = SwedishPreferenceGate("jonasaise/laya-swedish-preference-gate", revision="v1")  # the first release
+```python
+gate_v1 = SwedishPreferenceGate(
+    "jonasaise/laya-swedish-preference-gate", revision="v1"
+)  # the first release
 ```
 
 Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>`, `margin=<float>` and
@@ -111,7 +117,8 @@ Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>`, `margin=<floa
   validation set and applied as `softmax(logits / T)`. It changes confidence, not the
   predicted winner.
 - **Pipeline.** `./run.sh` runs data → train → calibrate → benchmark → judge → probe →
-  fluent pairs → v2 train / calibrate / evaluate → tests → readme → publish.
+  fluent pairs → v2 and v3 train / calibrate / evaluate → CPU benchmark →
+  machine-translation test → tests → readme → publish.
 
 ## Detailed results
 
@@ -477,6 +484,154 @@ Recommended for v2 (lowest routed fraction within 0.5% of the best cascade accur
 88.0% for 88.1%; for v1 the same rule gives
 0.45 → 31.9% routed, 73.7%.
 
+### v3: single-response questions
+
+**Why:** comparing N candidates pairwise costs N(N−1) ordered forward passes. v3 adds two
+questions over a *single* response (state `{"prompt", "response"}`):
+
+- **quality** (`score`, levels 1–5): trained on fluent responses with a soft target from the
+  UltraFeedback GPT-4 rating, split between the two nearest levels. The expected level under the
+  calibrated distribution is the score.
+- **natural_swedish** (`choice`: natural / translationese): original chosen = natural, original
+  rejected = translationese, every fluent response = natural.
+
+The pairwise `preference` and `naturalness` questions are trained exactly as in v2.
+
+#### Training
+
+Initialized from the base multilingual checkpoint; lr 2e-05, micro-batch
+8 × accumulation 2, warmup + cosine, bf16,
+OOM fallback: none. 2 epochs over
+110526 units (original/preference 12750 · original/naturalness 12750 · fluent/preference 9921 · fluent/naturalness 9921 · original/natural_swedish 25500 · fluent/quality 19842 · fluent/natural_swedish 19842). Best epoch: **1**
+(lowest mean val_calib loss over (source, question) groups); as with v2, the fluent preference loss rises in epoch 2. Total
+154.4 min on NVIDIA GeForce RTX 4080 Laptop GPU; peak GPU memory
+10.73 GiB. Quality accuracy is exact-level (5-way).
+
+| Epoch | Train loss | fluent/natural_swedish loss / acc | original/natural_swedish loss / acc | original/preference loss / acc | original/naturalness loss / acc | fluent/quality loss / acc | fluent/preference loss / acc | fluent/naturalness loss / acc | Time |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | 0.509 | 0.105 / 95.8% | 0.163 / 94.8% | 0.034 / 98.9% | 0.044 / 98.7% | 1.370 / 43.7% | 0.583 / 77.3% | 0.764 / n/a | 78.5 min |
+| 2 | 0.322 | 0.124 / 97.0% | 0.194 / 95.2% | 0.040 / 99.1% | 0.048 / 99.1% | 1.471 / 44.9% | 0.830 / 75.9% | 0.739 / n/a | 75.9 min |
+
+Temperatures, fitted per question on val_calib: `preference` T = 1.941 (NLL 0.275 → 0.233), `naturalness` T = 0.746 (NLL 0.042 → 0.041), `quality` T = 1.286 (NLL 1.370 → 1.358), `natural_swedish` T = 1.482 (NLL 0.137 → 0.124).
+
+#### v2 vs v3 on the pairwise questions
+
+Order-averaged accuracy (both orders scored, probabilities averaged), same evaluation code
+(`python -m laya_gate.v3 evaluate`).
+
+| Metric | v2 | v3 |
+|---|---|---|
+| Original val_eval, preference | 97.6% | 98.9% |
+| Original val_eval, naturalness | 98.1% | 98.8% |
+| Original val_eval, preference ECE | 0.023 | 0.014 |
+| Original, accuracy with chosen in A | 97.8% | 98.8% |
+| Original, accuracy with chosen in B | 97.0% | 98.7% |
+| Fluent val_eval, preference | 78.8% | 78.8% |
+| Fluent val_eval, preference ECE | 0.024 | 0.033 |
+| **Probe**, preference [95% CI] | 75.9% [70.9%, 80.6%] | 80.3% [75.6%, 84.6%] |
+| Probe, preference ECE | 0.033 | 0.041 |
+| Probe, positional consistency | 85.3% | 86.3% |
+| GPU forward, batch 1, median (pair) | 11.0 ms | 9.8 ms |
+
+The probe gain (75.9% → 80.3%) is inside
+overlapping 95% CIs, so it is suggestive, not established.
+
+#### Quality score
+
+Comparing two answers by their scores (one forward pass each):
+
+| Metric | Fluent val_eval (876 pairs) | Probe (299 pairs) |
+|---|---|---|
+| Accuracy (higher score = chosen) [95% CI] | 79.1% [76.5%, 82.0%] | 82.9% [78.9%, 87.0%] |
+| Spearman vs GPT-4 rating | 0.570 | 0.557 |
+| Mean score chosen / rejected | 3.77 / 3.14 | 3.80 / 3.12 |
+| ECE of P(chosen scores higher) | 0.107 | 0.139 |
+
+Mean absolute error against the rating on fluent val_eval: 0.86
+levels. The ranking is useful; the derived "A beats B" probability is **not** well calibrated
+(ECE above 0.085), so use the pairwise question when you need a calibrated margin.
+GPU forward for one response: 6.0 ms median.
+
+#### Natural-Swedish check
+
+On original val_eval responses: AUC 0.993, accuracy
+93.5% [92.4%, 94.5%], ECE 0.021. It lets
+12.2% of deliberate translationese pass as natural and
+flags 0.9% of the idiomatic answers; within a pair, the
+idiomatic answer gets the higher P(natural) 98.8% of
+the time. On fluent responses (all natural) it flags 3.9%
+(fluent val_eval) and 2.2% (probe).
+
+#### Probe cascade (v3 preference, Kimi-k3 judge)
+
+Kimi-k3 alone: 87.3%. Each order is a separate instance.
+
+| Threshold | Routed to judge | Cascade accuracy | Expected latency |
+|---|---|---|---|
+| 0.00 | 0.0% | 79.1% | 9.8 ms |
+| 0.05 | 9.5% | 82.6% | 918.3 ms |
+| 0.10 | 17.7% | 83.4% | 1699.3 ms |
+| 0.15 | 23.7% | 85.3% | 2273.0 ms |
+| 0.20 | 31.3% | 88.1% | 2990.3 ms |
+| 0.25 | 39.1% | 88.6% | 3739.4 ms |
+| **0.30** (recommended) | 46.8% | 88.8% | 4472.6 ms |
+| 0.35 | 56.4% | 89.1% | 5381.1 ms |
+| 0.40 | 72.2% | 87.8% | 6895.2 ms |
+| 0.45 | 88.5% | 87.6% | 8441.2 ms |
+
+Recommended (lowest routed fraction within 0.5% of the best cascade accuracy in the sweep): threshold 0.30, routing
+46.8% for 88.8%.
+
+### CPU inference
+
+Checkpoint `checkpoints/v3` on 13th Gen Intel(R) Core(TM) i9-13980HX, 24 threads.
+Method: batch 1; collate + forward + logits to host; tokenization excluded; 100 runs over the first 50 val_eval pairs. Probe accuracy is the preference question, both orders averaged;
+"original" is the first 300 original val_eval pairs. ΔP is the change in P(A) against torch fp32.
+
+| Variant | Latency median / p95 | Mean input tokens | Probe accuracy | Original accuracy | Mean / max ΔP |
+|---|---|---|---|---|---|
+| `torch-fp32` | 506.7 ms / 611.5 ms | 720 | 80.3% | 99.0% | 0.000 / 0.000 |
+| `torch-int8` | 486.5 ms / 572.0 ms | 720 | 77.6% | 99.0% | 0.073 / 0.596 |
+| `onnx-fp32` | 827.2 ms / 1095.5 ms | 720 | 80.3% | 99.0% | 0.000 / 0.000 |
+| `onnx-int8` | 448.5 ms / 595.5 ms | 720 | 77.9% | 99.0% | 0.057 / 0.538 |
+| `onnx-int8-512` | 147.7 ms / 151.9 ms | 421 | 75.9% | 97.7% | 0.086 / 0.740 |
+
+`torch-int8` is `torch.ao.quantization.quantize_dynamic` on the encoder's linear layers; the ONNX
+variants come from `python -m laya_gate.onnx_export` (int8 = ONNX Runtime dynamic
+quantization); `-512` caps the input at 512 tokens instead of 1024. Thread sweep for
+`onnx-int8` (median): 4 threads 559.6 ms, 8 threads 447.2 ms, 16 threads 580.5 ms, 24 threads 736.7 ms. The sweep's 24-thread median (736.7 ms) differs from the table's (448.5 ms) for the same setting, so expect large run-to-run variance on this hybrid P/E-core laptop CPU; treat the CPU numbers as rough. Files: onnx 1228 MB, onnx-int8 318 MB, torch (safetensors) 614 MB.
+
+No CPU variant comes close to the 35 ms target: the GPU is what makes the gate
+a millisecond-scale filter. int8 saves little time at 1024 tokens and costs a few probe points;
+the 512-token cap is the only large speed-up, at a larger accuracy cost.
+
+### Machine-translation test (a negative result)
+
+Does the naturalness skill transfer to data no Kimi-k3 model touched? 1989
+sentences from openlanguagedata/flores_plus (dev + devtest), professional English->Swedish translations are paired with a machine translation of the same English
+sentence by `Helsinki-NLP/opus-mt-en-sv` (20 identical pairs dropped).
+Length and content are matched (mean 129 vs
+127 characters). Pairwise questions use the prompt
+'Översätt följande text till svenska:' + English source; "human preferred" is order-averaged.
+
+| Model | Question | Human translation preferred [95% CI] | Positional consistency | AUC |
+|---|---|---|---|---|
+| v1 | `preference` (pairwise) | 45.8% [43.6%, 47.9%] | 50.0% | — |
+| v2 | `preference` (pairwise) | 42.6% [40.4%, 44.7%] | 47.1% | — |
+| v2 | `naturalness` (pairwise) | 44.8% [42.7%, 47.0%] | 54.4% | — |
+| v3 | `preference` (pairwise) | 48.2% [46.1%, 50.4%] | 57.4% | — |
+| v3 | `naturalness` (pairwise) | 49.1% [47.0%, 51.3%] | 58.7% | — |
+| v3 | `natural_swedish/with_source` (single response) | 53.3% [51.2%, 55.6%] | — | 0.520 |
+| v3 | `natural_swedish/no_prompt` (single response) | 57.9% [55.8%, 60.0%] | — | 0.554 |
+
+**No version separates professional from machine translation usefully.** The pairwise
+questions are at chance or lean toward the MT output; the best signal, v3's single-response
+check without a prompt, is above chance but weak (AUC 0.554). The professional reference is itself a
+translation, so this is a harder contrast than the deliberate translationese in the training
+data, but the result means the gate's "naturalness" is specific to Kimi-k3-style translationese
+(literal phrasing, English loan words, US-centric content). Do not use it as a general
+machine-translation quality estimator.
+
 ### Tests
 
 `pytest -v --cov=src/laya_gate (all markers; skips listed)`: **108 passed, 0 failed,
@@ -492,6 +647,8 @@ Coverage: **62.3%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · 
 - **1024-token window.** 42.3% of pairs exceed it; the gate then sees only the end of the prompt and the start of each response, so differences late in long answers are invisible to it.
 - **Kimi-k3 is a reference, not ground truth.** The judge is a strong but imperfect model; agreement with it is not correctness.
 - **Single seed, single run.** Numbers come from one training run; seed-to-seed variance was not measured.
+- **Naturalness does not transfer to machine translation.** On professional vs `opus-mt-en-sv` translations of FLORES+ sentences no version separates the two usefully (AUC ≤ 0.56, see the machine-translation test); it detects Kimi-k3-style translationese, not machine translation in general.
+- **CPU is slow.** A pair takes 506.7 ms (median) on CPU with torch fp32; int8 and ONNX do not get anywhere near the GPU's millisecond latency.
 
 ## Conclusion
 
@@ -501,11 +658,14 @@ Against these labels Kimi-k3 is *less* accurate than the gate (95.5% vs 98.6%) a
 
 A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is the default checkpoint on the Hub; v1 stays available as `revision="v1"`.
 
+A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is not on the Hub yet.
+
 ## Usage ideas
 
 - **Best-of-N reranking:** generate N Swedish candidates from an LLM, run a pairwise knockout
   or round-robin with `predict_preference_batch` (score both orders and average), and keep the
-  winner; N=8 round-robin is 56 ordered pairs, one batched call.
+  winner; N=8 round-robin is 56 ordered pairs, one batched call. With v3, `rank_by_quality`
+  scores each candidate once (N forward passes) instead.
 - **LLM-as-judge cascade:** score every pair with the gate and only send pairs with
   `is_valid_margin == False` to an expensive judge such as Kimi-k3. In our measurement the recommended threshold 0.00 routes 0.0% at 98.6% accuracy, and the most accurate setting (0.45) routes 5.2% for 99.1% at 507.5 ms expected per pair (see the cascade table).
 - **DPO data curation:** score a Swedish preference dataset in both orders and flag pairs where

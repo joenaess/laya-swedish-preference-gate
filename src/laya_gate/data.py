@@ -200,7 +200,26 @@ def truncate_triplet(
     min_response_tokens: int = 16,
     max_iter: int = 20,
 ) -> tuple[dict[str, str], bool, int]:
-    """Fit the serialized state into `room` tokens.
+    """Fit `{prompt, candidate_a, candidate_b}` into `room` tokens (see `truncate_state`)."""
+    return truncate_state(
+        tok,
+        prompt,
+        {"candidate_a": candidate_a, "candidate_b": candidate_b},
+        room,
+        min_response_tokens,
+        max_iter,
+    )
+
+
+def truncate_state(
+    tok,
+    prompt: str,
+    responses: dict[str, str],
+    room: int,
+    min_response_tokens: int = 16,
+    max_iter: int = 20,
+) -> tuple[dict[str, str], bool, int]:
+    """Fit the serialized state `{"prompt": prompt, **responses}` into `room` tokens.
 
     Keeps the tail of the prompt (most recent context) and the head of each response. The
     model reads the fields JSON-serialized, where escapes (newlines, control characters) can
@@ -211,8 +230,13 @@ def truncate_triplet(
 
     Returns `(state, truncated, n_state_tokens)`.
     """
-    fields = (prompt, candidate_a, candidate_b)
-    state = make_state(*fields)
+    keys = list(responses)
+    fields = (prompt, *responses.values())
+
+    def build(texts):
+        return {"prompt": texts[0], **dict(zip(keys, texts[1:], strict=True))}
+
+    state = build(fields)
     n_full = count_state_tokens(tok, state)
     if n_full <= room:
         return state, False, n_full
@@ -223,9 +247,9 @@ def truncate_triplet(
         max(1, count_state_tokens(tok, {"": t}) - count_state_tokens(tok, {"": ""})) for t in fields
     ]
     floors = [0] + [min(r, min_response_tokens) for r in raw[1:]]
-    overhead = count_state_tokens(tok, make_state("", "", ""))
+    overhead = count_state_tokens(tok, build([""] * len(fields)))
     budget = room - overhead
-    if budget < 3 * min_response_tokens:
+    if budget < len(keys) * min_response_tokens + min_response_tokens:
         raise ValueError(f"state room {room} leaves no space for the responses")
     for _ in range(max_iter):
         alloc = waterfill(ser, budget)
@@ -233,10 +257,9 @@ def truncate_triplet(
             min(r, max(f, int(a * r / s)))
             for r, s, a, f in zip(raw, ser, alloc, floors, strict=True)
         ]
-        state = make_state(
-            tail_tokens(prompt, offs[0], keep[0]),
-            head_tokens(candidate_a, offs[1], keep[1]),
-            head_tokens(candidate_b, offs[2], keep[2]),
+        state = build(
+            [tail_tokens(prompt, offs[0], keep[0])]
+            + [head_tokens(t, o, k) for t, o, k in zip(fields[1:], offs[1:], keep[1:], strict=True)]
         )
         n = count_state_tokens(tok, state)
         if n <= room:

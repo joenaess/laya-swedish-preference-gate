@@ -147,11 +147,35 @@ results = gate.predict_preference_batch(
 
 
 def v2_quickstart(m: dict) -> str:
-    if get(m, "publish.checkpoint") != "v2":
+    which = get(m, "publish.checkpoint")
+    if which not in ("v2", "v3"):
         return ""
     repo = get(m, "publish.repo_id")
-    return f"""The Hub checkpoint is **v2**, which also answers a second question, *which response is
-written in more natural, idiomatic Swedish*:
+    v3 = (
+        """
+
+v3 adds two single-response questions, so N candidates need N forward passes instead of
+N(N−1) ordered pairs:
+
+```python
+s = gate.score_quality(prompt="Hur fungerar fotosyntesen?", response="Växter gör mat av solljus.")
+# {"score": <float 1-5>, "probabilities": {1: <float>, ..., 5: <float>}}
+ranking = gate.rank_by_quality(prompt, [cand_1, cand_2, cand_3])  # [(index, score), ...] best first
+
+n = gate.score_naturalness("Du kan besöka ett museum, vänligen notera att det är bra.")
+# {"label": "natural" | "translationese", "p_natural": <float>, "is_valid_margin": <bool>}
+```
+
+Earlier releases stay loadable: `revision="v2"` and `revision="v1"`."""
+        if which == "v3"
+        else f"""
+
+```python
+gate_v1 = SwedishPreferenceGate("{repo}", revision="v1")  # the first release
+```"""
+    )
+    return f"""The Hub checkpoint is **{which}**, which also answers *which response is written in more
+natural, idiomatic Swedish*:
 
 ```python
 r = gate.predict_naturalness(
@@ -160,9 +184,7 @@ r = gate.predict_naturalness(
     candidate_b="Du kan besöka ett museum, vänligen notera att det är en bra aktivitet för regn.",
 )
 # {{"more_natural": "candidate_a", "p_a_more_natural": <float>, "probabilities": {{...}}}}
-
-gate_v1 = SwedishPreferenceGate("{repo}", revision="v1")  # the first release
-```
+```{v3}
 
 """
 
@@ -595,12 +617,280 @@ def v2_summary(m: dict) -> str | None:
         f"{num(100 * ((get(m, 'probe.judge.order_averaged.accuracy') or 0) - (a(ev) or 0)), 1)} "
         "percentage points "
         "behind Kimi-k3. "
-        + (
-            'v2 is the default checkpoint on the Hub; v1 stays available as `revision="v1"`.'
-            if get(m, "publish.checkpoint") == "v2"
-            else "v2 is not on the Hub yet."
-        )
+        + {
+            "v2": 'v2 is the default checkpoint on the Hub; v1 stays available as `revision="v1"`.',
+            "v3": 'v2 is on the Hub as `revision="v2"`.',
+        }.get(get(m, "publish.checkpoint"), "v2 is not on the Hub yet.")
     )
+
+
+def _oa(d: Any, key: str, part: str = "accuracy") -> Any:
+    """Order-averaged accuracy (or one CI bound: part="ci95.0" / "ci95.1")."""
+    return get(d, f"{key}.accuracy_order_averaged_prob.{part}")
+
+
+def _ci(d: Any, key: str, path: str = "accuracy_order_averaged_prob") -> str:
+    a = get(d, f"{path}.accuracy") if key == "" else get(d, f"{key}.{path}.accuracy")
+    base = path if key == "" else f"{key}.{path}"
+    lo, hi = get(d, f"{base}.ci95.0"), get(d, f"{base}.ci95.1")
+    return f"{pct(a)} [{pct(lo)}, {pct(hi)}]" if a is not None else NM
+
+
+def v3_summary(m: dict) -> str | None:
+    """One paragraph on v3, or None when v3 has not been evaluated."""
+    ev, pw, v2 = m.get("v3_eval"), m.get("v3_pointwise"), m.get("v2_eval")
+    if not (isinstance(ev, dict) and isinstance(pw, dict) and isinstance(v2, dict)):
+        return None
+    k = "probe/preference"
+    pub = (
+        'v3 is the default checkpoint on the Hub; v2 and v1 stay available as `revision="v2"` '
+        'and `revision="v1"`.'
+        if get(m, "publish.checkpoint") == "v3"
+        else "v3 is not on the Hub yet."
+    )
+    return (
+        f"A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) "
+        "keeps v2's two pairwise questions and adds two single-response questions: a 1–5 "
+        "**quality** score and a **natural Swedish vs translationese** check. On the probe its "
+        f"pairwise preference reaches {_ci(ev, k)} (v2: {pct(_oa(v2, k))}), and ranking the two "
+        f"answers by their quality scores reaches {_ci(pw, 'probe/quality', 'accuracy_expected_score')} "
+        f"with one forward pass per answer (Kimi-k3: "
+        f"{pct(get(m, 'probe.judge.order_averaged.accuracy'))}). On the original held-out pairs "
+        f"v3 is back to {pct(_oa(ev, 'original/preference'))} (v2: "
+        f"{pct(_oa(v2, 'original/preference'))}). On human vs machine translations of FLORES+ "
+        "sentences, no version is useful (see "
+        f"[the machine-translation test](#machine-translation-test-a-negative-result)). {pub}"
+    )
+
+
+def _history_table(tr: dict) -> str:
+    hist = tr.get("history", [])
+    groups = [k for k in (hist[0]["val_calib"] if hist else {}) if k != "mean_loss"]
+    head = " | ".join(f"{g} loss / acc" for g in groups)
+    rows = "\n".join(
+        f"| {h['epoch']} | {num(h['train_loss'])} | "
+        + " | ".join(
+            f"{num(h['val_calib'][g]['loss'])} / "
+            + (pct(h["val_calib"][g]["acc"]) if h["val_calib"][g]["acc"] is not None else "n/a")
+            for g in groups
+        )
+        + f" | {h['epoch_seconds'] / 60:.1f} min |"
+        for h in hist
+    )
+    return f"""| Epoch | Train loss | {head} | Time |
+|---|---|{"---|" * len(groups)}---|
+{rows}"""
+
+
+def v3_section(m: dict) -> str:
+    ev, pw, v2 = m.get("v3_eval"), m.get("v3_pointwise"), m.get("v2_eval")
+    tr, cal = m.get("v3_training"), m.get("v3_calibration")
+    if not all(isinstance(x, dict) for x in (ev, pw, tr)):
+        return "Not measured: run `python -m laya_gate.v3 train|calibrate|evaluate`."
+    v2 = v2 if isinstance(v2, dict) else {}
+    hp = tr.get("hyperparameters", {})
+    units = " · ".join(f"{k} {v}" for k, v in tr.get("train_units_by_source_question", {}).items())
+
+    def row(label, key, field=None, fmt=pct):
+        if field is None:
+            a, b = _oa(v2, key), _oa(ev, key)
+        else:
+            a, b = get(v2, f"{key}.{field}"), get(ev, f"{key}.{field}")
+        return f"| {label} | {fmt(a)} | {fmt(b)} |"
+
+    pair_rows = [
+        row("Original val_eval, preference", "original/preference"),
+        row("Original val_eval, naturalness", "original/naturalness"),
+        row("Original val_eval, preference ECE", "original/preference", "ece_order_averaged", num),
+        row("Original, accuracy with chosen in A", "original/preference", "accuracy_chosen_in_a"),
+        row("Original, accuracy with chosen in B", "original/preference", "accuracy_chosen_in_b"),
+        row("Fluent val_eval, preference", "fluent/preference"),
+        row("Fluent val_eval, preference ECE", "fluent/preference", "ece_order_averaged", num),
+        f"| **Probe**, preference [95% CI] | {_ci(v2, 'probe/preference')} | "
+        f"{_ci(ev, 'probe/preference')} |",
+        row("Probe, preference ECE", "probe/preference", "ece_order_averaged", num),
+        row("Probe, positional consistency", "probe/preference", "positional_consistency"),
+        row("GPU forward, batch 1, median (pair)", "latency_gpu_forward_ms", "p50", ms),
+    ]
+    fq, pq = pw.get("fluent/quality", {}), pw.get("probe/quality", {})
+    on, fn, pn = (
+        pw.get("original/natural_swedish", {}),
+        pw.get("fluent/natural_swedish", {}),
+        pw.get("probe/natural_swedish", {}),
+    )
+    c = get(ev, "probe/cascade", {})
+    rec = c.get("recommended", {})
+    casc_rows = "\n".join(
+        (
+            f"| **{r['threshold']:.2f}** (recommended) "
+            if abs(r["threshold"] - rec.get("threshold", -1)) < 1e-9
+            else f"| {r['threshold']:.2f} "
+        )
+        + f"| {pct(r['routed_fraction'])} | {pct(r['cascade_accuracy'])} | "
+        f"{ms(r['expected_latency_ms'])} |"
+        for r in c.get("table", [])
+    )
+    temps = ", ".join(
+        f"`{q}` T = {num(f.get('temperature'))} (NLL {num(f.get('nll_pre'))} → "
+        f"{num(f.get('nll_post'))})"
+        for q, f in (cal or {}).items()
+    )
+    return f"""**Why:** comparing N candidates pairwise costs N(N−1) ordered forward passes. v3 adds two
+questions over a *single* response (state `{{"prompt", "response"}}`):
+
+- **quality** (`score`, levels 1–5): trained on fluent responses with a soft target from the
+  UltraFeedback GPT-4 rating, split between the two nearest levels. The expected level under the
+  calibrated distribution is the score.
+- **natural_swedish** (`choice`: natural / translationese): original chosen = natural, original
+  rejected = translationese, every fluent response = natural.
+
+The pairwise `preference` and `naturalness` questions are trained exactly as in v2.
+
+#### Training
+
+Initialized from the base multilingual checkpoint; lr {hp.get("lr", NM)}, micro-batch
+{hp.get("micro_batch", NM)} × accumulation {hp.get("grad_accum", NM)}, warmup + cosine, bf16,
+OOM fallback: {hp.get("oom_fallback", NM)}. {hp.get("epochs", NM)} epochs over
+{tr.get("train_units", NM)} units ({units}). Best epoch: **{tr.get("best_epoch", NM)}**
+({tr.get("selection", NM)}); as with v2, the fluent preference loss rises in epoch 2. Total
+{num((tr.get("total_seconds") or 0) / 60, 1)} min on {tr.get("hardware", NM)}; peak GPU memory
+{num(tr.get("peak_gpu_memory_allocated_gib"), 2)} GiB. Quality accuracy is exact-level (5-way).
+
+{_history_table(tr)}
+
+Temperatures, fitted per question on val_calib: {temps}.
+
+#### v2 vs v3 on the pairwise questions
+
+Order-averaged accuracy (both orders scored, probabilities averaged), same evaluation code
+(`python -m laya_gate.v3 evaluate`).
+
+| Metric | v2 | v3 |
+|---|---|---|
+{chr(10).join(pair_rows)}
+
+The probe gain ({pct(_oa(v2, "probe/preference"))} → {pct(_oa(ev, "probe/preference"))}) is inside
+overlapping 95% CIs, so it is suggestive, not established.
+
+#### Quality score
+
+Comparing two answers by their scores (one forward pass each):
+
+| Metric | Fluent val_eval ({fq.get("n_pairs", NM)} pairs) | Probe ({pq.get("n_pairs", NM)} pairs) |
+|---|---|---|
+| Accuracy (higher score = chosen) [95% CI] | {_ci(fq, "", "accuracy_expected_score")} | {_ci(pq, "", "accuracy_expected_score")} |
+| Spearman vs GPT-4 rating | {num(fq.get("spearman_vs_rating"))} | {num(pq.get("spearman_vs_rating"))} |
+| Mean score chosen / rejected | {num(fq.get("mean_score_chosen"), 2)} / {num(fq.get("mean_score_rejected"), 2)} | {num(pq.get("mean_score_chosen"), 2)} / {num(pq.get("mean_score_rejected"), 2)} |
+| ECE of P(chosen scores higher) | {num(fq.get("ece_p_chosen_beats_rejected"))} | {num(pq.get("ece_p_chosen_beats_rejected"))} |
+
+Mean absolute error against the rating on fluent val_eval: {num(fq.get("mae_vs_rating"), 2)}
+levels. The ranking is useful; the derived "A beats B" probability is **not** well calibrated
+(ECE above {ECE_TARGET}), so use the pairwise question when you need a calibrated margin.
+GPU forward for one response: {ms(get(pw, "latency_gpu_forward_ms_single_response.p50"))} median.
+
+#### Natural-Swedish check
+
+On original val_eval responses: AUC {num(on.get("auc"))}, accuracy
+{_ci(on, "", "accuracy")}, ECE {num(on.get("ece"))}. It lets
+{pct(on.get("translationese_passed_as_natural"))} of deliberate translationese pass as natural and
+flags {pct(on.get("natural_flagged_translationese"))} of the idiomatic answers; within a pair, the
+idiomatic answer gets the higher P(natural) {pct(on.get("within_pair_natural_scores_higher"))} of
+the time. On fluent responses (all natural) it flags {pct(fn.get("flagged_translationese"))}
+(fluent val_eval) and {pct(pn.get("flagged_translationese"))} (probe).
+
+#### Probe cascade (v3 preference, Kimi-k3 judge)
+
+Kimi-k3 alone: {pct(c.get("judge_accuracy"))}. Each order is a separate instance.
+
+| Threshold | Routed to judge | Cascade accuracy | Expected latency |
+|---|---|---|---|
+{casc_rows}
+
+Recommended ({rec.get("rule", NM)}): threshold {num(rec.get("threshold"), 2)}, routing
+{pct(rec.get("routed_fraction"))} for {pct(rec.get("cascade_accuracy"))}."""
+
+
+def cpu_section(m: dict) -> str:
+    c = m.get("cpu_inference")
+    if not isinstance(c, dict) or not c.get("variants"):
+        return "Not measured: run `python -m laya_gate.cpu`."
+    rows = "\n".join(
+        f"| `{k}` | {ms(get(v, 'latency_ms.p50'))} / {ms(get(v, 'latency_ms.p95'))} | "
+        f"{num(v.get('mean_input_tokens'), 0)} | {pct(get(v, 'probe_accuracy.accuracy'))} | "
+        f"{pct(get(v, 'original_accuracy.accuracy'))} | "
+        f"{num(v.get('mean_abs_delta_p_vs_torch_fp32'))} / {num(v.get('max_abs_delta_p_vs_torch_fp32'))} |"
+        for k, v in c["variants"].items()
+    )
+    v = c["variants"]
+    n_orig = get(next(iter(v.values())), "original_accuracy.n", NM)
+    sweep = get(c, "thread_sweep.p50_ms_by_threads", {})
+    sweep_s = ", ".join(f"{t} threads {ms(x)}" for t, x in sweep.items())
+    files = ", ".join(f"{k} {x} MB" for k, x in c.get("files_mb", {}).items())
+    same_t = sweep.get(str(c.get("threads")))
+    main_t = get(v, f"{get(c, 'thread_sweep.variant')}.latency_ms.p50")
+    noise = (
+        f" The sweep's {c.get('threads')}-thread median ({ms(same_t)}) differs from the table's "
+        f"({ms(main_t)}) for the same setting, so expect large run-to-run variance on this "
+        "hybrid P/E-core laptop CPU; treat the CPU numbers as rough."
+        if isinstance(same_t, float)
+        and isinstance(main_t, float)
+        and abs(same_t - main_t) > 0.2 * main_t
+        else ""
+    )
+    return f"""Checkpoint `{c.get("checkpoint", NM)}` on {c.get("cpu", NM)}, {c.get("threads", NM)} threads.
+Method: {c.get("method", NM)}. Probe accuracy is the preference question, both orders averaged;
+"original" is the first {n_orig} original val_eval pairs. ΔP is the change in P(A) against torch fp32.
+
+| Variant | Latency median / p95 | Mean input tokens | Probe accuracy | Original accuracy | Mean / max ΔP |
+|---|---|---|---|---|---|
+{rows}
+
+`torch-int8` is `torch.ao.quantization.quantize_dynamic` on the encoder's linear layers; the ONNX
+variants come from `python -m laya_gate.onnx_export` (int8 = ONNX Runtime dynamic
+quantization); `-512` caps the input at 512 tokens instead of 1024. Thread sweep for
+`{get(c, "thread_sweep.variant", NM)}` (median): {sweep_s}.{noise} Files: {files}.
+
+No CPU variant comes close to the {LATENCY_TARGET_MS:.0f} ms target: the GPU is what makes the gate
+a millisecond-scale filter. int8 saves little time at 1024 tokens and costs a few probe points;
+the 512-token cap is the only large speed-up, at a larger accuracy cost."""
+
+
+def mt_section(m: dict) -> str:
+    mt = m.get("mt_naturalness")
+    if not isinstance(mt, dict) or not mt.get("models"):
+        return "Not measured: run `python -m laya_gate.mtqa translate` then `evaluate`."
+    rows = []
+    for ver, qs in mt["models"].items():
+        for q, d in qs.items():
+            if "human_preferred" in d:
+                rows.append(
+                    f"| {ver} | `{q}` (pairwise) | {_ci(d, '', 'human_preferred')} | "
+                    f"{pct(d.get('positional_consistency'))} | — |"
+                )
+            else:
+                rows.append(
+                    f"| {ver} | `{q}` (single response) | "
+                    f"{_ci(d, '', 'within_pair_human_higher')} | — | "
+                    f"{num(d.get('auc_human_vs_mt'))} |"
+                )
+    return f"""Does the naturalness skill transfer to data no Kimi-k3 model touched? {mt.get("n_pairs", NM)}
+sentences from {mt.get("source", NM)} are paired with a machine translation of the same English
+sentence by `{mt.get("mt_system", NM)}` ({mt.get("n_identical_dropped", NM)} identical pairs dropped).
+Length and content are matched (mean {num(get(mt, "mean_chars.human"), 0)} vs
+{num(get(mt, "mean_chars.mt"), 0)} characters). Pairwise questions use the prompt
+{mt.get("prompt", NM)}; "human preferred" is order-averaged.
+
+| Model | Question | Human translation preferred [95% CI] | Positional consistency | AUC |
+|---|---|---|---|---|
+{chr(10).join(rows)}
+
+**No version separates professional from machine translation usefully.** The pairwise
+questions are at chance or lean toward the MT output; the best signal, v3's single-response
+check without a prompt, is above chance but weak (AUC {num(get(mt, "models.v3.natural_swedish/no_prompt.auc_human_vs_mt"))}). The professional reference is itself a
+translation, so this is a harder contrast than the deliberate translationese in the training
+data, but the result means the gate's "naturalness" is specific to Kimi-k3-style translationese
+(literal phrasing, English loan words, US-centric content). Do not use it as a general
+machine-translation quality estimator."""
 
 
 def _v2_row(label: str, v1: Any, v2: Any, fmt=pct) -> str:
@@ -689,19 +979,6 @@ def v2_section(m: dict, intro: bool = True) -> str:
             ms,
         ),
     ]
-    hist = tr.get("history", [])
-    groups = [k for k in (hist[0]["val_calib"] if hist else {}) if k != "mean_loss"]
-    head = " | ".join(f"{g} loss / acc" for g in groups)
-    hist_rows = "\n".join(
-        f"| {h['epoch']} | {num(h['train_loss'])} | "
-        + " | ".join(
-            f"{num(h['val_calib'][g]['loss'])} / "
-            + (pct(h["val_calib"][g]["acc"]) if h["val_calib"][g]["acc"] is not None else "n/a")
-            for g in groups
-        )
-        + f" | {h['epoch_seconds'] / 60:.1f} min |"
-        for h in hist
-    )
     hp = tr.get("hyperparameters", {})
     nat = ev.get("original/naturalness", {})
     fn, pn = ev.get("fluent/naturalness", {}), ev.get("probe/naturalness", {})
@@ -758,9 +1035,7 @@ recipe as v1 (lr {hp.get("lr", NM)}, micro-batch {hp.get("micro_batch", NM)} × 
 
 Accuracy is n/a for fluent/naturalness, whose target is 50/50.
 
-| Epoch | Train loss | {head} | Time |
-|---|---|{"---|" * len(groups)}---|
-{hist_rows}
+{_history_table(tr)}
 
 Temperatures were fitted per question on val_calib, both orders:
 {temps}.
@@ -850,6 +1125,19 @@ def limitations(m: dict) -> str:
         "**Single seed, single run.** Numbers come from one training run; seed-to-seed variance "
         "was not measured.",
     ]
+    if isinstance(m.get("mt_naturalness"), dict):
+        items.append(
+            "**Naturalness does not transfer to machine translation.** On professional vs "
+            "`opus-mt-en-sv` translations of FLORES+ sentences no version separates the two usefully "
+            "(AUC ≤ 0.56, see the machine-translation test); it detects Kimi-k3-style "
+            "translationese, not machine translation in general."
+        )
+    cpu = get(m, "cpu_inference.variants.torch-fp32.latency_ms.p50")
+    if isinstance(cpu, float):
+        items.append(
+            f"**CPU is slow.** A pair takes {ms(cpu)} (median) on CPU with torch fp32; int8 and "
+            "ONNX do not get anywhere near the GPU's millisecond latency."
+        )
     if missed:
         items.append("**Targets not met:** " + "; ".join(missed) + ".")
     if not pub_ok:
@@ -933,8 +1221,8 @@ def conclusion(m: dict) -> str:
         )
     else:
         p2 = "The judge comparison is incomplete, so the cascade could not be assessed."
-    v2 = v2_summary(m)
-    return p1 + "\n\n" + p2 + (f"\n\n{v2}" if v2 else "")
+    extra = [x for x in (v2_summary(m), v3_summary(m)) if x]
+    return "\n\n".join([p1, p2, *extra])
 
 
 def baseline_comparison(m: dict) -> str:
@@ -997,7 +1285,8 @@ def usage_ideas(m: dict) -> str:
     )
     return f"""- **Best-of-N reranking:** generate N Swedish candidates from an LLM, run a pairwise knockout
   or round-robin with `predict_preference_batch` (score both orders and average), and keep the
-  winner; N=8 round-robin is 56 ordered pairs, one batched call.
+  winner; N=8 round-robin is 56 ordered pairs, one batched call. With v3, `rank_by_quality`
+  scores each candidate once (N forward passes) instead.
 - **LLM-as-judge cascade:** score every pair with the gate and only send pairs with
   `is_valid_margin == False` to an expensive judge such as Kimi-k3. {cascade}
 - **DPO data curation:** score a Swedish preference dataset in both orders and flag pairs where
@@ -1042,7 +1331,7 @@ deliberately poor translation. What it has learned is mainly to tell **authentic
 translationese**, and it is compared against {JUDGE_HW}.
 
 {hub_line}
-{(chr(10) + v2_summary(m) + chr(10)) if v2_summary(m) else ""}
+{"".join(chr(10) + x + chr(10) for x in (v2_summary(m), v3_summary(m)) if x)}
 ## Results at a glance
 
 {results_table(m)}
@@ -1082,7 +1371,8 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
   validation set and applied as `softmax(logits / T)`. It changes confidence, not the
   predicted winner.
 - **Pipeline.** `./run.sh` runs data → train → calibrate → benchmark → judge → probe →
-  fluent pairs → v2 train / calibrate / evaluate → tests → readme → publish.
+  fluent pairs → v2 and v3 train / calibrate / evaluate → CPU benchmark →
+  machine-translation test → tests → readme → publish.
 
 ## Detailed results
 
@@ -1115,6 +1405,18 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 ### v2: training on fluent pairs too
 
 {v2_section(m)}
+
+### v3: single-response questions
+
+{v3_section(m)}
+
+### CPU inference
+
+{cpu_section(m)}
+
+### Machine-translation test (a negative result)
+
+{mt_section(m)}
 
 ### Tests
 

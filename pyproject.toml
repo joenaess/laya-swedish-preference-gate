@@ -28,6 +28,15 @@ dev = [
     "pytest-cov>=4.1.0",
     "pytest-asyncio>=0.23.0",
 ]
+mt = [
+    "sacremoses>=0.1.1",
+    "sentencepiece>=0.2.0",
+]
+onnx = [
+    "onnx>=1.16",
+    "onnxruntime>=1.18",
+    "onnxscript>=0.1",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/laya_gate"]

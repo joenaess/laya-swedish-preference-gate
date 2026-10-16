@@ -146,3 +146,22 @@ def test_resolve_checkpoint_passes_revision(monkeypatch, tmp_path):
     assert predictor.resolve_checkpoint("me/model", revision="v1") == tmp_path
     assert seen["repo_id"] == "me/model" and seen["revision"] == "v1"
     assert "questions.json" in seen["patterns"]
+
+
+def test_onnx_backend_matches_torch(tiny_checkpoint, tmp_path):
+    pytest.importorskip("onnxruntime")
+    import shutil
+
+    from laya_gate.onnx_export import export
+
+    ckpt = tmp_path / "ckpt"
+    shutil.copytree(tiny_checkpoint, ckpt)
+    export(ckpt)
+    args = ("Fråga om hösten?", "Löven blir röda och gula.", "Höst är en årstid.")
+    ref = SwedishPreferenceGate(ckpt, device="cpu").predict_preference(*args)
+    for backend, tol in (("onnx", 1e-4), ("onnx-int8", 0.1)):
+        got = SwedishPreferenceGate(ckpt, backend=backend, threads=1).predict_preference(*args)
+        assert set(got) == set(ref)
+        assert abs(got["p_chosen"] - ref["p_chosen"]) < tol
+    with pytest.raises(ValueError):
+        SwedishPreferenceGate(ckpt, backend="tensorrt")

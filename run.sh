@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # End-to-end pipeline: data -> train -> calibrate -> benchmark -> judge -> tests -> readme -> publish.
 # v2 (5c-5f): fluent-vs-fluent training pairs from Kimi-k3, then the two-question v2 gate.
+# v3 (5g-5i): v2's questions plus single-response quality and natural-Swedish questions;
+# then the CPU benchmark (5j) and the machine-translation test (5k).
 # Secrets are loaded from .env by uv and read from the environment; nothing here prints them.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -33,12 +35,20 @@ if [[ -f cache/fluent/train.jsonl ]]; then
     step "5e/8 v2 calibrate" v2 calibrate
     step "5f/8 v2 evaluate"  v2 evaluate
     step "5f/8 v1 evaluate"  v2 evaluate --checkpoint checkpoints/best_model --section v1_eval
+    step "5g/8 v3 train"     v3 train
+    step "5h/8 v3 calibrate" v3 calibrate
+    step "5i/8 v3 evaluate"  v3 evaluate
+    step "5j/8 cpu"          cpu --checkpoint checkpoints/v3
+    step "5k/8 mt test"      mtqa translate
+    step "5k/8 mt test"      mtqa evaluate
 else
-    echo "note: no fluent training pairs; skipping v2" >&2
+    echo "note: no fluent training pairs; skipping v2 and v3" >&2
 fi
 step "6/8 tests"      testing
 step "7/8 readme"     readme
-if [[ -f checkpoints/v2/model.safetensors ]]; then
+if [[ -f checkpoints/v3/model.safetensors ]]; then
+    step "8/8 publish"    publish --checkpoint v3
+elif [[ -f checkpoints/v2/model.safetensors ]]; then
     step "8/8 publish"    publish --checkpoint v2
 else
     step "8/8 publish"    publish

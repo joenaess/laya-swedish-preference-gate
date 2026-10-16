@@ -35,13 +35,20 @@ def softmax(logits: np.ndarray, temperature: float = 1.0) -> np.ndarray:
 
 def nll(logits: np.ndarray, labels: Sequence[int], temperature: float = 1.0) -> float:
     p = softmax(logits, temperature)
+    y = np.asarray(labels)
+    if y.ndim == 2:  # soft targets
+        return float(-np.mean((y * np.log(np.clip(p, 1e-12, 1.0))).sum(-1)))
     return float(-np.mean(np.log(np.clip(p[np.arange(len(labels)), labels], 1e-12, 1.0))))
 
 
 def fit_temperature(logits: np.ndarray, labels: Sequence[int], max_iter: int = 200) -> float:
-    """Single scalar T > 0 minimizing NLL, by L-BFGS over log T (so T = exp(log_T) > 0)."""
+    """Single scalar T > 0 minimizing NLL, by L-BFGS over log T (so T = exp(log_T) > 0).
+
+    `labels` are class indices, or an `[n, k]` array of soft target distributions.
+    """
     x = torch.as_tensor(np.asarray(logits), dtype=torch.float64)
-    y = torch.as_tensor(np.asarray(labels), dtype=torch.long)
+    y_arr = np.asarray(labels)
+    y = torch.as_tensor(y_arr, dtype=torch.float64 if y_arr.ndim == 2 else torch.long)
     log_t = torch.zeros(1, dtype=torch.float64, requires_grad=True)
     opt = torch.optim.LBFGS([log_t], lr=0.1, max_iter=max_iter, line_search_fn="strong_wolfe")
 

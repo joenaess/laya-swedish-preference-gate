@@ -15,15 +15,18 @@ from typing import Any
 import numpy as np
 import torch
 
-from .data import state_room_for, truncate_triplet
+from .data import state_room_for, truncate_state, truncate_triplet
 from .utils import (
     CHECKPOINT_DIR,
     DEFAULT_MARGIN,
     HEAD_MAX_LEN,
     MAX_LEN,
+    NATURAL_SINGLE_QID,
     NATURALNESS_QID,
     OPTIONS,
     QID,
+    QUALITY_LEVELS,
+    QUALITY_QID,
     QUESTION,
     QUESTIONS_FILE,
 )
@@ -31,8 +34,13 @@ from .utils import (
 TEMPERATURE_FILE = "temperature.json"
 
 
-def resolve_checkpoint(checkpoint_path: str | os.PathLike, revision: str | None = None) -> Path:
-    """A local directory, or a Hugging Face Hub repo id (at `revision`) downloaded to the cache."""
+def resolve_checkpoint(
+    checkpoint_path: str | os.PathLike,
+    revision: str | None = None,
+    backend: str = "torch",
+) -> Path:
+    """A local directory, or a Hugging Face Hub repo id (at `revision`) downloaded to the cache.
+    The torch weights are fetched for `backend="torch"`, the ONNX graph for the ONNX backends."""
     path = Path(checkpoint_path)
     if path.is_dir():
         return path
@@ -46,26 +54,43 @@ def resolve_checkpoint(checkpoint_path: str | os.PathLike, revision: str | None 
             revision=revision,
             allow_patterns=[
                 "rl_agent_config.json",
-                "model.safetensors",
                 "tokenizer/*",
                 "encoder/*",
                 TEMPERATURE_FILE,
                 QUESTIONS_FILE,
+                *(
+                    ["model.safetensors"]
+                    if backend == "torch"
+                    else [f"onnx/{_onnx_file(backend)}*"]  # graph + external weight data
+                ),
             ],
         )
     )
 
 
-def load_model(model_dir: Path):
-    """`(model, tokenizer, cfg)` from a checkpoint in the layout `laya.load` reads."""
+def _onnx_file(backend: str) -> str:
+    from .onnx_export import FILES
+
+    if backend not in FILES:
+        raise ValueError(f"backend must be 'torch' or one of {sorted(FILES)}")
+    return FILES[backend]
+
+
+def load_config_and_tokenizer(model_dir: Path):
     from laya.agent import _fix_tokenizer_config
-    from laya.common import build_model
-    from safetensors.torch import load_file
     from transformers import AutoTokenizer
 
     _fix_tokenizer_config(str(model_dir))
     cfg = json.loads((model_dir / "rl_agent_config.json").read_text(encoding="utf-8"))
-    tok = AutoTokenizer.from_pretrained(str(model_dir / "tokenizer"))
+    return AutoTokenizer.from_pretrained(str(model_dir / "tokenizer")), cfg
+
+
+def load_model(model_dir: Path):
+    """`(model, tokenizer, cfg)` from a checkpoint in the layout `laya.load` reads."""
+    from laya.common import build_model
+    from safetensors.torch import load_file
+
+    tok, cfg = load_config_and_tokenizer(model_dir)
     model = build_model(cfg, encoder_dir=str(model_dir / "encoder"), pretrained=False)
     model.load_state_dict(load_file(str(model_dir / "model.safetensors")), strict=True)
     return model, tok, cfg
@@ -81,10 +106,10 @@ def collate(items: Sequence[dict[str, Any]], pad_id: int) -> dict[str, torch.Ten
 
 @torch.inference_mode()
 def forward_logits(model, batch: dict[str, torch.Tensor], device: torch.device) -> torch.Tensor:
-    """Raw option logits `[n, 2]` (float32) for a collated batch."""
+    """Raw option logits `[n, k]` (float32) for a collated batch; k = most options in the batch."""
     args = [batch[k].to(device, non_blocking=True) for k in batch]
     logits, _act = model(*args)
-    return logits[:, : len(OPTIONS)].float()
+    return logits.float()
 
 
 class SwedishPreferenceGate:
@@ -100,9 +125,15 @@ class SwedishPreferenceGate:
             `temperature.json`; 1.0 when the checkpoint has none).
         revision: Hub branch, tag or commit (e.g. "v1" for the first release); ignored for
             local directories.
+        backend: "torch" (default), or "onnx" / "onnx-int8" for ONNX Runtime on CPU using
+            `onnx/model.onnx` / `onnx/model.int8.onnx` in the checkpoint (see `onnx_export`).
+        threads: CPU threads for the ONNX backends (default: ONNX Runtime's choice).
+        max_len: override the 1024-token input limit (shorter is faster on CPU, but truncates
+            more; the model was trained at 1024).
 
     A checkpoint that ships `questions.json` with a `naturalness` question (v2) also supports
-    `predict_naturalness` / `predict_naturalness_batch`.
+    `predict_naturalness` / `predict_naturalness_batch`; one with the single-response questions
+    (v3) also supports `score_quality`, `rank_by_quality` and `score_naturalness`.
     """
 
     def __init__(
@@ -113,18 +144,35 @@ class SwedishPreferenceGate:
         dtype: torch.dtype | None = None,
         temperature: float | None = None,
         revision: str | None = None,
+        backend: str = "torch",
+        threads: int | None = None,
+        max_len: int | None = None,
     ):
         if not 0.0 <= margin < 0.5:
             raise ValueError("margin must be in [0, 0.5)")
         self.margin = float(margin)
-        self.model_dir = resolve_checkpoint(checkpoint_path, revision)
-        self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
-        if dtype is None:
-            dtype = torch.bfloat16 if self.device.type == "cuda" else torch.float32
-        self.dtype = dtype
-        model, self.tok, self.cfg = load_model(self.model_dir)
-        self.model = model.to(self.device, dtype=dtype).eval()
-        self.max_len = int(self.cfg.get("max_len", MAX_LEN))
+        self.backend = backend
+        self.model_dir = resolve_checkpoint(checkpoint_path, revision, backend)
+        self._onnx = None
+        if backend == "torch":
+            self.device = torch.device(device or ("cuda" if torch.cuda.is_available() else "cpu"))
+            if dtype is None:
+                dtype = torch.bfloat16 if self.device.type == "cuda" else torch.float32
+            self.dtype = dtype
+            model, self.tok, self.cfg = load_model(self.model_dir)
+            self.model = model.to(self.device, dtype=dtype).eval()
+        else:
+            from .onnx_export import ONNX_DIR, OnnxForward
+
+            path = self.model_dir / ONNX_DIR / _onnx_file(backend)
+            if not path.exists():
+                raise FileNotFoundError(
+                    f"{path} not found; run `python -m laya_gate.onnx_export {self.model_dir}`"
+                )
+            self.device, self.dtype, self.model = torch.device("cpu"), torch.float32, None
+            self.tok, self.cfg = load_config_and_tokenizer(self.model_dir)
+            self._onnx = OnnxForward(path, threads)
+        self.max_len = int(max_len or self.cfg.get("max_len", MAX_LEN))
         self.head_max_len = int(self.cfg.get("head_max_len", HEAD_MAX_LEN))
         q_path = self.model_dir / QUESTIONS_FILE
         self.questions = (
@@ -166,14 +214,32 @@ class SwedishPreferenceGate:
         )
         return {"ids": ids, "markers": markers, "qtype": 0, "truncated": truncated}
 
+    def encode_single(self, prompt: str, response: str, qid: str) -> dict[str, Any]:
+        """Encode one response for a single-response (v3) question; state = {prompt, response}."""
+        from laya.common import QTYPES, build_sequence
+
+        if qid not in self._internal:
+            raise ValueError(f"this checkpoint has no {qid!r} question")
+        state, truncated, _ = truncate_state(self.tok, prompt, {"response": response}, self.room)
+        q = self._internal[qid]
+        ids, markers = build_sequence(self.tok, state, q, self.max_len, self.head_max_len)
+        return {"ids": ids, "markers": markers, "qtype": QTYPES[q["t"]], "truncated": truncated}
+
     def logits(self, items: Sequence[dict[str, Any]], batch_size: int = 32) -> np.ndarray:
-        """Raw (uncalibrated) logits `[n, 2]`; batches are length-sorted, order is restored."""
+        """Raw (uncalibrated) logits `[n, k]`, k options per item (2 for the pairwise questions);
+        batches are length-sorted and the input order is restored. Items must share k."""
+        if len({len(it["markers"]) for it in items}) > 1:
+            raise ValueError("all items in one call must have the same number of options")
+        k = len(items[0]["markers"]) if items else len(OPTIONS)
         order = sorted(range(len(items)), key=lambda i: len(items[i]["ids"]))
-        out = np.zeros((len(items), len(OPTIONS)), dtype=np.float32)
+        out = np.zeros((len(items), k), dtype=np.float32)
         for start in range(0, len(order), batch_size):
             idx = order[start : start + batch_size]
             batch = collate([items[i] for i in idx], self.tok.pad_token_id)
-            out[idx] = forward_logits(self.model, batch, self.device).cpu().numpy()
+            if self._onnx is not None:
+                out[idx] = self._onnx(batch)[:, :k]
+            else:
+                out[idx] = forward_logits(self.model, batch, self.device)[:, :k].cpu().numpy()
         return out
 
     def probabilities(self, logits: np.ndarray, qid: str = QID) -> np.ndarray:
@@ -250,3 +316,70 @@ class SwedishPreferenceGate:
         ]
         probs = self.probabilities(self.logits(items, batch_size=batch_size), NATURALNESS_QID)
         return [self._natural_result(p) for p in probs]
+
+    # ------------------------------------------------------- single response (v3)
+
+    @property
+    def has_pointwise(self) -> bool:
+        return QUALITY_QID in self._internal and NATURAL_SINGLE_QID in self._internal
+
+    def score_quality(self, prompt: str, response: str) -> dict[str, Any]:
+        """Quality of one response on the 1-5 scale (v3 checkpoints only)."""
+        return self.score_quality_batch([prompt], [response], 1)[0]
+
+    def score_quality_batch(
+        self, prompts: Sequence[str], responses: Sequence[str], batch_size: int = 32
+    ) -> list[dict[str, Any]]:
+        """`score` is the expected level under the calibrated distribution over 1..5, so two
+        responses compare by `score`; `probabilities` is that distribution."""
+        if len(prompts) != len(responses):
+            raise ValueError("prompts and responses must have the same length")
+        items = [
+            self.encode_single(p, r, QUALITY_QID) for p, r in zip(prompts, responses, strict=True)
+        ]
+        probs = self.probabilities(self.logits(items, batch_size=batch_size), QUALITY_QID)
+        levels = np.asarray(QUALITY_LEVELS, dtype=float)
+        return [
+            {
+                "score": float(p @ levels),
+                "probabilities": {lvl: float(x) for lvl, x in zip(QUALITY_LEVELS, p, strict=True)},
+            }
+            for p in probs
+        ]
+
+    def rank_by_quality(
+        self, prompt: str, candidates: Sequence[str], batch_size: int = 32
+    ) -> list[tuple[int, float]]:
+        """Best-of-N with N forward passes: `(index, score)` pairs, best first."""
+        scores = self.score_quality_batch([prompt] * len(candidates), candidates, batch_size)
+        return sorted(
+            ((i, s["score"]) for i, s in enumerate(scores)), key=lambda x: x[1], reverse=True
+        )
+
+    def score_naturalness(self, response: str, prompt: str = "") -> dict[str, Any]:
+        """Whether one Swedish text reads as natural or as translationese (v3 checkpoints only).
+        `prompt` is optional context, e.g. the request or the source text."""
+        return self.score_naturalness_batch([response], [prompt], 1)[0]
+
+    def score_naturalness_batch(
+        self,
+        responses: Sequence[str],
+        prompts: Sequence[str] | None = None,
+        batch_size: int = 32,
+    ) -> list[dict[str, Any]]:
+        prompts = [""] * len(responses) if prompts is None else prompts
+        if len(prompts) != len(responses):
+            raise ValueError("prompts and responses must have the same length")
+        items = [
+            self.encode_single(p, r, NATURAL_SINGLE_QID)
+            for p, r in zip(prompts, responses, strict=True)
+        ]
+        probs = self.probabilities(self.logits(items, batch_size=batch_size), NATURAL_SINGLE_QID)
+        return [
+            {
+                "label": "natural" if p[0] >= 0.5 else "translationese",
+                "p_natural": float(p[0]),
+                "is_valid_margin": bool(abs(p[0] - 0.5) >= self.margin),
+            }
+            for p in probs
+        ]

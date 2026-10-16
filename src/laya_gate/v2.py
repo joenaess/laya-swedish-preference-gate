@@ -41,7 +41,7 @@ from .judge import (
     recommend,
 )
 from .probe import PROBE_DIR, bootstrap_ci, summarize
-from .train import Hyper, _collate_train, batch_loss, choose_memory_config, save
+from .train import Hyper, _collate_train, choose_memory_config, save
 from .utils import (
     BASE_MODEL_SUBFOLDER,
     DEFAULT_MARGIN,
@@ -116,9 +116,33 @@ def build_units(tok, rows_by_source, internal, room, max_len, head_max_len):
 
 
 def as_item(unit, order: str) -> dict[str, Any]:
+    """A training item; single-response units (v3) have one encoding and no order to flip."""
+    if unit.get("single"):
+        ids, markers = unit["fwd"]
+        return {
+            "ids": ids.tolist(),
+            "markers": markers,
+            "qtype": unit["qtype"],
+            "target": unit["target"],
+        }
     ids, markers = unit[order]
     target = unit["target"] if order == "fwd" else unit["target"][::-1]
     return {"ids": ids.tolist(), "markers": markers, "qtype": 0, "target": target}
+
+
+def batch_loss_k(model, batch, device):
+    """Soft-target cross-entropy over every option the item has (2 for pairwise questions,
+    5 for the quality score); padded options are masked to -1e4 by the model."""
+    args = [
+        batch[k].to(device)
+        for k in ("input_ids", "attention_mask", "marker_pos", "marker_mask", "qtype")
+    ]
+    with torch.autocast("cuda", dtype=torch.bfloat16, enabled=device.type == "cuda"):
+        logits, _ = model(*args)
+    logits = logits.float()
+    target = batch["target"].to(device)
+    loss = -(target * torch.log_softmax(logits, -1)).sum(-1).mean()
+    return loss, logits
 
 
 # ------------------------------------------------------------------------- train
@@ -126,21 +150,28 @@ def as_item(unit, order: str) -> dict[str, Any]:
 
 @torch.no_grad()
 def eval_units(model, units, pad_id, device, batch_size=32) -> dict[str, dict[str, float]]:
-    """Loss and accuracy per (source, question), stored order."""
+    """Loss and accuracy per (source, question), stored order; MAE for the quality score."""
     model.eval()
     order = sorted(range(len(units)), key=lambda i: len(units[i]["fwd"][0]))
-    sums: dict[tuple[str, str], list[float]] = {}
+    sums: dict[tuple[str, str], list[tuple[float, float, float]]] = {}
     for s in range(0, len(order), batch_size):
         chunk = [units[i] for i in order[s : s + batch_size]]
         batch = _collate_train([as_item(u, "fwd") for u in chunk], pad_id)
-        _, logits = batch_loss(model, batch, device)
+        _, logits = batch_loss_k(model, batch, device)
         logp = torch.log_softmax(logits, -1).cpu().numpy()
         for u, lp in zip(chunk, logp, strict=True):
+            k = len(u["target"])
+            lp = lp[:k]
             key = (u["source"], u["qid"])
             loss = -float(np.dot(u["target"], lp))
-            hard = u["target"] != [0.5, 0.5]
+            hard = max(u["target"]) > 0.5
             correct = float(np.argmax(lp) == u["label"]) if hard else float("nan")
-            sums.setdefault(key, []).append((loss, correct))
+            err = (
+                abs(float(np.exp(lp) @ np.arange(1, k + 1)) - u["rating"])
+                if "rating" in u
+                else float("nan")
+            )
+            sums.setdefault(key, []).append((loss, correct, err))
     out = {}
     for (src, qid), vals in sums.items():
         arr = np.array(vals)
@@ -149,13 +180,15 @@ def eval_units(model, units, pad_id, device, batch_size=32) -> dict[str, dict[st
             "acc": float(np.nanmean(arr[:, 1])) if not np.isnan(arr[:, 1]).all() else None,
             "n": len(vals),
         }
+        if not np.isnan(arr[:, 2]).all():
+            out[f"{src}/{qid}"]["mae"] = float(np.nanmean(arr[:, 2]))
     out["mean_loss"] = float(np.mean([v["loss"] for v in out.values()]))
     return out
 
 
-def train(args) -> None:
-    from laya.train import load_checkpoint, to_internal
-    from transformers import get_cosine_schedule_with_warmup
+def setup_training(args):
+    """Seeded base model, tokenizer and config on the training device."""
+    from laya.train import load_checkpoint
 
     hp = Hyper(epochs=args.epochs)
     random.seed(hp.seed)
@@ -164,7 +197,13 @@ def train(args) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model, tok, cfg = load_checkpoint(BASE_MODEL_SUBFOLDER)
     model.to(device)
-    pad = tok.pad_token_id
+    return hp, device, model, tok, cfg
+
+
+def train(args) -> None:
+    from laya.train import to_internal
+
+    hp, device, model, tok, cfg = setup_training(args)
     internal = {qid: to_internal(qid, q) for qid, q in QUESTIONS_V2.items()}
     room = state_room_for(tok, QUESTIONS_V2, hp.max_len, hp.head_max_len)
 
@@ -180,7 +219,14 @@ def train(args) -> None:
         f"encoded in {time.perf_counter() - t:.0f}s",
         flush=True,
     )
+    run_training(hp, device, model, tok, cfg, data, QUESTIONS_V2, V2_DIR, "v2_training", "v2")
 
+
+def run_training(hp, device, model, tok, cfg, data, questions, out_dir, section, recipe) -> None:
+    """Train on `data["train"]` units, keep the epoch with the lowest mean val_calib loss."""
+    from transformers import get_cosine_schedule_with_warmup
+
+    pad = tok.pad_token_id
     train_units = data["train"]
     probe_items = [as_item(u, "fwd") for u in train_units]
     hp = choose_memory_config(model, probe_items, pad, device, hp)
@@ -209,7 +255,7 @@ def train(args) -> None:
                 as_item(train_units[i], rng.choice(("fwd", "rev")))
                 for i in order[s : s + hp.micro_batch]
             ]
-            loss, _ = batch_loss(model, _collate_train(chunk, pad), device)
+            loss, _ = batch_loss_k(model, _collate_train(chunk, pad), device)
             window = min(hp.grad_accum, micro_steps - (step // hp.grad_accum) * hp.grad_accum)
             (loss / window).backward()
             total += loss.item()
@@ -236,15 +282,15 @@ def train(args) -> None:
         print(json.dumps(row), flush=True)
         if val["mean_loss"] < best["loss"]:
             best = {"loss": val["mean_loss"], "epoch": epoch + 1}
-            save(model, tok, cfg, hp, V2_DIR, {"best_epoch": epoch + 1, "recipe": "v2"})
-            (V2_DIR / QUESTIONS_FILE).write_text(json.dumps(QUESTIONS_V2, indent=2) + "\n")
-            print(f"saved best v2 checkpoint (epoch {epoch + 1})", flush=True)
+            save(model, tok, cfg, hp, out_dir, {"best_epoch": epoch + 1, "recipe": recipe})
+            (out_dir / QUESTIONS_FILE).write_text(json.dumps(questions, indent=2) + "\n")
+            print(f"saved best {recipe} checkpoint (epoch {epoch + 1})", flush=True)
 
     update_metrics(
-        "v2_training",
+        section,
         {
             "init": f"convaiinnovations/laya (subfolder={BASE_MODEL_SUBFOLDER})",
-            "questions": QUESTIONS_V2,
+            "questions": questions,
             "hyperparameters": asdict(hp),
             "order_resampling": "each pair encoded in both orders; one order drawn per item "
             "per epoch",
@@ -286,13 +332,11 @@ def gate_probs(gate, rows, qid, raw: bool = False) -> tuple[np.ndarray, np.ndarr
     return gate.probabilities(lf, qid)[:, 0], 1 - gate.probabilities(lr, qid)[:, 0]
 
 
-def calibrate(args) -> None:
+def fit_pairwise_temperatures(gate) -> dict[str, dict[str, Any]]:
+    """Temperatures for `preference` (original + fluent) and `naturalness` (original), fitted
+    on val_calib in both orders. `gate` must be loaded with every temperature at 1.0."""
     from laya.common import TEMP_MAX, TEMP_MIN
 
-    from .predictor import TEMPERATURE_FILE, SwedishPreferenceGate
-
-    gate = SwedishPreferenceGate(V2_DIR, temperature=1.0)
-    gate.temperatures = {q: 1.0 for q in gate.temperatures}
     calib = load_rows("val_calib")
     fits = {}
     for qid, sources in ((QID, SOURCES), (NATURALNESS_QID, ("original",))):
@@ -312,16 +356,35 @@ def calibrate(args) -> None:
             "nll_post": nll(logits, labels, t),
             "within_laya_clamp": bool(TEMP_MIN <= t <= TEMP_MAX),
         }
+    return fits
+
+
+def uncalibrated_gate(path):
+    from .predictor import SwedishPreferenceGate
+
+    gate = SwedishPreferenceGate(path, temperature=1.0)
+    gate.temperatures = {q: 1.0 for q in gate.temperatures}
+    return gate
+
+
+def save_temperatures(path, fits: dict[str, dict[str, Any]], section: str) -> None:
+    from .predictor import TEMPERATURE_FILE
+
     temps = {q: f["temperature"] for q, f in fits.items()}
-    (V2_DIR / TEMPERATURE_FILE).write_text(
+    (path / TEMPERATURE_FILE).write_text(
         json.dumps({"temperature": temps[QID], "temperatures": temps}, indent=2) + "\n"
     )
-    cfg_path = V2_DIR / "rl_agent_config.json"
+    cfg_path = path / "rl_agent_config.json"
     cfg = json.loads(cfg_path.read_text())
     cfg["temperature"], cfg["temperature_by_options"] = [temps[QID], 1.0, 1.0], {}
     cfg_path.write_text(json.dumps(cfg, indent=2) + "\n")
-    update_metrics("v2_calibration", fits)
+    update_metrics(section, fits)
     print(json.dumps(fits, indent=2))
+
+
+def calibrate(args) -> None:
+    fits = fit_pairwise_temperatures(uncalibrated_gate(V2_DIR))
+    save_temperatures(V2_DIR, fits, "v2_calibration")
 
 
 # ---------------------------------------------------------------------- evaluate

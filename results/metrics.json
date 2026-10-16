@@ -502,29 +502,33 @@
   },
   "tests": {
     "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
-    "total": 108,
-    "passed": 108,
+    "total": 112,
+    "passed": 112,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "skipped_tests": {},
     "all_passed": true,
-    "coverage_percent": 62.3,
+    "coverage_percent": 54.7,
     "coverage_per_module": {
       "__init__.py": 100.0,
       "benchmark.py": 63.2,
-      "calibrate.py": 63.8,
-      "data.py": 70.2,
+      "calibrate.py": 64.3,
+      "cpu.py": 0.0,
+      "data.py": 70.9,
       "fluent.py": 20.6,
       "judge.py": 79.3,
-      "predictor.py": 99.2,
+      "mtqa.py": 0.0,
+      "onnx_export.py": 87.2,
+      "predictor.py": 84.4,
       "probe.py": 46.0,
-      "publish.py": 66.2,
-      "readme.py": 95.1,
+      "publish.py": 68.9,
+      "readme.py": 93.0,
       "testing.py": 0.0,
       "train.py": 37.3,
       "utils.py": 100.0,
-      "v2.py": 30.1
+      "v2.py": 29.4,
+      "v3.py": 0.0
     }
   },
   "publish": {
@@ -1543,6 +1547,841 @@
       "p50": 10.250087012536824,
       "p95": 11.740524889319204,
       "n": 200
+    }
+  },
+  "v3_training": {
+    "init": "convaiinnovations/laya (subfolder=multilingual)",
+    "questions": {
+      "preference": {
+        "type": "choice",
+        "instructions": "Which candidate response better answers the prompt?",
+        "criteria": {
+          "candidate_a": "response A is superior",
+          "candidate_b": "response B is superior"
+        }
+      },
+      "naturalness": {
+        "type": "choice",
+        "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+        "criteria": {
+          "candidate_a": "response A reads more naturally",
+          "candidate_b": "response B reads more naturally"
+        }
+      },
+      "quality": {
+        "type": "score",
+        "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+        "criteria": [
+          "very poor: unhelpful, wrong or off-topic",
+          "poor: major errors or omissions",
+          "acceptable: partly helpful",
+          "good: helpful with minor issues",
+          "excellent: fully helpful and correct"
+        ]
+      },
+      "natural_swedish": {
+        "type": "choice",
+        "instructions": "Is the response written in natural, idiomatic Swedish?",
+        "criteria": {
+          "natural": "natural, idiomatic Swedish",
+          "translationese": "reads like a literal or poor translation"
+        }
+      }
+    },
+    "hyperparameters": {
+      "epochs": 2,
+      "micro_batch": 8,
+      "grad_accum": 2,
+      "lr": 2e-05,
+      "warmup_frac": 0.1,
+      "weight_decay": 0.01,
+      "grad_clip": 1.0,
+      "precision": "bfloat16",
+      "gradient_checkpointing": false,
+      "eval_batch": 32,
+      "seed": 20261014,
+      "max_len": 1024,
+      "head_max_len": 256,
+      "loss": "soft cross-entropy over the two choice options",
+      "oom_fallback": "none"
+    },
+    "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+    "train_units": 110526,
+    "train_units_by_source_question": {
+      "original/preference": 12750,
+      "original/naturalness": 12750,
+      "fluent/preference": 9921,
+      "fluent/naturalness": 9921,
+      "original/natural_swedish": 25500,
+      "fluent/quality": 19842,
+      "fluent/natural_swedish": 19842
+    },
+    "optimizer_updates": 13816,
+    "history": [
+      {
+        "epoch": 1,
+        "train_loss": 0.5088681104473803,
+        "val_calib": {
+          "fluent/natural_swedish": {
+            "loss": 0.10519411489190836,
+            "acc": 0.9582857142857143,
+            "n": 1750
+          },
+          "original/natural_swedish": {
+            "loss": 0.16265774762189064,
+            "acc": 0.9476744186046512,
+            "n": 2236
+          },
+          "original/preference": {
+            "loss": 0.034422351204392916,
+            "acc": 0.9892665474060823,
+            "n": 1118
+          },
+          "original/naturalness": {
+            "loss": 0.04447902575328257,
+            "acc": 0.9874776386404294,
+            "n": 1118
+          },
+          "fluent/quality": {
+            "loss": 1.369658205498542,
+            "acc": 0.4368340943683409,
+            "n": 1750,
+            "mae": 0.85662058092539
+          },
+          "fluent/preference": {
+            "loss": 0.5829067455776821,
+            "acc": 0.7725714285714286,
+            "n": 875
+          },
+          "fluent/naturalness": {
+            "loss": 0.7641425361158991,
+            "acc": null,
+            "n": 875
+          },
+          "mean_loss": 0.4376372466662283
+        },
+        "epoch_seconds": 4707.556792212
+      },
+      {
+        "epoch": 2,
+        "train_loss": 0.3218797810061101,
+        "val_calib": {
+          "fluent/natural_swedish": {
+            "loss": 0.12432065906705621,
+            "acc": 0.9702857142857143,
+            "n": 1750
+          },
+          "original/natural_swedish": {
+            "loss": 0.19424991426064525,
+            "acc": 0.9516994633273703,
+            "n": 2236
+          },
+          "original/preference": {
+            "loss": 0.040311027213361696,
+            "acc": 0.9910554561717353,
+            "n": 1118
+          },
+          "original/naturalness": {
+            "loss": 0.047921716127311824,
+            "acc": 0.9910554561717353,
+            "n": 1118
+          },
+          "fluent/quality": {
+            "loss": 1.4707905724228227,
+            "acc": 0.4490106544901065,
+            "n": 1750,
+            "mae": 0.8246423184678227
+          },
+          "fluent/preference": {
+            "loss": 0.8301397522856554,
+            "acc": 0.7588571428571429,
+            "n": 875
+          },
+          "fluent/naturalness": {
+            "loss": 0.7389156953600489,
+            "acc": null,
+            "n": 875
+          },
+          "mean_loss": 0.4923784766767003
+        },
+        "epoch_seconds": 4556.256495694999
+      }
+    ],
+    "best_epoch": 1,
+    "selection": "lowest mean val_calib loss over (source, question) groups",
+    "total_seconds": 9264.389893596,
+    "per_epoch_seconds": [
+      4707.556792212,
+      4556.256495694999
+    ],
+    "peak_gpu_memory_allocated_gib": 10.725080966949463,
+    "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+  },
+  "v3_calibration": {
+    "preference": {
+      "temperature": 1.9411734431002488,
+      "fit_on": "val_calib original+fluent, both orders",
+      "n": 3986,
+      "nll_pre": 0.2753529264493244,
+      "nll_post": 0.2327148674215389,
+      "within_laya_clamp": true
+    },
+    "naturalness": {
+      "temperature": 0.7462848716794198,
+      "fit_on": "val_calib original, both orders",
+      "n": 2236,
+      "nll_pre": 0.04189404628718307,
+      "nll_post": 0.04056866003595108,
+      "within_laya_clamp": true
+    },
+    "quality": {
+      "temperature": 1.286167178166855,
+      "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+      "n": 1750,
+      "nll_pre": 1.3697020230033035,
+      "nll_post": 1.3582415898018418,
+      "within_laya_clamp": true
+    },
+    "natural_swedish": {
+      "temperature": 1.4821899918575503,
+      "fit_on": "val_calib responses (fluent, original)",
+      "n": 3986,
+      "nll_pre": 0.1374037152593317,
+      "nll_post": 0.12404591176050406,
+      "within_laya_clamp": true
+    }
+  },
+  "v3_eval": {
+    "checkpoint": "v3_eval",
+    "temperatures": {
+      "preference": 1.9411734431002488,
+      "naturalness": 0.7462848716794198,
+      "quality": 1.286167178166855,
+      "natural_swedish": 1.4821899918575503
+    },
+    "original/preference": {
+      "n_pairs": 1118,
+      "accuracy_both_orders": {
+        "accuracy": 0.9874776386404294,
+        "ci95": [
+          0.9825581395348837,
+          0.9919499105545617
+        ],
+        "n": 2236
+      },
+      "accuracy_order_averaged_prob": {
+        "accuracy": 0.9892665474060823,
+        "ci95": [
+          0.983005366726297,
+          0.9946332737030411
+        ],
+        "n": 1118
+      },
+      "accuracy_chosen_in_a": 0.9883720930232558,
+      "accuracy_chosen_in_b": 0.9865831842576028,
+      "positional_consistency": 0.9910554561717353,
+      "ece_both_orders": 0.01077838172488132,
+      "mean_confidence": 0.9773928896021482,
+      "default_margin": {
+        "margin": 0.2,
+        "coverage": 0.9785330948121646,
+        "accuracy_on_covered": 0.9945155393053017
+      },
+      "ece_order_averaged": 0.014015952656589533,
+      "default_margin_order_averaged": {
+        "margin": 0.2,
+        "coverage": 0.9803220035778175,
+        "accuracy_on_covered": 0.9954379562043796,
+        "accuracy_on_routed": 0.6818181818181818
+      }
+    },
+    "original/naturalness": {
+      "n_pairs": 1118,
+      "accuracy_both_orders": {
+        "accuracy": 0.983005366726297,
+        "ci95": [
+          0.9776386404293381,
+          0.9883720930232558
+        ],
+        "n": 2236
+      },
+      "accuracy_order_averaged_prob": {
+        "accuracy": 0.9883720930232558,
+        "ci95": [
+          0.9821109123434705,
+          0.9937388193202147
+        ],
+        "n": 1118
+      },
+      "accuracy_chosen_in_a": 0.9901610017889088,
+      "accuracy_chosen_in_b": 0.9758497316636852,
+      "positional_consistency": 0.983005366726297,
+      "ece_both_orders": 0.009484154980111606,
+      "mean_confidence": 0.9757745117017115,
+      "default_margin": {
+        "margin": 0.2,
+        "coverage": 0.9610912343470484,
+        "accuracy_on_covered": 0.9962773382968823
+      },
+      "ece_order_averaged": 0.01345933320095586,
+      "default_margin_order_averaged": {
+        "margin": 0.2,
+        "coverage": 0.9633273703041145,
+        "accuracy_on_covered": 0.9972144846796658,
+        "accuracy_on_routed": 0.7560975609756098
+      }
+    },
+    "fluent/preference": {
+      "n_pairs": 876,
+      "accuracy_both_orders": {
+        "accuracy": 0.7745433789954338,
+        "ci95": [
+          0.7551369863013698,
+          0.7950913242009132
+        ],
+        "n": 1752
+      },
+      "accuracy_order_averaged_prob": {
+        "accuracy": 0.7876712328767124,
+        "ci95": [
+          0.7602739726027398,
+          0.8139269406392694
+        ],
+        "n": 876
+      },
+      "accuracy_chosen_in_a": 0.7876712328767124,
+      "accuracy_chosen_in_b": 0.7614155251141552,
+      "positional_consistency": 0.8789954337899544,
+      "ece_both_orders": 0.023758656792582,
+      "mean_confidence": 0.7907237295445116,
+      "default_margin": {
+        "margin": 0.2,
+        "coverage": 0.7134703196347032,
+        "accuracy_on_covered": 0.8512
+      },
+      "ece_order_averaged": 0.03348764170613778,
+      "default_margin_order_averaged": {
+        "margin": 0.2,
+        "coverage": 0.6894977168949772,
+        "accuracy_on_covered": 0.8692052980132451,
+        "accuracy_on_routed": 0.6066176470588235
+      }
+    },
+    "fluent/naturalness": {
+      "mean_abs_dev_from_0.5": 0.07050785261099657,
+      "fraction_within_0.2": 0.8767123287671232
+    },
+    "probe/preference": {
+      "n_pairs": 299,
+      "accuracy_both_orders": {
+        "accuracy": 0.7909698996655519,
+        "ci95": [
+          0.7575250836120402,
+          0.8244147157190636
+        ],
+        "n": 598
+      },
+      "accuracy_order_averaged_prob": {
+        "accuracy": 0.802675585284281,
+        "ci95": [
+          0.7558528428093646,
+          0.8461538461538461
+        ],
+        "n": 299
+      },
+      "accuracy_chosen_in_a": 0.7993311036789298,
+      "accuracy_chosen_in_b": 0.782608695652174,
+      "positional_consistency": 0.862876254180602,
+      "ece_both_orders": 0.04672104637798254,
+      "mean_confidence": 0.7818569066097002,
+      "default_margin": {
+        "margin": 0.2,
+        "coverage": 0.6872909698996655,
+        "accuracy_on_covered": 0.8905109489051095
+      },
+      "ece_order_averaged": 0.04091844750338428,
+      "default_margin_order_averaged": {
+        "margin": 0.2,
+        "coverage": 0.6555183946488294,
+        "accuracy_on_covered": 0.9081632653061225,
+        "accuracy_on_routed": 0.6019417475728155
+      },
+      "by_confidence": [
+        {
+          "confidence": [
+            0.5,
+            0.7
+          ],
+          "fraction": 0.34448160535117056,
+          "accuracy": 0.6019417475728155
+        },
+        {
+          "confidence": [
+            0.7,
+            0.9
+          ],
+          "fraction": 0.38127090301003347,
+          "accuracy": 0.8771929824561403
+        },
+        {
+          "confidence": [
+            0.9,
+            1.0
+          ],
+          "fraction": 0.27424749163879597,
+          "accuracy": 0.9512195121951219
+        }
+      ]
+    },
+    "probe/naturalness": {
+      "mean_abs_dev_from_0.5": 0.06302928638737446,
+      "fraction_within_0.2": 0.8695652173913043
+    },
+    "probe/cascade": {
+      "table": [
+        {
+          "threshold": 0.0,
+          "routed_fraction": 0.0,
+          "cascade_accuracy": 0.7909698996655519,
+          "expected_latency_ms": 9.783022999727109,
+          "routed_without_verdict": 0
+        },
+        {
+          "threshold": 0.05,
+          "routed_fraction": 0.09531772575250837,
+          "cascade_accuracy": 0.8260869565217391,
+          "expected_latency_ms": 918.2764380447647,
+          "routed_without_verdict": 0
+        },
+        {
+          "threshold": 0.1,
+          "routed_fraction": 0.17725752508361203,
+          "cascade_accuracy": 0.8344481605351171,
+          "expected_latency_ms": 1699.2620053641829,
+          "routed_without_verdict": 0
+        },
+        {
+          "threshold": 0.15,
+          "routed_fraction": 0.23745819397993312,
+          "cascade_accuracy": 0.8528428093645485,
+          "expected_latency_ms": 2273.04732012947,
+          "routed_without_verdict": 0
+        },
+        {
+          "threshold": 0.2,
+          "routed_fraction": 0.31270903010033446,
+          "cascade_accuracy": 0.8812709030100334,
+          "expected_latency_ms": 2990.2789635860786,
+          "routed_without_verdict": 0
+        },
+        {
+          "threshold": 0.25,
+          "routed_fraction": 0.391304347826087,
+          "cascade_accuracy": 0.8862876254180602,
+          "expected_latency_ms": 3739.387568974092,
+          "routed_without_verdict": 0
+        },
+        {
+          "threshold": 0.3,
+          "routed_fraction": 0.4682274247491639,
+          "cascade_accuracy": 0.8879598662207357,
+          "expected_latency_ms": 4472.557693396403,
+          "routed_without_verdict": 0
+        },
+        {
+          "threshold": 0.35,
+          "routed_fraction": 0.5635451505016722,
+          "cascade_accuracy": 0.8913043478260869,
+          "expected_latency_ms": 5381.05110844144,
+          "routed_without_verdict": 0
+        },
+        {
+          "threshold": 0.4,
+          "routed_fraction": 0.7224080267558528,
+          "cascade_accuracy": 0.8779264214046822,
+          "expected_latency_ms": 6895.206800183169,
+          "routed_without_verdict": 0
+        },
+        {
+          "threshold": 0.45,
+          "routed_fraction": 0.8846153846153846,
+          "cascade_accuracy": 0.8762541806020067,
+          "expected_latency_ms": 8441.239453856304,
+          "routed_without_verdict": 0
+        }
+      ],
+      "recommended": {
+        "threshold": 0.3,
+        "routed_fraction": 0.4682274247491639,
+        "cascade_accuracy": 0.8879598662207357,
+        "expected_latency_ms": 4472.557693396403,
+        "routed_without_verdict": 0,
+        "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+      },
+      "judge_accuracy": 0.8729096989966555
+    },
+    "latency_gpu_forward_ms": {
+      "p50": 9.783022999727109,
+      "p95": 11.04859285060229,
+      "n": 200
+    }
+  },
+  "v3_pointwise": {
+    "temperatures": {
+      "preference": 1.9411734431002488,
+      "naturalness": 0.7462848716794198,
+      "quality": 1.286167178166855,
+      "natural_swedish": 1.4821899918575503
+    },
+    "fluent/quality": {
+      "n_pairs": 876,
+      "accuracy_expected_score": {
+        "accuracy": 0.791095890410959,
+        "ci95": [
+          0.7648401826484018,
+          0.819634703196347
+        ],
+        "n": 876
+      },
+      "ties": 1,
+      "ece_p_chosen_beats_rejected": 0.10677214535939122,
+      "mean_score_chosen": 3.7742625874335984,
+      "mean_score_rejected": 3.139713799631405,
+      "spearman_vs_rating": 0.5695555710370521,
+      "pearson_vs_rating": 0.5800811476049623,
+      "mae_vs_rating": 0.8557005440752504
+    },
+    "probe/quality": {
+      "n_pairs": 299,
+      "accuracy_expected_score": {
+        "accuracy": 0.8294314381270903,
+        "ci95": [
+          0.7892140468227425,
+          0.8695652173913043
+        ],
+        "n": 299
+      },
+      "ties": 0,
+      "ece_p_chosen_beats_rejected": 0.13855882637711542,
+      "mean_score_chosen": 3.7983247992549276,
+      "mean_score_rejected": 3.117637098038908,
+      "spearman_vs_rating": 0.5571079662670578
+    },
+    "original/natural_swedish": {
+      "n_responses": 2236,
+      "auc": 0.9934764033653246,
+      "accuracy": {
+        "accuracy": 0.9347048300536672,
+        "ci95": [
+          0.9244186046511628,
+          0.945438282647585
+        ],
+        "n": 2236
+      },
+      "ece": 0.02088493730475217,
+      "natural_flagged_translationese": 0.008944543828264758,
+      "translationese_passed_as_natural": 0.12164579606440072,
+      "within_pair_natural_scores_higher": 0.9883720930232558
+    },
+    "fluent/natural_swedish": {
+      "n_responses": 1752,
+      "flagged_translationese": 0.039383561643835614,
+      "mean_p_natural": 0.9298489355222824
+    },
+    "probe/natural_swedish": {
+      "n_responses": 598,
+      "flagged_translationese": 0.021739130434782608,
+      "mean_p_natural": 0.9529801361355666
+    },
+    "latency_gpu_forward_ms_single_response": {
+      "p50": 6.026280500918801,
+      "p95": 9.867831148858375,
+      "n": 200
+    }
+  },
+  "cpu_inference": {
+    "checkpoint": "checkpoints/v3",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13980HX",
+    "threads": 24,
+    "method": "batch 1; collate + forward + logits to host; tokenization excluded; 100 runs over the first 50 val_eval pairs",
+    "files_mb": {
+      "onnx": 1228,
+      "onnx-int8": 318,
+      "torch (safetensors)": 614
+    },
+    "variants": {
+      "torch-fp32": {
+        "latency_ms": {
+          "p50": 506.7214234995845,
+          "p95": 611.5275488010411,
+          "mean": 424.2321063700365
+        },
+        "mean_input_tokens": 720.22,
+        "probe_accuracy": {
+          "accuracy": 0.802675585284281,
+          "ci95": [
+            0.7558528428093646,
+            0.8461538461538461
+          ],
+          "n": 299
+        },
+        "original_accuracy": {
+          "accuracy": 0.99,
+          "ci95": [
+            0.9766666666666667,
+            1.0
+          ],
+          "n": 300
+        },
+        "seconds_total": 365.25175354400017,
+        "mean_abs_delta_p_vs_torch_fp32": 0.0,
+        "max_abs_delta_p_vs_torch_fp32": 0.0
+      },
+      "torch-int8": {
+        "latency_ms": {
+          "p50": 486.53130599905126,
+          "p95": 571.9729084007668,
+          "mean": 401.3426766199518
+        },
+        "mean_input_tokens": 720.22,
+        "probe_accuracy": {
+          "accuracy": 0.7759197324414716,
+          "ci95": [
+            0.7290969899665551,
+            0.822742474916388
+          ],
+          "n": 299
+        },
+        "original_accuracy": {
+          "accuracy": 0.99,
+          "ci95": [
+            0.9766666666666667,
+            1.0
+          ],
+          "n": 300
+        },
+        "seconds_total": 347.13942459200007,
+        "mean_abs_delta_p_vs_torch_fp32": 0.073023320428938,
+        "max_abs_delta_p_vs_torch_fp32": 0.5962922060479663
+      },
+      "onnx-fp32": {
+        "latency_ms": {
+          "p50": 827.1691464997275,
+          "p95": 1095.5274986496988,
+          "mean": 696.2376475999918
+        },
+        "mean_input_tokens": 720.22,
+        "probe_accuracy": {
+          "accuracy": 0.802675585284281,
+          "ci95": [
+            0.7558528428093646,
+            0.8461538461538461
+          ],
+          "n": 299
+        },
+        "original_accuracy": {
+          "accuracy": 0.99,
+          "ci95": [
+            0.9766666666666667,
+            1.0
+          ],
+          "n": 300
+        },
+        "seconds_total": 475.329332452,
+        "mean_abs_delta_p_vs_torch_fp32": 1.2768409198260209e-07,
+        "max_abs_delta_p_vs_torch_fp32": 1.6075088096201284e-06
+      },
+      "onnx-int8": {
+        "latency_ms": {
+          "p50": 448.49228099974425,
+          "p95": 595.5407951008056,
+          "mean": 378.8457308400393
+        },
+        "mean_input_tokens": 720.22,
+        "probe_accuracy": {
+          "accuracy": 0.7792642140468228,
+          "ci95": [
+            0.7324414715719063,
+            0.822742474916388
+          ],
+          "n": 299
+        },
+        "original_accuracy": {
+          "accuracy": 0.99,
+          "ci95": [
+            0.9766666666666667,
+            1.0
+          ],
+          "n": 300
+        },
+        "seconds_total": 298.34809510000014,
+        "mean_abs_delta_p_vs_torch_fp32": 0.05748728772818188,
+        "max_abs_delta_p_vs_torch_fp32": 0.5375248913276542
+      },
+      "onnx-int8-512": {
+        "latency_ms": {
+          "p50": 147.74752700031968,
+          "p95": 151.91894059935294,
+          "mean": 130.57623460994364
+        },
+        "mean_input_tokens": 420.88,
+        "probe_accuracy": {
+          "accuracy": 0.7591973244147158,
+          "ci95": [
+            0.7090301003344481,
+            0.8060200668896321
+          ],
+          "n": 299
+        },
+        "original_accuracy": {
+          "accuracy": 0.9766666666666667,
+          "ci95": [
+            0.96,
+            0.99
+          ],
+          "n": 300
+        },
+        "seconds_total": 142.87662611700034,
+        "mean_abs_delta_p_vs_torch_fp32": 0.08607974768863844,
+        "max_abs_delta_p_vs_torch_fp32": 0.7398443828805978
+      }
+    },
+    "thread_sweep": {
+      "variant": "onnx-int8",
+      "p50_ms_by_threads": {
+        "4": 559.5862849995683,
+        "8": 447.194752001451,
+        "16": 580.4971590005152,
+        "24": 736.6590279998491
+      }
+    }
+  },
+  "mt_naturalness": {
+    "source": "openlanguagedata/flores_plus (dev + devtest), professional English->Swedish translations",
+    "mt_system": "Helsinki-NLP/opus-mt-en-sv",
+    "n_sentences": 2009,
+    "n_identical_dropped": 20,
+    "n_pairs": 1989,
+    "prompt": "'Översätt följande text till svenska:' + English source",
+    "mean_chars": {
+      "human": 129.2941176470588,
+      "mt": 126.96681749622925
+    },
+    "models": {
+      "v1": {
+        "preference": {
+          "p_human_wins_mean": 0.4635279291810773,
+          "human_preferred": {
+            "accuracy": 0.45751633986928103,
+            "ci95": [
+              0.4358974358974359,
+              0.47863247863247865
+            ],
+            "n": 1989
+          },
+          "positional_consistency": 0.5002513826043238,
+          "confident_human": 0.20563097033685268,
+          "confident_mt": 0.2825540472599296
+        }
+      },
+      "v2": {
+        "preference": {
+          "p_human_wins_mean": 0.4658086714820796,
+          "human_preferred": {
+            "accuracy": 0.42584213172448465,
+            "ci95": [
+              0.40372046254399196,
+              0.4469582704876823
+            ],
+            "n": 1989
+          },
+          "positional_consistency": 0.47058823529411764,
+          "confident_human": 0.07692307692307693,
+          "confident_mt": 0.167420814479638
+        },
+        "naturalness": {
+          "p_human_wins_mean": 0.4721383166169986,
+          "human_preferred": {
+            "accuracy": 0.44846656611362495,
+            "ci95": [
+              0.4268350930115636,
+              0.4695827048768225
+            ],
+            "n": 1989
+          },
+          "positional_consistency": 0.5439919557566616,
+          "confident_human": 0.06586224233283057,
+          "confident_mt": 0.13574660633484162
+        }
+      },
+      "v3": {
+        "preference": {
+          "p_human_wins_mean": 0.4921729578636125,
+          "human_preferred": {
+            "accuracy": 0.48215183509301157,
+            "ci95": [
+              0.4610231271995978,
+              0.5037707390648567
+            ],
+            "n": 1989
+          },
+          "positional_consistency": 0.5736551030668677,
+          "confident_human": 0.14479638009049775,
+          "confident_mt": 0.16641528406234288
+        },
+        "naturalness": {
+          "p_human_wins_mean": 0.4986891274629127,
+          "human_preferred": {
+            "accuracy": 0.49120160884866765,
+            "ci95": [
+              0.4695827048768225,
+              0.5133232780291603
+            ],
+            "n": 1989
+          },
+          "positional_consistency": 0.5867269984917044,
+          "confident_human": 0.18099547511312217,
+          "confident_mt": 0.18401206636500755
+        },
+        "natural_swedish/with_source": {
+          "auc_human_vs_mt": 0.5196089806151025,
+          "within_pair_human_higher": {
+            "accuracy": 0.5334338863750628,
+            "ci95": [
+              0.5118149824032177,
+              0.5555555555555556
+            ],
+            "n": 1989
+          },
+          "mean_p_natural": {
+            "human": 0.8153659822063263,
+            "mt": 0.7992050865477117
+          },
+          "flagged_translationese": {
+            "human": 0.1151332327802916,
+            "mt": 0.13725490196078433
+          }
+        },
+        "natural_swedish/no_prompt": {
+          "auc_human_vs_mt": 0.5535193438218902,
+          "within_pair_human_higher": {
+            "accuracy": 0.5786827551533434,
+            "ci95": [
+              0.5575666163901458,
+              0.599798893916541
+            ],
+            "n": 1989
+          },
+          "mean_p_natural": {
+            "human": 0.7233300798064343,
+            "mt": 0.6756215721782439
+          },
+          "flagged_translationese": {
+            "human": 0.17546505781799898,
+            "mt": 0.24384112619406736
+          }
+        }
+      }
     }
   }
 }
