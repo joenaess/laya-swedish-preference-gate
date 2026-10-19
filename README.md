@@ -12,9 +12,9 @@ translationese**, and it is compared against self-hosted Kimi-k3 on 8× NVIDIA B
 
 Weights: [huggingface.co/jonasaise/laya-swedish-preference-gate](https://huggingface.co/jonasaise/laya-swedish-preference-gate) (public).
 
-A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is on the Hub as `revision="v2"`.
+A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is not on the Hub yet.
 
-A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is the default checkpoint on the Hub; v2 and v1 stay available as `revision="v2"` and `revision="v1"`.
+A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is not on the Hub yet.
 
 ## Results at a glance
 
@@ -77,7 +77,7 @@ results = gate.predict_preference_batch(
 )
 ```
 
-The Hub checkpoint is **v3**, which also answers *which response is written in more
+The Hub checkpoint is **v4**, which also answers *which response is written in more
 natural, idiomatic Swedish*:
 
 ```python
@@ -89,19 +89,23 @@ r = gate.predict_naturalness(
 # {"more_natural": "candidate_a", "p_a_more_natural": <float>, "probabilities": {...}}
 ```
 
-v3 adds two single-response questions, so N candidates need N forward passes instead of
-N(N−1) ordered pairs:
+v4 adds a single-response grammar check (use it to compare two versions of a text; as a
+stand-alone verdict it flags too much good Swedish) and judges translations with the English
+source in the prompt:
 
 ```python
+g = gate.score_grammar("Människor är snälla där och alla varor är billiga.")
+# {"label": "correct" | "incorrect", "p_correct": <float>, "is_valid_margin": <bool>}
+t = gate.predict_preference(
+    prompt="Översätt följande text till svenska:
+The meeting was postponed.",
+    chosen_candidate="Mötet sköts upp.",
+    rejected_candidate="Mötet ställdes in.",
+)
 s = gate.score_quality(prompt="Hur fungerar fotosyntesen?", response="Växter gör mat av solljus.")
-# {"score": <float 1-5>, "probabilities": {1: <float>, ..., 5: <float>}}
-ranking = gate.rank_by_quality(prompt, [cand_1, cand_2, cand_3])  # [(index, score), ...] best first
-
-n = gate.score_naturalness("Du kan besöka ett museum, vänligen notera att det är bra.")
-# {"label": "natural" | "translationese", "p_natural": <float>, "is_valid_margin": <bool>}
 ```
 
-Earlier releases stay loadable: `revision="v2"` and `revision="v1"`.
+Earlier releases stay loadable: `revision="v3"`, `revision="v2"` and `revision="v1"`.
 
 Also `device="cpu"`, `dtype=torch.float32`, `temperature=<float>`, `margin=<float>` and
 `revision=<Hub branch or tag>` are accepted. The checkpoint is in the standard Laya layout, so `laya.load(path)` opens it too
@@ -866,134 +870,171 @@ stays at 1024; fine-tuning at a longer length was not tried.
 
 ### v4 ablation: Europarl, DaLAJ and SweFAQ as training data
 
-Does more training data make the gate a better judge of Swedish, and is Europarl's
-professional human Swedish a good "better" label? A controlled ablation
+Which extra training data makes the gate a better judge of Swedish? A controlled ablation
 (`python -m laya_gate.v4`): every arm fine-tunes the base checkpoint with the v3 recipe (v3 data
 and questions, 1 epoch, the same seed and hyperparameters); only the added data differs. A second
 control seed measures seed-to-seed noise.
 
+The derived training and evaluation pairs are on the Hub: [jonasaise/laya-swedish-gate-v4-data](https://huggingface.co/datasets/jonasaise/laya-swedish-gate-v4-data) (one config per source, each under its source's license).
+
 - **+Europarl**: 12,000 English-original speeches (none from the Europarl test
-  sample, no Swedish-original speech), professional Swedish translation > Kimi-k3 machine
-  translation, as `preference` (English source in the prompt) and `naturalness` (no prompt). The
-  negatives are Kimi-k3's only, so OPUS-MT never appears in training and the OPUS-MT tests
-  (liu-nlp, FLORES+, WMT24++/opus) measure transfer. Length-balanced: the human side is longer in
-  exactly half the pairs (it was 57.3% before balancing), so
-  "the longer one wins" cannot be learned; 604
-  near-identical pairs dropped.
+  sample), professional Swedish translation > Kimi-k3 machine translation, as `preference`
+  (English source in the prompt) and `naturalness` (no prompt). The negatives are Kimi-k3's
+  only, so OPUS-MT never appears in training. Length-balanced: the human side is longer in
+  exactly half the pairs (57.3% before balancing).
 - **+DaLAJ/SweFAQ**: 16,365 DaLAJ-GED train pairs (corrected > learner
-  sentence, `naturalness`) and 3,074 SweFAQ train pairs (own answer > another
-  answer on the page, `preference`; 781 questions, no FAQ page shared
-  with the test questions).
-- **+both**: both.
+  sentence, `naturalness`) and 3,074 SweFAQ train pairs (own answer >
+  another answer on the same FAQ page, `preference`; no page shared with the test questions).
+- **+both**: both. **+grammar**: +both plus a new single-response question, `grammatical`
+  (correct / contains an error), trained on both sentences of every DaLAJ pair; its
+  temperature is fitted on DaLAJ dev.
+- **v4 (+adequacy)**: +grammar plus negatives that can only be told apart with the source,
+  built from 3,000 further Europarl paragraphs: the
+  correct translation beats another paragraph's human translation, a half translation, a
+  word-shuffled translation and the untranslated English, and Kimi-k3's correct translation
+  beats another paragraph's human translation; the English is neither natural nor grammatical
+  Swedish (14989 `preference`, 3000 `naturalness`
+  and 6000 single-response rows).
 
-All tests are held out from every arm (DaLAJ and SweFAQ use their dev/test splits; ScaLA-sv is
-EuroEval's own test split, `mteb/scala_sv_classification`; GerLangMod-sv is the native
-Talbanken test file; WMT24++ en→sv is EuroEval's translation set, `google/wmt24pp`, post-edited
-references, 960 segments with OPUS-MT and Kimi-k3 translations). Each cell is the share of items
-where the reference side wins (corrected sentence, own answer, human Swedish). **\*** marks a
-difference from control whose paired-bootstrap 95% CI excludes zero; the two control seeds
-differ by up to 4.2 points on a single test, so smaller differences should be read
-as noise even when starred.
+All tests are held out from every arm: DaLAJ and SweFAQ dev/test splits; ScaLA-sv is EuroEval's
+own test split (`mteb/scala_sv_classification`); GerLangMod-sv the native Talbanken test file
+(lowercased, no punctuation, as distributed); WMT24++ en→sv is EuroEval's translation set
+(`google/wmt24pp`, 960 post-edited segments with OPUS-MT and Kimi-k3 translations). Each cell is
+the share of items where the reference side wins (corrected sentence, own answer, human Swedish).
+**\*** marks a difference from control whose paired-bootstrap 95% CI excludes zero; the two
+control seeds differ by up to 4.2 points on a single
+test, so smaller differences are noise even when starred.
 
-| Test | v3 (published) | control | control, seed 2 | +Europarl | +DaLAJ/SweFAQ | +both |
-|---|---|---|---|---|---|---|
-| **In-domain (DPO validation, fluent pairs, probe)** | | | | | | |
-| original/preference | 98.9% | 98.9% | 99.0% | 98.7% | 99.0% | 99.0% |
-| fluent/preference | 78.7% | 77.7% | 76.6% | 74.5% * | 77.6% | 77.7% |
-| probe/preference | 79.9% | 78.3% | 77.9% | 76.9% | 78.9% | 76.9% |
-| **Native speaker vs OPUS-MT (liu-nlp, human-annotated)** | | | | | | |
-| liu/naturalness | 44.3% | 43.5% | 44.3% | 58.8% * | 47.3% | 53.7% * |
-| liu/natural_swedish | 51.6% | 49.5% | 52.8% | 52.2% | 48.4% | 53.0% |
-| liu/preference+source | 37.3% | 36.5% | 34.7% | 60.8% * | 39.5% | 50.3% * |
-| **Professional translation vs MT (FLORES+, WMT24++)** | | | | | | |
-| flores/naturalness | 58.1% * | 55.5% | 56.8% | 58.5% | 59.5% * | 61.0% * |
-| flores/preference+source | 48.5% | 47.2% | 46.2% | 73.3% * | 53.0% * | 77.0% * |
-| wmt24pp/opus/naturalness | 63.1% | 64.5% | 64.2% | 66.9% | 68.9% * | 66.7% |
-| wmt24pp/opus/preference+source | 54.3% | 51.6% | 55.8% * | 76.3% * | 62.1% * | 74.9% * |
-| wmt24pp/kimi/naturalness | 48.3% | 48.6% | 49.3% | 54.7% * | 45.6% | 51.9% |
-| wmt24pp/kimi/preference+source | 43.1% | 40.1% | 42.5% | 66.7% * | 41.7% | 71.8% * |
-| **Grammar (DaLAJ, GerLangMod-sv, ScaLA-sv)** | | | | | | |
-| dalaj/naturalness | 55.9% * | 60.4% | 57.1% * | 52.2% * | 90.8% * | 87.7% * |
-| dalaj/natural_swedish | 68.8% | 66.8% | 65.6% | 61.8% * | 78.3% * | 74.4% * |
-| gerlangmod/naturalness | 83.3% | 85.1% | 81.6% * | 32.5% * | 94.5% * | 89.2% * |
-| gerlangmod/natural_swedish | 83.4% | 85.3% | 85.4% | 81.9% * | 88.6% * | 84.8% |
-| **Relevance (SweFAQ)** | | | | | | |
-| swefaq/preference | 60.3% | 60.8% | 60.0% | 54.6% * | 88.7% * | 87.5% * |
-| swefaq/quality | 66.7% | 67.9% | 64.9% * | 65.2% * | 76.6% * | 68.0% |
-| swefaq/quality_top1 | 20.1% | 16.9% | 16.4% | 17.8% | 27.9% * | 20.1% |
-| **Europarl (in-distribution for +Europarl)** | | | | | | |
-| europarl_en/opus/preference+source | 40.6% * | 37.6% | 38.6% | 81.7% * | 38.0% | 84.1% * |
-| europarl_en/kimi/preference+source | 38.7% | 35.9% | 39.8% * | 85.4% * | 35.6% | 87.8% * |
-| europarl_sv/opus/preference+source | 40.8% * | 35.6% | 38.3% | 86.3% * | 36.6% | 86.2% * |
-| europarl_sv/kimi/preference+source | 37.2% * | 33.7% | 35.7% | 88.8% * | 36.2% | 91.0% * |
-| europarl_sv/kimi/naturalness | 48.1% | 46.0% | 50.1% * | 78.2% * | 44.9% | 79.3% * |
-| ScaLA-sv MCC (EuroEval metric), threshold 0.5 | 0.146 | 0.117 | 0.100 | 0.055 | 0.167 | 0.114 |
-| Natural responses flagged as translationese (lower is better) | 3.9% | 4.5% | 3.9% | 4.9% | 4.1% | 3.8% |
-| ECE, DPO validation `preference` | 0.0108 | 0.0120 | 0.0138 | 0.0151 | 0.0139 | 0.0157 |
-| Training units / wall-clock | 2 epochs (published) | 110,526 / 1.3 h | 110,526 / 1.3 h | 134,526 / 1.5 h | 129,965 / 1.5 h | 153,965 / 1.7 h |
+| Test | v3 (published) | control | control, seed 2 | +Europarl | +DaLAJ/SweFAQ | +both | +both +grammar | **v4**: +grammar +adequacy |
+|---|---|---|---|---|---|---|---|---|
+| **In-domain (DPO validation, fluent pairs, probe)** | | | | | | | | |
+| original/preference | 98.9% | 98.9% | 99.0% | 98.7% | 99.0% | 99.0% | 98.7% | 98.7% |
+| fluent/preference | 78.7% | 77.7% | 76.6% | 74.5% * | 77.6% | 77.7% | 79.1% | 77.4% |
+| probe/preference | 79.9% | 78.3% | 77.9% | 76.9% | 78.9% | 76.9% | 79.3% | 78.6% |
+| **Native speaker vs OPUS-MT (liu-nlp, human-annotated)** | | | | | | | | |
+| liu/naturalness | 44.3% | 43.5% | 44.3% | 58.8% * | 47.3% | 53.7% * | 52.7% * | 52.2% * |
+| liu/natural_swedish | 51.6% | 49.5% | 52.8% | 52.2% | 48.4% | 53.0% | 48.5% | 52.2% |
+| liu/preference+source | 37.3% | 36.5% | 34.7% | 60.8% * | 39.5% | 50.3% * | 66.0% * | 53.0% * |
+| **Professional translation vs MT (FLORES+, WMT24++)** | | | | | | | | |
+| flores/naturalness | 58.1% * | 55.5% | 56.8% | 58.5% | 59.5% * | 61.0% * | 58.2% | 65.2% * |
+| flores/preference+source | 48.5% | 47.2% | 46.2% | 73.3% * | 53.0% * | 77.0% * | 76.1% * | 73.8% * |
+| wmt24pp/opus/naturalness | 63.1% | 64.5% | 64.2% | 66.9% | 68.9% * | 66.7% | 63.1% | 68.5% * |
+| wmt24pp/opus/preference+source | 54.3% | 51.6% | 55.8% * | 76.3% * | 62.1% * | 74.9% * | 71.5% * | 74.6% * |
+| wmt24pp/kimi/preference+source | 43.1% | 40.1% | 42.5% | 66.7% * | 41.7% | 71.8% * | 72.9% * | 58.9% * |
+| **Grammar (DaLAJ, GerLangMod-sv, ScaLA-sv)** | | | | | | | | |
+| dalaj/naturalness | 55.9% * | 60.4% | 57.1% * | 52.2% * | 90.8% * | 87.7% * | 88.6% * | 89.7% * |
+| dalaj/natural_swedish | 68.8% | 66.8% | 65.6% | 61.8% * | 78.3% * | 74.4% * | 84.6% * | 83.6% * |
+| dalaj/grammatical | — | — | — | — | — | — | 83.2% | 83.2% |
+| gerlangmod/naturalness | 83.3% | 85.1% | 81.6% * | 32.5% * | 94.5% * | 89.2% * | 93.6% * | 95.5% * |
+| gerlangmod/grammatical | — | — | — | — | — | — | 88.0% | 47.8% |
+| **Relevance (SweFAQ)** | | | | | | | | |
+| swefaq/preference | 60.3% | 60.8% | 60.0% | 54.6% * | 88.7% * | 87.5% * | 87.7% * | 88.9% * |
+| swefaq/quality | 66.7% | 67.9% | 64.9% * | 65.2% * | 76.6% * | 68.0% | 71.7% * | 72.8% * |
+| swefaq/quality_top1 | 20.1% | 16.9% | 16.4% | 17.8% | 27.9% * | 20.1% | 27.4% * | 20.1% |
+| **Europarl (in-distribution for the Europarl arms)** | | | | | | | | |
+| europarl_en/kimi/preference+source | 38.7% | 35.9% | 39.8% * | 85.4% * | 35.6% | 87.8% * | 87.3% * | 77.4% * |
+| europarl_sv/kimi/preference+source | 37.2% * | 33.7% | 35.7% | 88.8% * | 36.2% | 91.0% * | 90.0% * | 83.6% * |
+| ScaLA-sv MCC (EuroEval metric), best single-response question | 0.146 | 0.117 | 0.100 | 0.055 | 0.167 | 0.114 | 0.318 | 0.341 |
+| Fluent LLM answers flagged as translationese (lower is better) | 3.9% | 4.5% | 3.9% | 4.9% | 4.1% | 3.8% | 3.4% | 3.3% |
+| ECE, DPO validation `preference` | 0.0108 | 0.0120 | 0.0138 | 0.0151 | 0.0139 | 0.0157 | 0.0102 | 0.0142 |
+| Training units / wall-clock | 2 epochs | 110,526 / 1.3 h | 110,526 / 1.3 h | 134,526 / 1.5 h | 129,965 / 1.5 h | 153,965 / 1.7 h | 186,695 / 2.0 h | 210,684 / 2.1 h |
 
-**Europarl human translations are a strong training signal for translation quality, and the
-gain transfers.** On the human-annotated liu-nlp benchmark, where every earlier gate preferred the
-OPUS-MT translationese, +Europarl moves the pairwise naturalness question from
-43.5% to 58.8% and the
-source-conditioned preference from 36.5% to
-60.8%, the first gate result above chance on it. The
-same holds on professional translations from other domains: FLORES+ preference
-47.2% → 73.3%,
-WMT24++ against OPUS-MT 51.6% →
-76.3% and against Kimi-k3
-40.1% →
-66.7%. None of these sets nor OPUS-MT was in
-training. Kimi-k3 as a judge preferred the machine translations on Europarl (see the external
-benchmarks above), but that verdict looks like bias, not evidence against the human
-translations: on WMT24++ (300-pair sample, both orders) it prefers the post-edited human
-translation over OPUS-MT in 81.0%
-of pairs, yet over its *own* translation in only
-24.5%. The +both gate
-picks the human translation over Kimi-k3's in 71.8%
-of WMT24++ pairs; Kimi-k3 is not a neutral reference for its own output.
+#### Sanity tests: a shortcut in the Europarl pairs
 
-**On its own, Europarl costs grammar sensitivity.** +Europarl drops GerLangMod-sv
-`naturalness` from 85.1% to
-32.5%: it now prefers the sentence with the misplaced
-verbs. DaLAJ, SweFAQ, the fluent pairs and ScaLA-sv get worse too (MCC
-0.117 → 0.055). One explanation, not tested here, is word
-order: professional translations of speeches may keep a freer word order than Kimi-k3's output,
-so "the less canonical word order wins" would fit the Europarl pairs. Either way, a preference
-signal from one register needs counterweights.
+FLORES+ devtest (the pilot's 200 sentences), the professional reference against a degraded
+alternative, English source in the prompt for `preference`; share of pairs where the reference
+wins (`python -m laya_gate.v4 sanity`):
 
-**DaLAJ and SweFAQ fix the two weak spots they target** (grammar
-60.4% → 90.8% on DaLAJ,
-85.1% → 94.5% on
-GerLangMod-sv; relevance 60.8% →
-88.7% on SweFAQ, top-1 among all answers on a page
-16.9% → 27.9%), with
-smaller gains on FLORES+ and WMT24++ against OPUS-MT, and leave translation against Kimi-k3
-unchanged.
+| The reference translation against … | v3 (published) | control | control, seed 2 | +Europarl | +DaLAJ/SweFAQ | +both | +both +grammar | **v4**: +grammar +adequacy |
+|---|---|---|---|---|---|---|---|---|
+| the reference of a *different* sentence | 91.0% | 90.5% | 94.0% | 2.5% | 97.5% | 0.5% | 0.0% | 78.0% |
+| LFM2-350M's translation (pilot's lowest chrF) | 97.0% | 99.0% | 99.0% | 57.5% | 98.5% | 49.0% | 3.5% | 98.0% |
+| only the first half of the reference | 72.0% | 81.0% | 85.5% | 59.5% | 99.5% | 14.5% | 7.5% | 100.0% |
+| the untranslated English | 20.5% | 14.5% | 12.5% | 99.5% | 47.5% | 100.0% | 100.0% | 100.0% |
+| the untranslated English (`naturalness`, no prompt) | 87.5% | 82.0% | 83.5% | 56.5% | 87.5% | 45.5% | 38.5% | 99.5% |
 
-**Combining them keeps most of both.** +both keeps grammar (87.7%
-DaLAJ, 89.2% GerLangMod-sv) and relevance
-(87.5% SweFAQ) near the +DaLAJ/SweFAQ level and translation
-quality at about the +Europarl level (FLORES+ 77.0%,
-WMT24++ 74.9% / 71.8%),
-while the in-domain numbers, calibration and latency stay at the control level (liu-nlp
-53.7% / 50.3%).
-Its liu-nlp gain is real but smaller than +Europarl's. It is the best all-round candidate for
-a v4.
+**Every arm trained on the Europarl pairs alone learned "the candidate least like the English
+source wins".** The human side of a Europarl pair is always the less literal one, so that rule
+fits the training pairs perfectly. It also explains part of the large liu-nlp, FLORES+ and
+WMT24++ gains of +Europarl, +both and +grammar: human translations are less literal than MT
+there too. These arms pick a fluent translation of the *wrong* sentence over the right one
+(the reference wins in 2.5% to
+0.0% of pairs); +both and +grammar also lose
+to half translations and to LFM2's nonsense; and on the pilot's 4,400 real model translations
+their translation score is uncorrelated or negatively correlated with chrF (Spearman per translation:
++both -0.03, +grammar -0.17; v3 0.28).
 
-**What did not move.** The single-response `natural_swedish` question was not trained on any new
-data and barely changes: liu-nlp stays at chance and ScaLA-sv's MCC stays between
-0.055 and
-0.167 across arms (AUC at most
-0.645). Teaching the single-response questions
-from the same pairs (corrected = natural, learner error = not) is the next step for a fast
-one-pass grammar check. Each arm was trained once; the seed row shows the noise floor.
+**The adequacy negatives remove the shortcut.** v4 picks the reference over a half translation,
+garbage MT and untranslated English in 100.0%,
+98.0% and
+100.0% of pairs, and over another sentence's
+reference in 78.0% (v3:
+91.0%). These tests were built the same way as the
+adequacy negatives, so they show the fix took, not independent generalization. The independent
+check is the pilot: v4's translation score agrees with chrF per translation at
+0.42, the highest of any checkpoint. What remains of the translation gains
+after the fix is smaller but still clear: FLORES+ `preference` 47.2%
+→ 73.8%, WMT24++ against OPUS-MT
+51.6% → 74.6%
+and against Kimi-k3 40.1% →
+58.9%, liu-nlp
+36.5% → 53.0%.
+
+**DaLAJ and SweFAQ fix the two weak spots they target**, in every arm that includes them:
+grammar 60.4% → 89.7%
+(DaLAJ) and 85.1% →
+95.5% (GerLangMod-sv), relevance
+60.8% → 88.9%
+(SweFAQ). The single-response `grammatical` question raises ScaLA-sv's MCC from
+0.117 (control) to 0.341 (v4).
+
+**Costs.** As a stand-alone yes/no check, `grammatical` flags much good Swedish as incorrect at
+threshold 0.5: 40.4% of fluent LLM answers,
+59.9% of WMT24++ references,
+42.2% of FLORES+ references (it was trained
+on single learner sentences). It is useful for comparing two versions of a text, not as a
+verdict on one. On GerLangMod-sv (lowercased, no punctuation) v4's `grammatical` drops to
+47.8% from 88.0%
+with +grammar. In-domain accuracy, calibration and latency stay at the control level. Each arm was
+trained once.
+
+### Pilot: predicting EuroEval Swedish results
+
+Can the gate act as a quick predictor of EuroEval's Swedish results? A pilot
+(`python -m laya_gate.pilot`): 22 small open LLMs that have Swedish results on the
+[EuroEval leaderboard](https://euroeval.com) (overall Swedish rank 2.02
+for `mii-llm/nesso-4B` to 4.06 for `HuggingFaceTB/SmolLM2-360M-Instruct`; lower is
+better) each translate the same 200 FLORES+ devtest sentences
+into Swedish and answer the same 100 Swedish prompts (greedy,
+thinking off). The gate scores every output; the model-level means are correlated with the
+EuroEval Swedish rank (Spearman, bootstrap 95% CI over models). Model size alone predicts rank
+well on this range, so the second column controls for it (ranks residualized on log parameter
+count).
+
+| Model-level score | Spearman with EuroEval Swedish rank | controlling for size |
+|---|---|---|
+| v4 `quality` of the model's answers | 0.74 [0.39, 0.88] | 0.62 [0.11, 0.86] |
+| v3 `quality` of the model's answers | 0.76 [0.44, 0.92] | 0.64 [0.12, 0.87] |
+| v4 P(model translation beats the reference) | 0.73 [0.39, 0.92] | 0.38 [-0.23, 0.83] |
+| same, +grammar arm (before the adequacy fix) | -0.17 [-0.56, 0.28] | -0.25 [-0.61, 0.31] |
+| v4 `natural_swedish` of the answers | 0.38 [0.00, 0.66] | 0.39 [-0.15, 0.77] |
+| v4 `grammatical` of the answers | 0.12 [-0.35, 0.55] | 0.00 [-0.50, 0.42] |
+| chrF against the FLORES+ reference (no gate) | 0.82 [0.55, 0.93] | 0.53 [-0.01, 0.81] |
+| log parameter count (no gate) | 0.82 [0.55, 0.92] | — |
+| share of answers in Swedish (no gate) | -0.04 [-0.46, 0.40] | -0.32 [-0.67, 0.15] |
+
+**The single-response `quality` score of a model's Swedish answers tracks the leaderboard, and
+not only through model size.** No reference answers are needed. It correlates with the task scores too (linguistic acceptability 0.71, summarization 0.78, reading comprehension 0.70, knowledge 0.65). The
+translation score only becomes predictive once the Europarl shortcut is removed (the +grammar
+arm's score is uncorrelated with rank). With 22 models from one size band (up to about 4B
+parameters) the intervals are wide; a pilot, not a calibrated predictor. The models' outputs are
+not redistributed (their licenses differ); the scores are in `metrics.json`.
 
 ### Tests
 
-`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **144 passed, 0 failed,
-0 errors, 0 skipped** of 144.
-Coverage: **49.2%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `external_eval.py` 37.7% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `onnx_export.py` 87.2% · `predictor.py` 84.4% · `probe.py` 46.0% · `publish.py` 68.9% · `readme.py` 78.8% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 18.0% · `v4.py` 29.1%.
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **153 passed, 0 failed,
+0 errors, 0 skipped** of 153.
+Coverage: **46.9%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `external_eval.py` 37.7% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `onnx_export.py` 87.2% · `pilot.py` 40.5% · `predictor.py` 81.1% · `probe.py` 46.0% · `publish.py` 61.5% · `publish_data.py` 0.0% · `readme.py` 73.9% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 18.0% · `v4.py` 29.8%.
 
 
 ## Limitations
@@ -1006,6 +1047,8 @@ Coverage: **49.2%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · 
 - **Single seed, single run.** Numbers come from one training run; seed-to-seed variance was not measured.
 - **Naturalness does not transfer to machine translation.** On professional vs `opus-mt-en-sv` translations of FLORES+ sentences no version separates the two usefully (AUC ≤ 0.56, see the machine-translation test); it detects Kimi-k3-style translationese, not machine translation in general. The same holds on the human-annotated translationese benchmark (liu-nlp/translationese-opensubtitles): every gate prefers the OPUS-MT translation over the native speaker's alternative.
 - **Grammar and relevance are weak spots.** On natively written Swedish the gate barely prefers a corrected sentence over a learner error (DaLAJ, best v3 question 68.8%) and loses to a word-overlap baseline at picking a question's own FAQ answer (SweFAQ, v3 `quality` 66.8% vs 79.7%); Kimi-k3 gets 90.3% and 99.0%.
+- **v4's `grammatical` question over-flags.** At threshold 0.5 it marks 40.4% of fluent LLM answers and 59.9% of WMT24++ references as incorrect; use it to compare two versions of a text, not as a verdict on one.
+- **Translation preference is source-sensitive only after the adequacy fix.** Europarl human-vs-MT pairs alone teach 'the less literal side wins' (see the v4 sanity tests); v4 still picks a fluent translation of the wrong sentence in 22.0% of FLORES+ pairs.
 - **CPU is slow.** A pair takes 506.7 ms (median) on CPU with torch fp32; int8 and ONNX do not get anywhere near the GPU's millisecond latency.
 
 ## Conclusion
@@ -1014,9 +1057,11 @@ The fine-tuned gate reaches 98.4% accuracy on held-out pairs (the zero-shot base
 
 Against these labels Kimi-k3 is *less* accurate than the gate (95.5% vs 98.6%) and 802× slower, which is expected: the labels mark translationese, which the gate was trained on, while the judge was also asked about helpfulness and correctness, and it generated these pairs itself. The judge still helps where the gate is unsure: routing the 5.2% least-confident instances (threshold 0.45) lifts accuracy from 98.6% to 99.1% at an expected 507.5 ms per pair. The pre-registered rule (cheapest threshold within 0.5 points of the best) picks 0.00, i.e. 0.0% routed, because the gain is that small. For its intended System 1 role on data like this, settling confident comparisons in milliseconds and escalating the rest, the gate is fit for purpose (latency target met, ECE target met, confident-subset accuracy 98.6% vs judge 95.5%). It should not be the only judge for high-stakes decisions.
 
-A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is on the Hub as `revision="v2"`.
+A **v2** checkpoint (`python -m laya_gate.v2`, see [v2](#v2-training-on-fluent-pairs-too)) adds 9921 fluent-vs-fluent training pairs and a separate naturalness question. On the probe it reaches 75.9% (95% CI 70.9%–80.6%) vs 64.2% for v1, with ECE 0.033 instead of 0.230, so its margin routes mistakes to the judge again: with about 32% of probe instances routed to Kimi-k3, the cascade reaches 84.8% with v2 (33.1% routed) vs 73.7% with v1. The cost is 98.7% → 97.6% on the original held-out pairs (both orders averaged), and the probe is still 11.4 percentage points behind Kimi-k3. v2 is not on the Hub yet.
 
-A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is the default checkpoint on the Hub; v2 and v1 stay available as `revision="v2"` and `revision="v1"`.
+A **v3** checkpoint (`python -m laya_gate.v3`, see [v3](#v3-single-response-questions)) keeps v2's two pairwise questions and adds two single-response questions: a 1–5 **quality** score and a **natural Swedish vs translationese** check. On the probe its pairwise preference reaches 80.3% [75.6%, 84.6%] (v2: 75.9%), and ranking the two answers by their quality scores reaches 82.9% [78.9%, 87.0%] with one forward pass per answer (Kimi-k3: 87.3%). On the original held-out pairs v3 is back to 98.9% (v2: 97.6%). On human vs machine translations of FLORES+ sentences, no version is useful (see [the machine-translation test](#machine-translation-test-a-negative-result)). v3 is not on the Hub yet.
+
+**v4** closes the two gaps the external benchmarks exposed: grammar (DaLAJ 55.9% → 89.7%, ScaLA-sv MCC 0.146 → 0.341) and relevance (SweFAQ 60.3% → 88.9%), and judges translations better (FLORES+ 48.5% → 73.8%), with in-domain accuracy, calibration and latency about the same as v3's. Getting there exposed a trap worth knowing: human-vs-MT pairs alone teach a gate to reward whatever is least like the source; source-dependent negatives fixed it. Its `grammatical` question is useful for comparing two texts but over-flags good Swedish as a stand-alone verdict. In a 22-model pilot, the gate's quality score of a model's Swedish answers tracks the EuroEval Swedish rank (Spearman 0.74, 0.62 after controlling for model size), which makes it a plausible cheap proxy for screening Swedish models, to be validated on more and larger models.
 
 ## Usage ideas
 

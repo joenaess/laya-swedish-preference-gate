@@ -19,6 +19,7 @@ from .data import state_room_for, truncate_state, truncate_triplet
 from .utils import (
     CHECKPOINT_DIR,
     DEFAULT_MARGIN,
+    GRAMMAR_QID,
     HEAD_MAX_LEN,
     MAX_LEN,
     NATURAL_SINGLE_QID,
@@ -379,6 +380,36 @@ class SwedishPreferenceGate:
             {
                 "label": "natural" if p[0] >= 0.5 else "translationese",
                 "p_natural": float(p[0]),
+                "is_valid_margin": bool(abs(p[0] - 0.5) >= self.margin),
+            }
+            for p in probs
+        ]
+
+    # --------------------------------------------------------- grammar (v4 grammar arm)
+
+    @property
+    def has_grammar(self) -> bool:
+        return GRAMMAR_QID in self._internal
+
+    def score_grammar(self, text: str, prompt: str = "") -> dict[str, Any]:
+        """Whether one Swedish text is grammatically correct (checkpoints with `grammatical`)."""
+        return self.score_grammar_batch([text], [prompt], 1)[0]
+
+    def score_grammar_batch(
+        self,
+        texts: Sequence[str],
+        prompts: Sequence[str] | None = None,
+        batch_size: int = 32,
+    ) -> list[dict[str, Any]]:
+        prompts = [""] * len(texts) if prompts is None else prompts
+        if len(prompts) != len(texts):
+            raise ValueError("prompts and texts must have the same length")
+        items = [self.encode_single(p, t, GRAMMAR_QID) for p, t in zip(prompts, texts, strict=True)]
+        probs = self.probabilities(self.logits(items, batch_size=batch_size), GRAMMAR_QID)
+        return [
+            {
+                "label": "correct" if p[0] >= 0.5 else "incorrect",
+                "p_correct": float(p[0]),
                 "is_valid_margin": bool(abs(p[0] - 0.5) >= self.margin),
             }
             for p in probs

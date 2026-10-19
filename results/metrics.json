@@ -502,14 +502,14 @@
   },
   "tests": {
     "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
-    "total": 144,
-    "passed": 144,
+    "total": 153,
+    "passed": 153,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "skipped_tests": {},
     "all_passed": true,
-    "coverage_percent": 49.2,
+    "coverage_percent": 46.9,
     "coverage_per_module": {
       "__init__.py": 100.0,
       "benchmark.py": 63.2,
@@ -522,16 +522,18 @@
       "liu_eval.py": 36.6,
       "mtqa.py": 0.0,
       "onnx_export.py": 87.2,
-      "predictor.py": 84.4,
+      "pilot.py": 40.5,
+      "predictor.py": 81.1,
       "probe.py": 46.0,
-      "publish.py": 68.9,
-      "readme.py": 78.8,
+      "publish.py": 61.5,
+      "publish_data.py": 0.0,
+      "readme.py": 73.9,
       "testing.py": 0.0,
       "train.py": 37.3,
       "utils.py": 100.0,
       "v2.py": 29.4,
       "v3.py": 18.0,
-      "v4.py": 29.1
+      "v4.py": 29.8
     }
   },
   "publish": {
@@ -539,14 +541,16 @@
     "repo_id": "jonasaise/laya-swedish-preference-gate",
     "url": "https://huggingface.co/jonasaise/laya-swedish-preference-gate",
     "visibility": "public",
-    "commit": "b38bea2cc2aadcb70889d53845fbf5c9c637cd82",
-    "checkpoint": "v3",
-    "previous_revision_tag": null,
+    "commit": "ff962639806f8a731d742ea512db902d6cbb785c",
+    "checkpoint": "v4",
+    "previous_revision_tag": {
+      "tag": "v3",
+      "revision": "b38bea2cc2aadcb70889d53845fbf5c9c637cd82"
+    },
     "files": [
       "README.md",
       "encoder",
       "model.safetensors",
-      "onnx/model.int8.onnx",
       "questions.json",
       "results/metrics.json",
       "rl_agent_config.json",
@@ -7351,6 +7355,18 @@
           "naturalness": "no prompt"
         },
         "negatives": "Kimi-k3 translations (reasoning off); OPUS-MT never used in training"
+      },
+      "adequacy": {
+        "preference": 14989,
+        "naturalness": 3000,
+        "single": 6000,
+        "by_kind": {
+          "wrong_source": 3000,
+          "mt_vs_wrong_source": 3000,
+          "half": 3000,
+          "shuffled": 2989,
+          "untranslated": 3000
+        }
       }
     },
     "arms": {
@@ -11470,6 +11486,1730 @@
             "n": 2048
           }
         }
+      },
+      "grammar": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            },
+            "grammatical": {
+              "type": "choice",
+              "instructions": "Is the text grammatically correct Swedish (spelling, inflection, word choice, word order, punctuation)?",
+              "criteria": {
+                "correct": "grammatically correct Swedish",
+                "incorrect": "contains a grammatical, spelling or word-order error"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": false,
+            "eval_batch": 32,
+            "seed": 20261014,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "none"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 186695,
+          "train_units_by_source_question": {
+            "original/preference": 12750,
+            "original/naturalness": 12750,
+            "fluent/preference": 9921,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842,
+            "europarl/preference": 12000,
+            "europarl/naturalness": 12000,
+            "dalaj/naturalness": 16365,
+            "swefaq/preference": 3074,
+            "dalaj_grammar/grammatical": 32730
+          },
+          "optimizer_updates": 11669,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.5112670276095137,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.092276629775541,
+                  "acc": 0.9651428571428572,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.16011395872697196,
+                  "acc": 0.9414132379248659,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.042129012059601886,
+                  "acc": 0.9874776386404294,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.06646987715880054,
+                  "acc": 0.981216457960644,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.3619540401537504,
+                  "acc": 0.4383561643835616,
+                  "n": 1750,
+                  "mae": 0.8685782679161057
+                },
+                "fluent/preference": {
+                  "loss": 0.5437463511955803,
+                  "acc": 0.7577142857142857,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.7324684209987256,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.42845118429556733
+              },
+              "epoch_seconds": 7125.240661574004
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 7125.907160344999,
+          "per_epoch_seconds": [
+            7125.240661574004
+          ],
+          "peak_gpu_memory_allocated_gib": 10.725080966949463,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.5321653781816176,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.2556800278765847,
+            "nll_post": 0.23987913047636994,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.5433204525659171,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.060607106091853546,
+            "nll_post": 0.053279330253485094,
+            "within_laya_clamp": true
+          },
+          "quality": {
+            "temperature": 1.1222208835132554,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.361994562512417,
+            "nll_post": 1.3597073293710915,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.3182868648503538,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.13017064167705555,
+            "nll_post": 0.12431872492828505,
+            "within_laya_clamp": true
+          },
+          "grammatical": {
+            "temperature": 1.3281917650643995,
+            "fit_on": "DaLAJ-GED dev (corrected and learner sentences)",
+            "n": 4192,
+            "nll_pre": 0.6058884066599431,
+            "nll_post": 0.6005445098862534,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_grammar_eval",
+          "temperatures": {
+            "preference": 1.5321653781816176,
+            "naturalness": 0.5433204525659171,
+            "quality": 1.1222208835132554,
+            "natural_swedish": 1.3182868648503538,
+            "grammatical": 1.3281917650643995
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9852415026833632,
+              "ci95": [
+                0.9803220035778175,
+                0.9897137745974955
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9874776386404294,
+              "ci95": [
+                0.9803220035778175,
+                0.9937388193202147
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9821109123434705,
+            "accuracy_chosen_in_b": 0.9883720930232558,
+            "positional_consistency": 0.9856887298747764,
+            "ece_both_orders": 0.010164614488342239,
+            "mean_confidence": 0.9750768881950209,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9731663685152058,
+              "accuracy_on_covered": 0.9940257352941176
+            },
+            "ece_order_averaged": 0.013318090986559374,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9731663685152058,
+              "accuracy_on_covered": 0.9944852941176471,
+              "accuracy_on_routed": 0.7333333333333333
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9843470483005367,
+              "ci95": [
+                0.9794275491949911,
+                0.9892665474060823
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9847942754919499,
+              "ci95": [
+                0.9776386404293381,
+                0.9910554561717353
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.981216457960644,
+            "accuracy_chosen_in_b": 0.9874776386404294,
+            "positional_consistency": 0.9776386404293381,
+            "ece_both_orders": 0.015180082536962475,
+            "mean_confidence": 0.9694607725241058,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9575134168157424,
+              "accuracy_on_covered": 0.9948622139187295
+            },
+            "ece_order_averaged": 0.021130310389593482,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9588550983899821,
+              "accuracy_on_covered": 0.9981343283582089,
+              "accuracy_on_routed": 0.6739130434782609
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.7842465753424658,
+              "ci95": [
+                0.7648401826484018,
+                0.8036529680365296
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7922374429223744,
+              "ci95": [
+                0.7636986301369864,
+                0.819634703196347
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.7659817351598174,
+            "accuracy_chosen_in_b": 0.8025114155251142,
+            "positional_consistency": 0.8812785388127854,
+            "ece_both_orders": 0.020913622531508993,
+            "mean_confidence": 0.7737066341330759,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6501141552511416,
+              "accuracy_on_covered": 0.8735733099209834
+            },
+            "ece_order_averaged": 0.03430119007654502,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6358447488584474,
+              "accuracy_on_covered": 0.8850987432675045,
+              "accuracy_on_routed": 0.6300940438871473
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.07056143596560525,
+            "fraction_within_0.2": 0.9018264840182648
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.7859531772575251,
+              "ci95": [
+                0.7525083612040134,
+                0.8194397993311034
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7926421404682275,
+              "ci95": [
+                0.745819397993311,
+                0.8394648829431438
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.7759197324414716,
+            "accuracy_chosen_in_b": 0.7959866220735786,
+            "positional_consistency": 0.8929765886287625,
+            "ece_both_orders": 0.037522073670225385,
+            "mean_confidence": 0.7828660922866637,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6638795986622074,
+              "accuracy_on_covered": 0.889168765743073
+            },
+            "ece_order_averaged": 0.040639376453832976,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6421404682274248,
+              "accuracy_on_covered": 0.90625,
+              "accuracy_on_routed": 0.5887850467289719
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.35785953177257523,
+                "accuracy": 0.5887850467289719
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.34448160535117056,
+                "accuracy": 0.8640776699029126
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.2976588628762542,
+                "accuracy": 0.9550561797752809
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.07898415318687936,
+            "fraction_within_0.2": 0.8929765886287625
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.7859531772575251,
+                "expected_latency_ms": 9.753365011420101,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.06688963210702341,
+                "cascade_accuracy": 0.8076923076923077,
+                "expected_latency_ms": 647.2926036395166,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.1605351170568562,
+                "cascade_accuracy": 0.8377926421404682,
+                "expected_latency_ms": 1539.847537718852,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.2525083612040134,
+                "cascade_accuracy": 0.8712374581939799,
+                "expected_latency_ms": 2416.463990832485,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.33612040133779264,
+                "cascade_accuracy": 0.8879598662207357,
+                "expected_latency_ms": 3213.3880391176053,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.411371237458194,
+                "cascade_accuracy": 0.8896321070234113,
+                "expected_latency_ms": 3930.619682574214,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.49331103678929766,
+                "cascade_accuracy": 0.8963210702341137,
+                "expected_latency_ms": 4711.605249893632,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.5752508361204013,
+                "cascade_accuracy": 0.8879598662207357,
+                "expected_latency_ms": 5492.59081721305,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.6822742474916388,
+                "cascade_accuracy": 0.8862876254180602,
+                "expected_latency_ms": 6512.6535990180055,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.8311036789297659,
+                "cascade_accuracy": 0.8812709030100334,
+                "expected_latency_ms": 7931.17840496552,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.3,
+              "routed_fraction": 0.49331103678929766,
+              "cascade_accuracy": 0.8963210702341137,
+              "expected_latency_ms": 4711.605249893632,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 9.753365011420101,
+            "p95": 10.99640189204365,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.5321653781816176,
+            "naturalness": 0.5433204525659171,
+            "quality": 1.1222208835132554,
+            "natural_swedish": 1.3182868648503538,
+            "grammatical": 1.3281917650643995
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.791095890410959,
+              "ci95": [
+                0.7625570776255708,
+                0.817351598173516
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.11275035519168516,
+            "mean_score_chosen": 3.8046980683516276,
+            "mean_score_rejected": 3.1441331950126736,
+            "spearman_vs_rating": 0.5726170403629249,
+            "pearson_vs_rating": 0.5777783950688293,
+            "mae_vs_rating": 0.8502519529326081
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.8060200668896321,
+              "ci95": [
+                0.7591973244147158,
+                0.8528428093645485
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.11591134867762495,
+            "mean_score_chosen": 3.8204414928509314,
+            "mean_score_rejected": 3.127949110262447,
+            "spearman_vs_rating": 0.5519482637806805
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.9922071261932724,
+            "accuracy": {
+              "accuracy": 0.9347048300536672,
+              "ci95": [
+                0.9244186046511628,
+                0.9449910554561717
+              ],
+              "n": 2236
+            },
+            "ece": 0.01663610267792299,
+            "natural_flagged_translationese": 0.016100178890876567,
+            "translationese_passed_as_natural": 0.11449016100178891,
+            "within_pair_natural_scores_higher": 0.9883720930232558
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.03367579908675799,
+            "mean_p_natural": 0.9375383575211386
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.021739130434782608,
+            "mean_p_natural": 0.9581841586836226
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 6.03025101008825,
+            "p95": 9.85603102017193,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9874776386404294,
+            "ci95": [
+              0.9803220035778175,
+              0.9937388193202147
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.791095890410959,
+            "ci95": [
+              0.7636986301369864,
+              0.8184931506849316
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.7926421404682275,
+            "ci95": [
+              0.745819397993311,
+              0.8394648829431438
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.5266666666666666,
+            "ci95": [
+              0.4866666666666667,
+              0.565
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.485,
+            "ci95": [
+              0.446625,
+              0.5233333333333333
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.66,
+            "ci95": [
+              0.6216666666666667,
+              0.6983749999999997
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.5816993464052288,
+            "ci95": [
+              0.5590749120160885,
+              0.6028280542986424
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.5809451985922575,
+            "ci95": [
+              0.5600804424333836,
+              0.6030668677727501
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.7606837606837606,
+            "ci95": [
+              0.7430744092508799,
+              0.7787833081950729
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.8858447488584474,
+            "ci95": [
+              0.8721334348046677,
+              0.8990360223236935
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.8462709284627092,
+            "ci95": [
+              0.8300355149670218,
+              0.8612379502790461
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.8765432098765432,
+            "ci95": [
+              0.8651234567901235,
+              0.8882716049382716
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.7169753086419753,
+            "ci95": [
+              0.7009182098765432,
+              0.7324074074074074
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.9360189573459715,
+            "ci95": [
+              0.919431279620853,
+              0.95260663507109
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.908175355450237,
+            "ci95": [
+              0.88801836492891,
+              0.9265402843601895
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.7147435897435898,
+            "ci95": [
+              0.6858974358974359,
+              0.7446581196581197
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6314102564102564,
+            "ci95": [
+              0.5993589743589743,
+              0.6634615384615384
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.7291897891231964,
+            "ci95": [
+              0.7014150943396227,
+              0.755826859045505
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.5105438401775805,
+            "ci95": [
+              0.4772475027746948,
+              0.5438401775804661
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.8450704225352113,
+            "ci95": [
+              0.8219064386317907,
+              0.8672032193158954
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.6529175050301811,
+            "ci95": [
+              0.6237424547283702,
+              0.6830985915492958
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.8733668341708543,
+            "ci95": [
+              0.8512562814070351,
+              0.892462311557789
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.7437185929648241,
+            "ci95": [
+              0.7135678391959799,
+              0.7698743718592964
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.878968253968254,
+            "ci95": [
+              0.8591269841269841,
+              0.8988095238095238
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.7212301587301587,
+            "ci95": [
+              0.6934523809523809,
+              0.75
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.9,
+            "ci95": [
+              0.8811881188118812,
+              0.9188118811881189
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.7762376237623763,
+            "ci95": [
+              0.751460396039604,
+              0.802970297029703
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.273972602739726,
+            "ci95": [
+              0.2146118721461187,
+              0.3333333333333333
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.591796875,
+            "ci95": [
+              0.5703125,
+              0.6123046875
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.62744140625,
+            "ci95": [
+              0.60693359375,
+              0.64794921875
+            ],
+            "n": 2048
+          },
+          "dalaj/grammatical": {
+            "mean": 0.8315575849822425,
+            "ci95": [
+              0.8145547945205479,
+              0.8475393201420599
+            ],
+            "n": 1971
+          },
+          "gerlangmod/grammatical": {
+            "mean": 0.8803317535545023,
+            "ci95": [
+              0.8590047393364929,
+              0.9016587677725119
+            ],
+            "n": 844
+          },
+          "scala/grammatical_accuracy@0.5": {
+            "mean": 0.65869140625,
+            "ci95": [
+              0.638671875,
+              0.6796875
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "flores_reference_flagged_incorrect": {
+            "mean": 0.38427078148332505,
+            "ci95": [
+              0.3628670980587357,
+              0.4051767048282728
+            ],
+            "n": 2009
+          },
+          "wmt24pp_reference_flagged_incorrect": {
+            "mean": 0.5448717948717948,
+            "ci95": [
+              0.5117254273504274,
+              0.5758547008547008
+            ],
+            "n": 936
+          },
+          "europarl_human_flagged_incorrect": {
+            "mean": 0.32261306532663314,
+            "ci95": [
+              0.29346733668341707,
+              0.34977386934673355
+            ],
+            "n": 995
+          },
+          "fluent_responses_flagged_incorrect": {
+            "mean": 0.2722602739726027,
+            "ci95": [
+              0.2511272831050228,
+              0.2939497716894977
+            ],
+            "n": 1752
+          },
+          "fluent_flagged_translationese": {
+            "mean": 0.03367579908675799,
+            "ci95": [
+              0.025684931506849314,
+              0.04223744292237443
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.23243698572309246,
+            "mcc@val_threshold": 0.2723697401181262,
+            "val_threshold": 0.6628371093426472,
+            "auc": 0.6923179626464844,
+            "flagged_incorrect": 0.193359375,
+            "n": 2048
+          },
+          "scala_grammatical": {
+            "mcc@0.5": 0.3177176515182886,
+            "mcc@val_threshold": 0.300840189830331,
+            "val_threshold": 0.4277194547318876,
+            "auc": 0.7157564163208008,
+            "by_corruption": {
+              "None": 0.6357421875,
+              "delete": 0.6422764227642277,
+              "flip_neighbours": 0.7180451127819549
+            },
+            "n": 2048
+          }
+        }
+      },
+      "adequacy": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            },
+            "grammatical": {
+              "type": "choice",
+              "instructions": "Is the text grammatically correct Swedish (spelling, inflection, word choice, word order, punctuation)?",
+              "criteria": {
+                "correct": "grammatically correct Swedish",
+                "incorrect": "contains a grammatical, spelling or word-order error"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": false,
+            "eval_batch": 32,
+            "seed": 20261014,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "none"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 210684,
+          "train_units_by_source_question": {
+            "original/preference": 12750,
+            "original/naturalness": 12750,
+            "fluent/preference": 9921,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842,
+            "europarl/preference": 12000,
+            "europarl/naturalness": 12000,
+            "dalaj/naturalness": 16365,
+            "swefaq/preference": 3074,
+            "dalaj_grammar/grammatical": 32730,
+            "adequacy/preference": 14989,
+            "adequacy/naturalness": 3000,
+            "adequacy/natural_swedish": 3000,
+            "adequacy/grammatical": 3000
+          },
+          "optimizer_updates": 13168,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.46968546480781687,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.08447746958788285,
+                  "acc": 0.9651428571428572,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.17758894605338885,
+                  "acc": 0.9338103756708408,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.029654314743848578,
+                  "acc": 0.9874776386404294,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.06022512483323941,
+                  "acc": 0.9838998211091234,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.3690410742610692,
+                  "acc": 0.4368340943683409,
+                  "n": 1750,
+                  "mae": 0.8793606200181446
+                },
+                "fluent/preference": {
+                  "loss": 0.5515086914017364,
+                  "acc": 0.7565714285714286,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.7380189365776522,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.4300735082084025
+              },
+              "epoch_seconds": 7604.747687792988
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 7605.36246077501,
+          "per_epoch_seconds": [
+            7604.747687792988
+          ],
+          "peak_gpu_memory_allocated_gib": 10.725080966949463,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.589792695679994,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.26351186493986756,
+            "nll_post": 0.24337156422402476,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.37870927575382723,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.05873128360334634,
+            "nll_post": 0.04263673482385321,
+            "within_laya_clamp": false
+          },
+          "quality": {
+            "temperature": 1.1208135827781331,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.368934015338923,
+            "nll_post": 1.3667906283487485,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.404550238392129,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.1365010241328522,
+            "nll_post": 0.12711659675467452,
+            "within_laya_clamp": true
+          },
+          "grammatical": {
+            "temperature": 1.4485255223322013,
+            "fit_on": "DaLAJ-GED dev (corrected and learner sentences)",
+            "n": 4192,
+            "nll_pre": 0.5973735688527602,
+            "nll_post": 0.5862223748090876,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_adequacy_eval",
+          "temperatures": {
+            "preference": 1.589792695679994,
+            "naturalness": 0.37870927575382723,
+            "quality": 1.1208135827781331,
+            "natural_swedish": 1.404550238392129,
+            "grammatical": 1.4485255223322013
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9861359570661896,
+              "ci95": [
+                0.9807692307692307,
+                0.990608228980322
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9856887298747764,
+              "ci95": [
+                0.9776386404293381,
+                0.9919499105545617
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9865831842576028,
+            "accuracy_chosen_in_b": 0.9856887298747764,
+            "positional_consistency": 0.9919499105545617,
+            "ece_both_orders": 0.014219252114462379,
+            "mean_confidence": 0.9744189348469265,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9749552772808586,
+              "accuracy_on_covered": 0.994954128440367
+            },
+            "ece_order_averaged": 0.016615166263331652,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9785330948121646,
+              "accuracy_on_covered": 0.9945155393053017,
+              "accuracy_on_routed": 0.5833333333333334
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9847942754919499,
+              "ci95": [
+                0.9794275491949911,
+                0.9897137745974955
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9883720930232558,
+              "ci95": [
+                0.9821109123434705,
+                0.9937388193202147
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9847942754919499,
+            "accuracy_chosen_in_b": 0.9847942754919499,
+            "positional_consistency": 0.9892665474060823,
+            "ece_both_orders": 0.007872449146444341,
+            "mean_confidence": 0.9772030983487241,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9646690518783542,
+              "accuracy_on_covered": 0.9953639313861845
+            },
+            "ece_order_averaged": 0.012009308102835509,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9677996422182469,
+              "accuracy_on_covered": 0.9953789279112755,
+              "accuracy_on_routed": 0.7777777777777778
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.7751141552511416,
+              "ci95": [
+                0.7557077625570776,
+                0.7939497716894978
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.773972602739726,
+              "ci95": [
+                0.7454337899543378,
+                0.8025114155251142
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.7545662100456622,
+            "accuracy_chosen_in_b": 0.795662100456621,
+            "positional_consistency": 0.8767123287671232,
+            "ece_both_orders": 0.030794931186838223,
+            "mean_confidence": 0.7770709556376174,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6569634703196348,
+              "accuracy_on_covered": 0.8635968722849696
+            },
+            "ece_order_averaged": 0.03008486423935708,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.634703196347032,
+              "accuracy_on_covered": 0.8812949640287769,
+              "accuracy_on_routed": 0.5875
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.08982844810843214,
+            "fraction_within_0.2": 0.8595890410958904
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.7892976588628763,
+              "ci95": [
+                0.7575250836120402,
+                0.822742474916388
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7859531772575251,
+              "ci95": [
+                0.7357859531772575,
+                0.8327759197324415
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.7892976588628763,
+            "accuracy_chosen_in_b": 0.7892976588628763,
+            "positional_consistency": 0.8996655518394648,
+            "ece_both_orders": 0.026966197482726592,
+            "mean_confidence": 0.7870166380644344,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6906354515050167,
+              "accuracy_on_covered": 0.8619854721549637
+            },
+            "ece_order_averaged": 0.031122613698701722,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6822742474916388,
+              "accuracy_on_covered": 0.8823529411764706,
+              "accuracy_on_routed": 0.5789473684210527
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.3177257525083612,
+                "accuracy": 0.5789473684210527
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.43478260869565216,
+                "accuracy": 0.823076923076923
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.24749163879598662,
+                "accuracy": 0.9864864864864865
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.09755456901071287,
+            "fraction_within_0.2": 0.8260869565217391
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.7892976588628763,
+                "expected_latency_ms": 9.813512006076053,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.07357859531772576,
+                "cascade_accuracy": 0.8110367892976589,
+                "expected_latency_ms": 711.1066744969824,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.14715719063545152,
+                "cascade_accuracy": 0.8327759197324415,
+                "expected_latency_ms": 1412.3998369878886,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.22742474916387959,
+                "cascade_accuracy": 0.8511705685618729,
+                "expected_latency_ms": 2177.4469233416044,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.3093645484949833,
+                "cascade_accuracy": 0.8595317725752508,
+                "expected_latency_ms": 2958.4324906610227,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.38127090301003347,
+                "cascade_accuracy": 0.8779264214046822,
+                "expected_latency_ms": 3643.7871721862266,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.4682274247491639,
+                "cascade_accuracy": 0.8862876254180602,
+                "expected_latency_ms": 4472.588182402752,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.5886287625418061,
+                "cascade_accuracy": 0.8846153846153846,
+                "expected_latency_ms": 5620.158811933326,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.717391304347826,
+                "cascade_accuracy": 0.8795986622073578,
+                "expected_latency_ms": 6847.421846292412,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.8612040133779264,
+                "cascade_accuracy": 0.8745819397993311,
+                "expected_latency_ms": 8218.131209342819,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.3,
+              "routed_fraction": 0.4682274247491639,
+              "cascade_accuracy": 0.8862876254180602,
+              "expected_latency_ms": 4472.588182402752,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 9.813512006076053,
+            "p95": 11.074306041700765,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.589792695679994,
+            "naturalness": 0.37870927575382723,
+            "quality": 1.1208135827781331,
+            "natural_swedish": 1.404550238392129,
+            "grammatical": 1.4485255223322013
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.771689497716895,
+              "ci95": [
+                0.7442922374429224,
+                0.7990867579908676
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.10199274485789345,
+            "mean_score_chosen": 3.7832993874689724,
+            "mean_score_rejected": 3.162450495156977,
+            "spearman_vs_rating": 0.5573247755529468,
+            "pearson_vs_rating": 0.5614508725468568,
+            "mae_vs_rating": 0.8643844699326751
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.7558528428093646,
+              "ci95": [
+                0.705685618729097,
+                0.8060200668896321
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.092050415942608,
+            "mean_score_chosen": 3.8030469723555993,
+            "mean_score_rejected": 3.16374255122341,
+            "spearman_vs_rating": 0.5341118384341903
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.9905686265724956,
+            "accuracy": {
+              "accuracy": 0.9284436493738819,
+              "ci95": [
+                0.9181574239713775,
+                0.9391771019677997
+              ],
+              "n": 2236
+            },
+            "ece": 0.022072792386708496,
+            "natural_flagged_translationese": 0.011627906976744186,
+            "translationese_passed_as_natural": 0.13148479427549195,
+            "within_pair_natural_scores_higher": 0.9874776386404294
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.033105022831050226,
+            "mean_p_natural": 0.9419080973000916
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.013377926421404682,
+            "mean_p_natural": 0.9624810377786753
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 5.992665508529171,
+            "p95": 9.871126036159684,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9865831842576028,
+            "ci95": [
+              0.9794275491949911,
+              0.9928443649373881
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.773972602739726,
+            "ci95": [
+              0.7454337899543378,
+              0.8025114155251142
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.7859531772575251,
+            "ci95": [
+              0.7357859531772575,
+              0.8327759197324415
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.5216666666666666,
+            "ci95": [
+              0.4816666666666667,
+              0.56
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.5216666666666666,
+            "ci95": [
+              0.4816666666666667,
+              0.5633333333333334
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.53,
+            "ci95": [
+              0.49,
+              0.5683749999999997
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.6520864756158874,
+            "ci95": [
+              0.6309703368526898,
+              0.6726998491704375
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.615887380593263,
+            "ci95": [
+              0.5947712418300654,
+              0.6380090497737556
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.7380593262946205,
+            "ci95": [
+              0.717948717948718,
+              0.7576671694318753
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.8970065956367326,
+            "ci95": [
+              0.883802638254693,
+              0.9097031963470319
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.8358701166920345,
+            "ci95": [
+              0.8198820395738203,
+              0.8516045154743785
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.8891975308641975,
+            "ci95": [
+              0.8783873456790123,
+              0.9006172839506172
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.7283950617283951,
+            "ci95": [
+              0.7129629629629629,
+              0.7435185185185185
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.9549763033175356,
+            "ci95": [
+              0.9395734597156398,
+              0.9680094786729858
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.8122037914691943,
+            "ci95": [
+              0.7855450236966824,
+              0.8382701421800948
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.7457264957264957,
+            "ci95": [
+              0.7179220085470086,
+              0.7735042735042735
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6848290598290598,
+            "ci95": [
+              0.655982905982906,
+              0.7136752136752137
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.5893451720310766,
+            "ci95": [
+              0.5571587125416204,
+              0.6215316315205327
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.51165371809101,
+            "ci95": [
+              0.47835738068812433,
+              0.5438401775804661
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.7122736418511066,
+            "ci95": [
+              0.6830985915492958,
+              0.7404426559356136
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.7082494969818913,
+            "ci95": [
+              0.6800553319919517,
+              0.735437625754527
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.7738693467336684,
+            "ci95": [
+              0.7477386934673367,
+              0.7989949748743719
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.771859296482412,
+            "ci95": [
+              0.7457035175879397,
+              0.7979899497487437
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.7996031746031746,
+            "ci95": [
+              0.7757936507936508,
+              0.8244047619047619
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.6875,
+            "ci95": [
+              0.6597222222222222,
+              0.7153025793650792
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.8356435643564356,
+            "ci95": [
+              0.8138366336633663,
+              0.8594059405940594
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.7534653465346535,
+            "ci95": [
+              0.7287128712871287,
+              0.7792326732673266
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.2009132420091324,
+            "ci95": [
+              0.1461187214611872,
+              0.2511415525114155
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.6298828125,
+            "ci95": [
+              0.60791015625,
+              0.6513671875
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.63037109375,
+            "ci95": [
+              0.60887451171875,
+              0.65185546875
+            ],
+            "n": 2048
+          },
+          "dalaj/grammatical": {
+            "mean": 0.8320649416539827,
+            "ci95": [
+              0.8155758498224251,
+              0.8488077118214105
+            ],
+            "n": 1971
+          },
+          "gerlangmod/grammatical": {
+            "mean": 0.47808056872037913,
+            "ci95": [
+              0.4431131516587678,
+              0.5118483412322274
+            ],
+            "n": 844
+          },
+          "scala/grammatical_accuracy@0.5": {
+            "mean": 0.6689453125,
+            "ci95": [
+              0.64990234375,
+              0.6904296875
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "flores_reference_flagged_incorrect": {
+            "mean": 0.42160278745644597,
+            "ci95": [
+              0.3987058237929318,
+              0.4435042309606769
+            ],
+            "n": 2009
+          },
+          "wmt24pp_reference_flagged_incorrect": {
+            "mean": 0.5993589743589743,
+            "ci95": [
+              0.5683760683760684,
+              0.6292735042735043
+            ],
+            "n": 936
+          },
+          "europarl_human_flagged_incorrect": {
+            "mean": 0.3075376884422111,
+            "ci95": [
+              0.27839195979899495,
+              0.335678391959799
+            ],
+            "n": 995
+          },
+          "fluent_responses_flagged_incorrect": {
+            "mean": 0.4035388127853881,
+            "ci95": [
+              0.3807077625570776,
+              0.4258133561643835
+            ],
+            "n": 1752
+          },
+          "fluent_flagged_translationese": {
+            "mean": 0.033105022831050226,
+            "ci95": [
+              0.02511415525114155,
+              0.041666666666666664
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.2674697726263398,
+            "mcc@val_threshold": 0.26894682521813984,
+            "val_threshold": 0.4953069650946644,
+            "auc": 0.674044132232666,
+            "flagged_incorrect": 0.380859375,
+            "n": 2048
+          },
+          "scala_grammatical": {
+            "mcc@0.5": 0.3412819671048909,
+            "mcc@val_threshold": 0.32653775051172174,
+            "val_threshold": 0.5284532020754411,
+            "auc": 0.732384204864502,
+            "by_corruption": {
+              "None": 0.5986328125,
+              "delete": 0.6910569105691057,
+              "flip_neighbours": 0.7838345864661654
+            },
+            "n": 2048
+          }
+        }
       }
     },
     "design": {
@@ -11486,6 +13226,19 @@
           "europarl",
           "dalaj",
           "swefaq"
+        ],
+        "grammar": [
+          "europarl",
+          "dalaj",
+          "swefaq",
+          "dalaj_grammar"
+        ],
+        "adequacy": [
+          "europarl",
+          "dalaj",
+          "swefaq",
+          "dalaj_grammar",
+          "adequacy"
         ]
       },
       "recipe": "v3 data and questions, 1 epoch, from the base checkpoint",
@@ -11498,6 +13251,256 @@
       "against": "control",
       "metric": "per-item difference in the share of items where the reference wins (guards: share flagged, lower is better); paired bootstrap over items",
       "arms": {
+        "adequacy": {
+          "original/preference": {
+            "diff": -0.0026833631484794273,
+            "ci95": [
+              -0.008050089445438283,
+              0.0017889087656529517
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": -0.003424657534246575,
+            "ci95": [
+              -0.026255707762557076,
+              0.019406392694063926
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": 0.0033444816053511705,
+            "ci95": [
+              -0.04013377926421405,
+              0.046822742474916385
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.08666666666666667,
+            "ci95": [
+              0.03333333333333333,
+              0.14
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": 0.02666666666666667,
+            "ci95": [
+              -0.021666666666666667,
+              0.07918749999999988
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": 0.165,
+            "ci95": [
+              0.11166666666666666,
+              0.21833333333333332
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.09703368526897939,
+            "ci95": [
+              0.07088989441930618,
+              0.12418300653594772
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": 0.013071895424836602,
+            "ci95": [
+              -0.011569884364002012,
+              0.038964303670186023
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": 0.26646556058320764,
+            "ci95": [
+              0.23930367018602314,
+              0.29411764705882354
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": 0.29274479959411465,
+            "ci95": [
+              0.2678716387620497,
+              0.31709791983764585
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": 0.16818873668188736,
+            "ci95": [
+              0.1461187214611872,
+              0.19051243023845763
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": 0.28117283950617283,
+            "ci95": [
+              0.26233796296296297,
+              0.2996913580246914
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": 0.04969135802469136,
+            "ci95": [
+              0.03580246913580247,
+              0.06450617283950617
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "diff": 0.10426540284360189,
+            "ci95": [
+              0.07938388625592417,
+              0.13033175355450238
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": -0.04087677725118483,
+            "ci95": [
+              -0.07464454976303317,
+              -0.0071090047393364926
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.2297008547008547,
+            "ci95": [
+              0.18803418803418803,
+              0.2692307692307692
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": 0.03952991452991453,
+            "ci95": [
+              0.002136752136752137,
+              0.07588141025641011
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.18867924528301888,
+            "ci95": [
+              0.146503884572697,
+              0.23307436182019978
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": 0.025527192008879023,
+            "ci95": [
+              -0.014428412874583796,
+              0.06551054384017743
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.33601609657947684,
+            "ci95": [
+              0.29977364185110666,
+              0.37424547283702214
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.2193158953722334,
+            "ci95": [
+              0.18209255533199195,
+              0.25857645875251495
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": 0.4150753768844221,
+            "ci95": [
+              0.3778894472361809,
+              0.45125628140703516
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.28542713567839195,
+            "ci95": [
+              0.24623115577889448,
+              0.3236180904522613
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.44345238095238093,
+            "ci95": [
+              0.40476190476190477,
+              0.48412698412698413
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": 0.19543650793650794,
+            "ci95": [
+              0.15575396825396826,
+              0.23511904761904762
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.499009900990099,
+            "ci95": [
+              0.4623762376237624,
+              0.537648514851485
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": 0.29306930693069305,
+            "ci95": [
+              0.25643564356435644,
+              0.3307178217821781
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": 0.0319634703196347,
+            "ci95": [
+              -0.0091324200913242,
+              0.0730593607305936
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": 0.10107421875,
+            "ci95": [
+              0.0771484375,
+              0.1259765625
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": 0.06103515625,
+            "ci95": [
+              0.03759765625,
+              0.083984375
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": -0.011986301369863013,
+            "ci95": [
+              -0.021118721461187213,
+              -0.003424657534246575
+            ],
+            "n": 1752
+          }
+        },
         "both": {
           "original/preference": {
             "diff": 0.0008944543828264759,
@@ -12248,6 +14251,256 @@
             "n": 1752
           }
         },
+        "grammar": {
+          "original/preference": {
+            "diff": -0.0017889087656529517,
+            "ci95": [
+              -0.007155635062611807,
+              0.0035778175313059034
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": 0.0136986301369863,
+            "ci95": [
+              -0.010273972602739725,
+              0.03767123287671233
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": 0.010033444816053512,
+            "ci95": [
+              -0.026755852842809364,
+              0.046822742474916385
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.09166666666666666,
+            "ci95": [
+              0.036625000000000005,
+              0.14666666666666667
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": -0.01,
+            "ci95": [
+              -0.0575,
+              0.03666666666666667
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": 0.295,
+            "ci95": [
+              0.23,
+              0.36
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.026646556058320763,
+            "ci95": [
+              -0.004524886877828055,
+              0.05731523378582202
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": -0.021870286576168928,
+            "ci95": [
+              -0.04399195575666164,
+              0.001514580191050745
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": 0.28908999497234794,
+            "ci95": [
+              0.25992961287078936,
+              0.31975867269984914
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": 0.2815829528158295,
+            "ci95": [
+              0.2567224759005581,
+              0.30644342973110095
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": 0.17858954845256214,
+            "ci95": [
+              0.15550481988838152,
+              0.20116692034500253
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": 0.26851851851851855,
+            "ci95": [
+              0.25030864197530867,
+              0.286736111111111
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": 0.03827160493827161,
+            "ci95": [
+              0.024691358024691357,
+              0.05185185185185185
+            ],
+            "n": 3240
+          },
+          "gerlangmod/naturalness": {
+            "diff": 0.08530805687203792,
+            "ci95": [
+              0.06042654028436019,
+              0.11374407582938388
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": 0.05509478672985782,
+            "ci95": [
+              0.029028436018957347,
+              0.08236078199052126
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.1987179487179487,
+            "ci95": [
+              0.15064102564102563,
+              0.2467948717948718
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": -0.013888888888888888,
+            "ci95": [
+              -0.05982905982905983,
+              0.030982905982905984
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.32852386237513875,
+            "ci95": [
+              0.2830188679245283,
+              0.3762486126526082
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": 0.0244173140954495,
+            "ci95": [
+              -0.025527192008879023,
+              0.07436182019977802
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.4688128772635815,
+            "ci95": [
+              0.42857142857142855,
+              0.5080482897384306
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.16398390342052313,
+            "ci95": [
+              0.11971830985915492,
+              0.21026156941649898
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": 0.5145728643216081,
+            "ci95": [
+              0.47537688442211057,
+              0.5527638190954773
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.25728643216080405,
+            "ci95": [
+              0.212035175879397,
+              0.2974874371859296
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.5228174603174603,
+            "ci95": [
+              0.4851190476190476,
+              0.5615079365079365
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": 0.22916666666666666,
+            "ci95": [
+              0.1874751984126984,
+              0.2718253968253968
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.5633663366336633,
+            "ci95": [
+              0.5257425742574258,
+              0.600990099009901
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": 0.31584158415841584,
+            "ci95": [
+              0.27524752475247527,
+              0.3574257425742574
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": 0.1050228310502283,
+            "ci95": [
+              0.0547945205479452,
+              0.1598173515981735
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": 0.06298828125,
+            "ci95": [
+              0.0458984375,
+              0.080078125
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": 0.05810546875,
+            "ci95": [
+              0.03271484375,
+              0.08251953125
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": -0.01141552511415525,
+            "ci95": [
+              -0.02054794520547945,
+              -0.0028538812785388126
+            ],
+            "n": 1752
+          }
+        },
         "native": {
           "original/preference": {
             "diff": 0.0008944543828264759,
@@ -12747,6 +15000,2771 @@
             ],
             "n": 1752
           }
+        }
+      }
+    },
+    "sanity": {
+      "data": "FLORES+ devtest, the pilot's 200 sentences; reference translation vs a degraded alternative; English source in the prompt for `preference`",
+      "garbage_model": "LiquidAI/LFM2-350M",
+      "n": {
+        "wrong_source": 200,
+        "garbage_mt": 200,
+        "untranslated": 200,
+        "first_half_only": 200
+      },
+      "checkpoints": {
+        "v3": {
+          "wrong_source/preference+source": {
+            "mean": 0.91,
+            "ci95": [
+              0.87,
+              0.945
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.51,
+            "ci95": [
+              0.445,
+              0.58
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.97,
+            "ci95": [
+              0.945,
+              0.99
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.92,
+            "ci95": [
+              0.88,
+              0.955
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 0.205,
+            "ci95": [
+              0.15,
+              0.26
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 0.875,
+            "ci95": [
+              0.83,
+              0.92
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 0.72,
+            "ci95": [
+              0.655,
+              0.78
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 0.16,
+            "ci95": [
+              0.11,
+              0.21
+            ],
+            "n": 200
+          }
+        },
+        "control": {
+          "wrong_source/preference+source": {
+            "mean": 0.905,
+            "ci95": [
+              0.865,
+              0.945
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.505,
+            "ci95": [
+              0.435,
+              0.575
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.99,
+            "ci95": [
+              0.975,
+              1.0
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.97,
+            "ci95": [
+              0.945,
+              0.99
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 0.145,
+            "ci95": [
+              0.095,
+              0.195
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 0.82,
+            "ci95": [
+              0.765,
+              0.87
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 0.81,
+            "ci95": [
+              0.755,
+              0.865
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 0.245,
+            "ci95": [
+              0.185,
+              0.31
+            ],
+            "n": 200
+          }
+        },
+        "control-s20261015": {
+          "wrong_source/preference+source": {
+            "mean": 0.94,
+            "ci95": [
+              0.905,
+              0.97
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.48,
+            "ci95": [
+              0.415,
+              0.555
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.99,
+            "ci95": [
+              0.975,
+              1.0
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.945,
+            "ci95": [
+              0.91,
+              0.975
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 0.125,
+            "ci95": [
+              0.08,
+              0.17
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 0.835,
+            "ci95": [
+              0.785,
+              0.885
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 0.855,
+            "ci95": [
+              0.805,
+              0.905
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 0.18,
+            "ci95": [
+              0.13,
+              0.235
+            ],
+            "n": 200
+          }
+        },
+        "europarl": {
+          "wrong_source/preference+source": {
+            "mean": 0.025,
+            "ci95": [
+              0.005,
+              0.05
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.51,
+            "ci95": [
+              0.445,
+              0.5751249999999992
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.575,
+            "ci95": [
+              0.505,
+              0.64
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.87,
+            "ci95": [
+              0.82,
+              0.915
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 0.995,
+            "ci95": [
+              0.985,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 0.565,
+            "ci95": [
+              0.495,
+              0.63
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 0.595,
+            "ci95": [
+              0.525,
+              0.6601249999999993
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 0.985,
+            "ci95": [
+              0.965,
+              1.0
+            ],
+            "n": 200
+          }
+        },
+        "native": {
+          "wrong_source/preference+source": {
+            "mean": 0.975,
+            "ci95": [
+              0.95,
+              0.995
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.535,
+            "ci95": [
+              0.465,
+              0.6001249999999992
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.985,
+            "ci95": [
+              0.965,
+              1.0
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.965,
+            "ci95": [
+              0.935,
+              0.99
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 0.475,
+            "ci95": [
+              0.405,
+              0.54
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 0.875,
+            "ci95": [
+              0.83,
+              0.92
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 0.995,
+            "ci95": [
+              0.985,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 0.96,
+            "ci95": [
+              0.93,
+              0.985
+            ],
+            "n": 200
+          }
+        },
+        "both": {
+          "wrong_source/preference+source": {
+            "mean": 0.005,
+            "ci95": [
+              0.0,
+              0.015
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.52,
+            "ci95": [
+              0.455,
+              0.585
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.49,
+            "ci95": [
+              0.42,
+              0.56
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.97,
+            "ci95": [
+              0.945,
+              0.99
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 0.455,
+            "ci95": [
+              0.39,
+              0.525
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 0.145,
+            "ci95": [
+              0.095,
+              0.195
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 0.97,
+            "ci95": [
+              0.945,
+              0.99
+            ],
+            "n": 200
+          }
+        },
+        "grammar": {
+          "wrong_source/preference+source": {
+            "mean": 0.0,
+            "ci95": [
+              0.0,
+              0.0
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.465,
+            "ci95": [
+              0.39,
+              0.535
+            ],
+            "n": 200
+          },
+          "wrong_source/grammatical": {
+            "mean": 0.51,
+            "ci95": [
+              0.44,
+              0.575
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.035,
+            "ci95": [
+              0.01,
+              0.06
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.935,
+            "ci95": [
+              0.9,
+              0.965
+            ],
+            "n": 200
+          },
+          "garbage_mt/grammatical": {
+            "mean": 0.94,
+            "ci95": [
+              0.905,
+              0.97
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 0.385,
+            "ci95": [
+              0.32,
+              0.455
+            ],
+            "n": 200
+          },
+          "untranslated/grammatical": {
+            "mean": 0.42,
+            "ci95": [
+              0.35,
+              0.49
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 0.075,
+            "ci95": [
+              0.04,
+              0.115
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/grammatical": {
+            "mean": 0.75,
+            "ci95": [
+              0.69,
+              0.81
+            ],
+            "n": 200
+          }
+        },
+        "adequacy": {
+          "wrong_source/preference+source": {
+            "mean": 0.78,
+            "ci95": [
+              0.72,
+              0.84
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.46,
+            "ci95": [
+              0.395,
+              0.53
+            ],
+            "n": 200
+          },
+          "wrong_source/grammatical": {
+            "mean": 0.495,
+            "ci95": [
+              0.429875,
+              0.565
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.98,
+            "ci95": [
+              0.96,
+              0.995
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.97,
+            "ci95": [
+              0.945,
+              0.99
+            ],
+            "n": 200
+          },
+          "garbage_mt/grammatical": {
+            "mean": 0.925,
+            "ci95": [
+              0.89,
+              0.96
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 0.995,
+            "ci95": [
+              0.985,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/grammatical": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/grammatical": {
+            "mean": 0.995,
+            "ci95": [
+              0.985,
+              1.0
+            ],
+            "n": 200
+          }
+        }
+      }
+    }
+  },
+  "pilot_euroeval": {
+    "design": {
+      "translation_items": 200,
+      "translation_source": "FLORES+ devtest, first 200 by id; gate prompt = 'Översätt följande text till svenska:' + English; reference = professional translation",
+      "answer_prompts": 100,
+      "answer_source": "probe Swedish prompts (Kimi-k3 translations of UltraFeedback prompts), fixed-seed sample of those with at most 120 words",
+      "decoding": "greedy, thinking off where the chat template allows; 256 / 384 new tokens",
+      "leaderboard": "EuroEval/leaderboards swedish_all.csv (rank: lower is better)",
+      "features": "model-level means; translation_vs_reference = order-averaged P(model translation beats the reference) under `preference` with the English source"
+    },
+    "generation": {
+      "HuggingFaceTB/SmolLM2-135M-Instruct": "cached",
+      "HuggingFaceTB/SmolLM2-360M-Instruct": "cached",
+      "LiquidAI/LFM2-350M": "cached",
+      "LiquidAI/LFM2-700M": "cached",
+      "LiquidAI/LFM2-1.2B": "cached",
+      "google/gemma-3-270m-it": "cached",
+      "NbAiLab/borealis-270m-instruct-preview": "cached",
+      "meta-llama/Llama-3.2-1B-Instruct": "cached",
+      "google/gemma-3-1b-it": "cached",
+      "NbAiLab/borealis-1b-instruct-preview": "cached",
+      "yulan-team/YuLan-Mini-Instruct": "cached",
+      "Qwen/Qwen3.5-0.8B": "cached",
+      "Unbabel/Tower-Plus-2B": "cached",
+      "utter-project/EuroMoE-2.6B-A0.6B-Instruct-Preview": "cached",
+      "Qwen/Qwen3.5-2B": "cached",
+      "ibm-granite/granite-4.0-micro": "cached",
+      "ibm-granite/granite-4.0-h-micro": "231s",
+      "deepcogito/cogito-v1-preview-llama-3B": "1705s",
+      "NbAiLab/borealis-4b-instruct-preview": "193s",
+      "google/gemma-3-4b-it": "194s",
+      "mii-llm/nesso-4B": "226s",
+      "tencent/Hunyuan-4B-Instruct": "237s"
+    },
+    "models": [
+      {
+        "model": "HuggingFaceTB/SmolLM2-135M-Instruct",
+        "leaderboard": {
+          "rank": 4.02,
+          "Sentiment classification": 6.73,
+          "Named entity recognition": 16.52,
+          "Linguistic acceptability": 0.2,
+          "Reading comprehension": 3.06,
+          "Summarization": 24.02,
+          "Knowledge": -0.17,
+          "Common sense reasoning": 0.45,
+          "parameters": 134515008.0,
+          "leaderboard_name": "HuggingFaceTB/SmolLM2-135M-Instruct"
+        },
+        "features": {
+          "chrf": 21.606788866326657,
+          "swedish_answers": 0.64,
+          "answer_words": 62.81,
+          "v3/translation_vs_reference": 0.30832635288062676,
+          "v3/naturalness_vs_reference": 0.5017309169128159,
+          "v3/answer_quality": 3.1733555932412583,
+          "v3/answer_natural": 0.9046491526487656,
+          "v4-both/translation_vs_reference": 0.3843624695873665,
+          "v4-both/naturalness_vs_reference": 0.562400285880865,
+          "v4-both/answer_quality": 3.209193313980222,
+          "v4-both/answer_natural": 0.876042649878332,
+          "v4-grammar/translation_vs_reference": 0.4515966087033303,
+          "v4-grammar/naturalness_vs_reference": 0.6539748944057778,
+          "v4-grammar/answer_quality": 3.208063849114134,
+          "v4-grammar/answer_natural": 0.8960147112888818,
+          "v4-grammar/answer_grammatical": 0.5309553082473374,
+          "v4-grammar/translation_grammatical": 0.5218985051436804,
+          "v4-adequacy/translation_vs_reference": 0.08258020365694418,
+          "v4-adequacy/naturalness_vs_reference": 0.2002412726177008,
+          "v4-adequacy/answer_quality": 3.1534815636954847,
+          "v4-adequacy/answer_natural": 0.865751421087453,
+          "v4-adequacy/answer_grammatical": 0.43306063895588826,
+          "v4-adequacy/translation_grammatical": 0.516161775937389,
+          "log_parameters": 8.128770741795426
+        }
+      },
+      {
+        "model": "HuggingFaceTB/SmolLM2-360M-Instruct",
+        "leaderboard": {
+          "rank": 4.06,
+          "Sentiment classification": 6.08,
+          "Named entity recognition": 17.0,
+          "Linguistic acceptability": -0.21,
+          "Reading comprehension": 6.71,
+          "Summarization": 24.8,
+          "Knowledge": -1.61,
+          "Common sense reasoning": -0.64,
+          "parameters": 361821120.0,
+          "leaderboard_name": "HuggingFaceTB/SmolLM2-360M-Instruct"
+        },
+        "features": {
+          "chrf": 20.54597633547446,
+          "swedish_answers": 0.7,
+          "answer_words": 48.08,
+          "v3/translation_vs_reference": 0.3049394716134694,
+          "v3/naturalness_vs_reference": 0.41566771875480696,
+          "v3/answer_quality": 3.224501253298099,
+          "v3/answer_natural": 0.8821935707590357,
+          "v4-both/translation_vs_reference": 0.4959823480549588,
+          "v4-both/naturalness_vs_reference": 0.3856777508578632,
+          "v4-both/answer_quality": 3.232121685444296,
+          "v4-both/answer_natural": 0.8731383514884834,
+          "v4-grammar/translation_vs_reference": 0.5886309932175543,
+          "v4-grammar/naturalness_vs_reference": 0.48030913303019973,
+          "v4-grammar/answer_quality": 3.2453441535134457,
+          "v4-grammar/answer_natural": 0.8965494899566882,
+          "v4-grammar/answer_grammatical": 0.5194781246582885,
+          "v4-grammar/translation_grammatical": 0.4948885245394717,
+          "v4-adequacy/translation_vs_reference": 0.07311538336749615,
+          "v4-adequacy/naturalness_vs_reference": 0.11606531632252938,
+          "v4-adequacy/answer_quality": 3.222600308665479,
+          "v4-adequacy/answer_natural": 0.882302047973807,
+          "v4-adequacy/answer_grammatical": 0.4055217153593552,
+          "v4-adequacy/translation_grammatical": 0.2701687077796292,
+          "log_parameters": 8.558493913634223
+        }
+      },
+      {
+        "model": "LiquidAI/LFM2-1.2B",
+        "leaderboard": {
+          "rank": 3.69,
+          "Sentiment classification": 17.63,
+          "Named entity recognition": 27.63,
+          "Linguistic acceptability": 1.48,
+          "Reading comprehension": 12.1,
+          "Summarization": 30.95,
+          "Knowledge": 4.14,
+          "Common sense reasoning": 0.55,
+          "parameters": 1170340608.0,
+          "leaderboard_name": "LiquidAI/LFM2-1.2B"
+        },
+        "features": {
+          "chrf": 32.365367447679326,
+          "swedish_answers": 0.7,
+          "answer_words": 127.91,
+          "v3/translation_vs_reference": 0.07965432388446178,
+          "v3/naturalness_vs_reference": 0.10211715426970627,
+          "v3/answer_quality": 3.3405196226339187,
+          "v3/answer_natural": 0.5702814525093379,
+          "v4-both/translation_vs_reference": 0.5527932876742734,
+          "v4-both/naturalness_vs_reference": 0.17023595522532556,
+          "v4-both/answer_quality": 3.358970962201795,
+          "v4-both/answer_natural": 0.5608631855855674,
+          "v4-grammar/translation_vs_reference": 0.8530680979569822,
+          "v4-grammar/naturalness_vs_reference": 0.28501463808618527,
+          "v4-grammar/answer_quality": 3.2793913010784426,
+          "v4-grammar/answer_natural": 0.5525433469519003,
+          "v4-grammar/answer_grammatical": 0.40062842976992563,
+          "v4-grammar/translation_grammatical": 0.24444603624205527,
+          "v4-adequacy/translation_vs_reference": 0.1392731318600367,
+          "v4-adequacy/naturalness_vs_reference": 0.026127733001579695,
+          "v4-adequacy/answer_quality": 3.28957653058238,
+          "v4-adequacy/answer_natural": 0.540169399179632,
+          "v4-adequacy/answer_grammatical": 0.33377260710170653,
+          "v4-adequacy/translation_grammatical": 0.24261917053385676,
+          "log_parameters": 9.068312274265288
+        }
+      },
+      {
+        "model": "LiquidAI/LFM2-350M",
+        "leaderboard": {
+          "rank": 4.01,
+          "Sentiment classification": 0.8,
+          "Named entity recognition": 23.84,
+          "Linguistic acceptability": -0.83,
+          "Reading comprehension": 5.02,
+          "Summarization": 25.8,
+          "Knowledge": -1.51,
+          "Common sense reasoning": -0.63,
+          "parameters": 354483968.0,
+          "leaderboard_name": "LiquidAI/LFM2-350M"
+        },
+        "features": {
+          "chrf": 20.46972657221543,
+          "swedish_answers": 0.77,
+          "answer_words": 135.48,
+          "v3/translation_vs_reference": 0.08677738118809661,
+          "v3/naturalness_vs_reference": 0.16640663612341172,
+          "v3/answer_quality": 3.163871720970387,
+          "v3/answer_natural": 0.5607007524799019,
+          "v4-both/translation_vs_reference": 0.5138022830078003,
+          "v4-both/naturalness_vs_reference": 0.09484272851176001,
+          "v4-both/answer_quality": 3.1065150696085637,
+          "v4-both/answer_natural": 0.5512917621190129,
+          "v4-grammar/translation_vs_reference": 0.8765723149550414,
+          "v4-grammar/naturalness_vs_reference": 0.16364838543451363,
+          "v4-grammar/answer_quality": 3.077708281427222,
+          "v4-grammar/answer_natural": 0.5487194220515289,
+          "v4-grammar/answer_grammatical": 0.360634889991833,
+          "v4-grammar/translation_grammatical": 0.2761876154144943,
+          "v4-adequacy/translation_vs_reference": 0.047295280193381466,
+          "v4-adequacy/naturalness_vs_reference": 0.03838172445629981,
+          "v4-adequacy/answer_quality": 3.0604138171405824,
+          "v4-adequacy/answer_natural": 0.5437804288175296,
+          "v4-adequacy/answer_grammatical": 0.3346827381664509,
+          "v4-adequacy/translation_grammatical": 0.26269868274470126,
+          "log_parameters": 8.549596598428597
+        }
+      },
+      {
+        "model": "LiquidAI/LFM2-700M",
+        "leaderboard": {
+          "rank": 3.76,
+          "Sentiment classification": 15.36,
+          "Named entity recognition": 26.12,
+          "Linguistic acceptability": 0.02,
+          "Reading comprehension": 7.81,
+          "Summarization": 29.75,
+          "Knowledge": 1.17,
+          "Common sense reasoning": 0.65,
+          "parameters": 742489344.0,
+          "leaderboard_name": "LiquidAI/LFM2-700M"
+        },
+        "features": {
+          "chrf": 33.10828393606716,
+          "swedish_answers": 0.73,
+          "answer_words": 127.7,
+          "v3/translation_vs_reference": 0.08481387725493374,
+          "v3/naturalness_vs_reference": 0.07988540049854863,
+          "v3/answer_quality": 3.3133983947996284,
+          "v3/answer_natural": 0.5862751130857999,
+          "v4-both/translation_vs_reference": 0.7403392990614358,
+          "v4-both/naturalness_vs_reference": 0.17645483967607448,
+          "v4-both/answer_quality": 3.379672071966074,
+          "v4-both/answer_natural": 0.6023440712379398,
+          "v4-grammar/translation_vs_reference": 0.9054861956535691,
+          "v4-grammar/naturalness_vs_reference": 0.2946318236257122,
+          "v4-grammar/answer_quality": 3.2677306758006006,
+          "v4-grammar/answer_natural": 0.5729068350166562,
+          "v4-grammar/answer_grammatical": 0.399791505438459,
+          "v4-grammar/translation_grammatical": 0.22355302131758134,
+          "v4-adequacy/translation_vs_reference": 0.15740269423644013,
+          "v4-adequacy/naturalness_vs_reference": 0.03429307816315567,
+          "v4-adequacy/answer_quality": 3.3134567889931246,
+          "v4-adequacy/answer_natural": 0.5707464131731042,
+          "v4-adequacy/answer_grammatical": 0.3315282302534741,
+          "v4-adequacy/translation_grammatical": 0.20123123361532275,
+          "log_parameters": 8.870690225160688
+        }
+      },
+      {
+        "model": "NbAiLab/borealis-1b-instruct-preview",
+        "leaderboard": {
+          "rank": 3.09,
+          "Sentiment classification": 72.81,
+          "Named entity recognition": 31.58,
+          "Linguistic acceptability": 0.0,
+          "Reading comprehension": 52.08,
+          "Summarization": 29.46,
+          "Knowledge": 9.79,
+          "Common sense reasoning": 7.65,
+          "parameters": 999885952.0,
+          "leaderboard_name": "NbAiLab/borealis-1b-instruct-preview (val)"
+        },
+        "features": {
+          "chrf": 36.75492544945584,
+          "swedish_answers": 0.67,
+          "answer_words": 78.01,
+          "v3/translation_vs_reference": 0.3781530927480927,
+          "v3/naturalness_vs_reference": 0.32558034026949995,
+          "v3/answer_quality": 3.561283895968156,
+          "v3/answer_natural": 0.8702657233002661,
+          "v4-both/translation_vs_reference": 0.5461472153644032,
+          "v4-both/naturalness_vs_reference": 0.5931552720649494,
+          "v4-both/answer_quality": 3.580075697272228,
+          "v4-both/answer_natural": 0.8939005491157606,
+          "v4-grammar/translation_vs_reference": 0.4944098921755036,
+          "v4-grammar/naturalness_vs_reference": 0.5753708655753397,
+          "v4-grammar/answer_quality": 3.640759034137519,
+          "v4-grammar/answer_natural": 0.897925161174256,
+          "v4-grammar/answer_grammatical": 0.5413060051582648,
+          "v4-grammar/translation_grammatical": 0.44338833710661424,
+          "v4-adequacy/translation_vs_reference": 0.3289022834354659,
+          "v4-adequacy/naturalness_vs_reference": 0.15658789421071592,
+          "v4-adequacy/answer_quality": 3.616804627811911,
+          "v4-adequacy/answer_natural": 0.9029109881210018,
+          "v4-adequacy/answer_grammatical": 0.42891018737180614,
+          "v4-adequacy/translation_grammatical": 0.36336335451714363,
+          "log_parameters": 8.99995046675829
+        }
+      },
+      {
+        "model": "NbAiLab/borealis-270m-instruct-preview",
+        "leaderboard": {
+          "rank": 3.92,
+          "Sentiment classification": 19.59,
+          "Named entity recognition": 6.57,
+          "Linguistic acceptability": 0.27,
+          "Reading comprehension": 14.74,
+          "Summarization": 26.27,
+          "Knowledge": 1.18,
+          "Common sense reasoning": -1.0,
+          "parameters": 268098176.0,
+          "leaderboard_name": "NbAiLab/borealis-270m-instruct-preview (val)"
+        },
+        "features": {
+          "chrf": 28.900672107828456,
+          "swedish_answers": 0.73,
+          "answer_words": 93.58,
+          "v3/translation_vs_reference": 0.42995573595443615,
+          "v3/naturalness_vs_reference": 0.29058609957750087,
+          "v3/answer_quality": 3.271967255688354,
+          "v3/answer_natural": 0.8363189133624022,
+          "v4-both/translation_vs_reference": 0.47646056317470054,
+          "v4-both/naturalness_vs_reference": 0.5267447930289524,
+          "v4-both/answer_quality": 3.3426506043982904,
+          "v4-both/answer_natural": 0.8527075367059171,
+          "v4-grammar/translation_vs_reference": 0.4405305276171672,
+          "v4-grammar/naturalness_vs_reference": 0.544865526403386,
+          "v4-grammar/answer_quality": 3.358407964142786,
+          "v4-grammar/answer_natural": 0.8539226017610089,
+          "v4-grammar/answer_grammatical": 0.518105014665799,
+          "v4-grammar/translation_grammatical": 0.4426654404343482,
+          "v4-adequacy/translation_vs_reference": 0.18347566498487794,
+          "v4-adequacy/naturalness_vs_reference": 0.07211521589400886,
+          "v4-adequacy/answer_quality": 3.366495794610789,
+          "v4-adequacy/answer_natural": 0.8854002967737066,
+          "v4-adequacy/answer_grammatical": 0.41194161833942844,
+          "v4-adequacy/translation_grammatical": 0.20406778392990288,
+          "log_parameters": 8.428293859280046
+        }
+      },
+      {
+        "model": "NbAiLab/borealis-4b-instruct-preview",
+        "leaderboard": {
+          "rank": 2.57,
+          "Sentiment classification": 78.47,
+          "Named entity recognition": 45.34,
+          "Linguistic acceptability": 2.11,
+          "Reading comprehension": 72.53,
+          "Summarization": 31.08,
+          "Knowledge": 31.47,
+          "Common sense reasoning": 25.87,
+          "parameters": 3880263168.0,
+          "leaderboard_name": "NbAiLab/borealis-4b-instruct-preview (val)"
+        },
+        "features": {
+          "chrf": 54.789621778564886,
+          "swedish_answers": 0.69,
+          "answer_words": 70.65,
+          "v3/translation_vs_reference": 0.45567031236429983,
+          "v3/naturalness_vs_reference": 0.4228905648219689,
+          "v3/answer_quality": 3.526182842971669,
+          "v3/answer_natural": 0.8401171392715153,
+          "v4-both/translation_vs_reference": 0.5064009707619959,
+          "v4-both/naturalness_vs_reference": 0.5104796359223543,
+          "v4-both/answer_quality": 3.459673280821587,
+          "v4-both/answer_natural": 0.8804818558023177,
+          "v4-grammar/translation_vs_reference": 0.49061488995956665,
+          "v4-grammar/naturalness_vs_reference": 0.5225680732619431,
+          "v4-grammar/answer_quality": 3.522870316222472,
+          "v4-grammar/answer_natural": 0.8829740186382218,
+          "v4-grammar/answer_grammatical": 0.5411309069660387,
+          "v4-grammar/translation_grammatical": 0.48036762951202117,
+          "v4-adequacy/translation_vs_reference": 0.44758213672123004,
+          "v4-adequacy/naturalness_vs_reference": 0.3601407384042448,
+          "v4-adequacy/answer_quality": 3.5131550084653353,
+          "v4-adequacy/answer_natural": 0.878869121573171,
+          "v4-adequacy/answer_grammatical": 0.4088980571242859,
+          "v4-adequacy/translation_grammatical": 0.4649899729566016,
+          "log_parameters": 9.588861181402027
+        }
+      },
+      {
+        "model": "Qwen/Qwen3.5-0.8B",
+        "leaderboard": {
+          "rank": 2.89,
+          "Sentiment classification": 66.33,
+          "Named entity recognition": 38.1,
+          "Linguistic acceptability": 2.49,
+          "Reading comprehension": 53.45,
+          "Summarization": 35.3,
+          "Knowledge": 14.18,
+          "Common sense reasoning": 7.58,
+          "parameters": 873436192.0,
+          "leaderboard_name": "Qwen/Qwen3.5-0.8B (val)"
+        },
+        "features": {
+          "chrf": 44.12187445040211,
+          "swedish_answers": 0.73,
+          "answer_words": 130.05,
+          "v3/translation_vs_reference": 0.347678120759793,
+          "v3/naturalness_vs_reference": 0.3131509545515577,
+          "v3/answer_quality": 3.8130022620613886,
+          "v3/answer_natural": 0.9089545275538657,
+          "v4-both/translation_vs_reference": 0.5941600062596423,
+          "v4-both/naturalness_vs_reference": 0.42285930335201755,
+          "v4-both/answer_quality": 3.8606599659654193,
+          "v4-both/answer_natural": 0.8773880821668179,
+          "v4-grammar/translation_vs_reference": 0.6313691890393914,
+          "v4-grammar/naturalness_vs_reference": 0.4763008500602804,
+          "v4-grammar/answer_quality": 3.8673444927338583,
+          "v4-grammar/answer_natural": 0.8608284893341324,
+          "v4-grammar/answer_grammatical": 0.5231515668488895,
+          "v4-grammar/translation_grammatical": 0.3831243675794561,
+          "v4-adequacy/translation_vs_reference": 0.4011826184862177,
+          "v4-adequacy/naturalness_vs_reference": 0.23134043768847626,
+          "v4-adequacy/answer_quality": 3.8584497817022254,
+          "v4-adequacy/answer_natural": 0.9008506994486634,
+          "v4-adequacy/answer_grammatical": 0.467789798166816,
+          "v4-adequacy/translation_grammatical": 0.36683518295989004,
+          "log_parameters": 8.941231183532466
+        }
+      },
+      {
+        "model": "Qwen/Qwen3.5-2B",
+        "leaderboard": {
+          "rank": 2.37,
+          "Sentiment classification": 74.53,
+          "Named entity recognition": 36.57,
+          "Linguistic acceptability": 30.7,
+          "Reading comprehension": 72.22,
+          "Summarization": 36.88,
+          "Knowledge": 34.26,
+          "Common sense reasoning": 27.02,
+          "parameters": 2274067232.0,
+          "leaderboard_name": "Qwen/Qwen3.5-2B (val)"
+        },
+        "features": {
+          "chrf": 53.21723592576652,
+          "swedish_answers": 0.73,
+          "answer_words": 120.94,
+          "v3/translation_vs_reference": 0.4424438309340238,
+          "v3/naturalness_vs_reference": 0.39953073082548557,
+          "v3/answer_quality": 3.8813312967535065,
+          "v3/answer_natural": 0.9451427855856737,
+          "v4-both/translation_vs_reference": 0.48107999596609163,
+          "v4-both/naturalness_vs_reference": 0.408032015358239,
+          "v4-both/answer_quality": 3.851806571620681,
+          "v4-both/answer_natural": 0.903074093266482,
+          "v4-grammar/translation_vs_reference": 0.4923101077582648,
+          "v4-grammar/naturalness_vs_reference": 0.4376092571134987,
+          "v4-grammar/answer_quality": 3.8700749704047626,
+          "v4-grammar/answer_natural": 0.904475376738855,
+          "v4-grammar/answer_grammatical": 0.5257940928119701,
+          "v4-grammar/translation_grammatical": 0.43116997430556336,
+          "v4-adequacy/translation_vs_reference": 0.3735710406605478,
+          "v4-adequacy/naturalness_vs_reference": 0.2524604062033647,
+          "v4-adequacy/answer_quality": 3.89143596870053,
+          "v4-adequacy/answer_natural": 0.930157249993987,
+          "v4-adequacy/answer_grammatical": 0.45324821893587364,
+          "v4-adequacy/translation_grammatical": 0.4150424083189438,
+          "log_parameters": 9.356803300305534
+        }
+      },
+      {
+        "model": "Unbabel/Tower-Plus-2B",
+        "leaderboard": {
+          "rank": 2.76,
+          "Sentiment classification": 69.03,
+          "Named entity recognition": 26.23,
+          "Linguistic acceptability": 7.47,
+          "Reading comprehension": 65.42,
+          "Summarization": 37.89,
+          "Knowledge": 18.92,
+          "Common sense reasoning": 12.13,
+          "parameters": 2614341888.0,
+          "leaderboard_name": "Unbabel/Tower-Plus-2B (val)"
+        },
+        "features": {
+          "chrf": 67.37546681277446,
+          "swedish_answers": 0.79,
+          "answer_words": 121.3,
+          "v3/translation_vs_reference": 0.5141071866164159,
+          "v3/naturalness_vs_reference": 0.4742133801630484,
+          "v3/answer_quality": 3.8791373468113473,
+          "v3/answer_natural": 0.9104458551962182,
+          "v4-both/translation_vs_reference": 0.35585910026333656,
+          "v4-both/naturalness_vs_reference": 0.4514970568763387,
+          "v4-both/answer_quality": 3.88756902228438,
+          "v4-both/answer_natural": 0.8927144460438059,
+          "v4-grammar/translation_vs_reference": 0.3442809796756308,
+          "v4-grammar/naturalness_vs_reference": 0.4961353978646823,
+          "v4-grammar/answer_quality": 3.964377440808418,
+          "v4-grammar/answer_natural": 0.9001389901797442,
+          "v4-grammar/answer_grammatical": 0.5544748298287605,
+          "v4-grammar/translation_grammatical": 0.5264318456805638,
+          "v4-adequacy/translation_vs_reference": 0.39788825511737014,
+          "v4-adequacy/naturalness_vs_reference": 0.41038174114197273,
+          "v4-adequacy/answer_quality": 3.8862052095393875,
+          "v4-adequacy/answer_natural": 0.88805816622825,
+          "v4-adequacy/answer_grammatical": 0.4574854199484246,
+          "v4-adequacy/translation_grammatical": 0.5232409552948744,
+          "log_parameters": 9.417362381394005
+        }
+      },
+      {
+        "model": "deepcogito/cogito-v1-preview-llama-3B",
+        "leaderboard": {
+          "rank": 2.85,
+          "Sentiment classification": 74.6,
+          "Named entity recognition": 42.87,
+          "Linguistic acceptability": 13.42,
+          "Reading comprehension": 11.97,
+          "Summarization": 36.16,
+          "Knowledge": 21.4,
+          "Common sense reasoning": 21.24,
+          "parameters": 3606752256.0,
+          "leaderboard_name": "deepcogito/cogito-v1-preview-llama-3B"
+        },
+        "features": {
+          "chrf": 58.95435409883726,
+          "swedish_answers": 0.83,
+          "answer_words": 97.87,
+          "v3/translation_vs_reference": 0.4633168753356473,
+          "v3/naturalness_vs_reference": 0.4077813689917616,
+          "v3/answer_quality": 3.644006301621033,
+          "v3/answer_natural": 0.8518432200353555,
+          "v4-both/translation_vs_reference": 0.41033682527836945,
+          "v4-both/naturalness_vs_reference": 0.471609194429244,
+          "v4-both/answer_quality": 3.585871202862734,
+          "v4-both/answer_natural": 0.8570916396892185,
+          "v4-grammar/translation_vs_reference": 0.4071430057156057,
+          "v4-grammar/naturalness_vs_reference": 0.4917696011790346,
+          "v4-grammar/answer_quality": 3.696065262929642,
+          "v4-grammar/answer_natural": 0.8641225173559569,
+          "v4-grammar/answer_grammatical": 0.563021455002023,
+          "v4-grammar/translation_grammatical": 0.4466269830999544,
+          "v4-adequacy/translation_vs_reference": 0.3833486381029006,
+          "v4-adequacy/naturalness_vs_reference": 0.3282714461956982,
+          "v4-adequacy/answer_quality": 3.6342096748939223,
+          "v4-adequacy/answer_natural": 0.8886051702900478,
+          "v4-adequacy/answer_grammatical": 0.532022074687567,
+          "v4-adequacy/translation_grammatical": 0.4321155502570953,
+          "log_parameters": 9.557116312113957
+        }
+      },
+      {
+        "model": "google/gemma-3-1b-it",
+        "leaderboard": {
+          "rank": 3.2,
+          "Sentiment classification": 67.47,
+          "Named entity recognition": 32.97,
+          "Linguistic acceptability": 8.43,
+          "Reading comprehension": 15.38,
+          "Summarization": 34.58,
+          "Knowledge": 6.0,
+          "Common sense reasoning": 3.43,
+          "parameters": 999885952.0,
+          "leaderboard_name": "google/gemma-3-1b-it"
+        },
+        "features": {
+          "chrf": 55.18755334254309,
+          "swedish_answers": 0.7,
+          "answer_words": 115.55,
+          "v3/translation_vs_reference": 0.4283302262704696,
+          "v3/naturalness_vs_reference": 0.370133061924907,
+          "v3/answer_quality": 3.7631453755705273,
+          "v3/answer_natural": 0.8887438202677198,
+          "v4-both/translation_vs_reference": 0.41302002895330875,
+          "v4-both/naturalness_vs_reference": 0.4006748923044401,
+          "v4-both/answer_quality": 3.705138828640463,
+          "v4-both/answer_natural": 0.8513346784416203,
+          "v4-grammar/translation_vs_reference": 0.43131146999223946,
+          "v4-grammar/naturalness_vs_reference": 0.4494497478818778,
+          "v4-grammar/answer_quality": 3.735970670906886,
+          "v4-grammar/answer_natural": 0.8374126157479389,
+          "v4-grammar/answer_grammatical": 0.5649864318180399,
+          "v4-grammar/translation_grammatical": 0.44936186426670444,
+          "v4-adequacy/translation_vs_reference": 0.32743612679228795,
+          "v4-adequacy/naturalness_vs_reference": 0.2165003994149072,
+          "v4-adequacy/answer_quality": 3.688976522841459,
+          "v4-adequacy/answer_natural": 0.8469500180385513,
+          "v4-adequacy/answer_grammatical": 0.4817883079681883,
+          "v4-adequacy/translation_grammatical": 0.41416127634445055,
+          "log_parameters": 8.99995046675829
+        }
+      },
+      {
+        "model": "google/gemma-3-270m-it",
+        "leaderboard": {
+          "rank": 3.7,
+          "Sentiment classification": 19.59,
+          "Named entity recognition": 13.28,
+          "Linguistic acceptability": -0.3,
+          "Reading comprehension": 7.15,
+          "Summarization": 37.39,
+          "Knowledge": -0.87,
+          "Common sense reasoning": 0.31,
+          "parameters": 268098176.0,
+          "leaderboard_name": "google/gemma-3-270m-it"
+        },
+        "features": {
+          "chrf": 27.98052255867277,
+          "swedish_answers": 0.67,
+          "answer_words": 89.43,
+          "v3/translation_vs_reference": 0.5821317649817113,
+          "v3/naturalness_vs_reference": 0.315314554928111,
+          "v3/answer_quality": 3.412540955591863,
+          "v3/answer_natural": 0.8762936619332558,
+          "v4-both/translation_vs_reference": 0.29778186752898134,
+          "v4-both/naturalness_vs_reference": 0.46201095397426684,
+          "v4-both/answer_quality": 3.3735652785064327,
+          "v4-both/answer_natural": 0.8559640948304057,
+          "v4-grammar/translation_vs_reference": 0.267283935460806,
+          "v4-grammar/naturalness_vs_reference": 0.5052488584410915,
+          "v4-grammar/answer_quality": 3.4523538381879515,
+          "v4-grammar/answer_natural": 0.8468188643267561,
+          "v4-grammar/answer_grammatical": 0.5506226864629928,
+          "v4-grammar/translation_grammatical": 0.5169279145174641,
+          "v4-adequacy/translation_vs_reference": 0.05654683200765451,
+          "v4-adequacy/naturalness_vs_reference": 0.02571154633014875,
+          "v4-adequacy/answer_quality": 3.4567415704290467,
+          "v4-adequacy/answer_natural": 0.8779309655786538,
+          "v4-adequacy/answer_grammatical": 0.42155052230291257,
+          "v4-adequacy/translation_grammatical": 0.06134581512069318,
+          "log_parameters": 8.428293859280046
+        }
+      },
+      {
+        "model": "google/gemma-3-4b-it",
+        "leaderboard": {
+          "rank": 2.34,
+          "Sentiment classification": 77.49,
+          "Named entity recognition": 42.23,
+          "Linguistic acceptability": 41.39,
+          "Reading comprehension": 45.97,
+          "Summarization": 36.52,
+          "Knowledge": 33.69,
+          "Common sense reasoning": 36.67,
+          "parameters": 4300079472.0,
+          "leaderboard_name": "google/gemma-3-4b-it"
+        },
+        "features": {
+          "chrf": 64.92705378748245,
+          "swedish_answers": 0.73,
+          "answer_words": 109.14,
+          "v3/translation_vs_reference": 0.49689139484745665,
+          "v3/naturalness_vs_reference": 0.4702753609993173,
+          "v3/answer_quality": 3.841258286674498,
+          "v3/answer_natural": 0.921700333840749,
+          "v4-both/translation_vs_reference": 0.402586093696454,
+          "v4-both/naturalness_vs_reference": 0.44452313683744493,
+          "v4-both/answer_quality": 3.7655953914265403,
+          "v4-both/answer_natural": 0.8980869496460088,
+          "v4-grammar/translation_vs_reference": 0.3920250936575447,
+          "v4-grammar/naturalness_vs_reference": 0.4758848263975608,
+          "v4-grammar/answer_quality": 3.7908280145189788,
+          "v4-grammar/answer_natural": 0.8848792382766715,
+          "v4-grammar/answer_grammatical": 0.5600491020666213,
+          "v4-grammar/translation_grammatical": 0.5028284413669512,
+          "v4-adequacy/translation_vs_reference": 0.3967160550798278,
+          "v4-adequacy/naturalness_vs_reference": 0.40526333440355417,
+          "v4-adequacy/answer_quality": 3.7581004670347395,
+          "v4-adequacy/answer_natural": 0.8935625078928884,
+          "v4-adequacy/answer_grammatical": 0.47785074843434777,
+          "v4-adequacy/translation_grammatical": 0.49523468203330223,
+          "log_parameters": 9.63347648207543
+        }
+      },
+      {
+        "model": "ibm-granite/granite-4.0-h-micro",
+        "leaderboard": {
+          "rank": 2.37,
+          "Sentiment classification": 76.9,
+          "Named entity recognition": 51.43,
+          "Linguistic acceptability": 22.13,
+          "Reading comprehension": 71.09,
+          "Summarization": 35.43,
+          "Knowledge": 34.15,
+          "Common sense reasoning": 20.93,
+          "parameters": 3191396096.0,
+          "leaderboard_name": "ibm-granite/granite-4.0-h-micro"
+        },
+        "features": {
+          "chrf": 53.256247428235476,
+          "swedish_answers": 0.57,
+          "answer_words": 78.93,
+          "v3/translation_vs_reference": 0.4001981134086666,
+          "v3/naturalness_vs_reference": 0.35031447424896245,
+          "v3/answer_quality": 3.531701863424433,
+          "v3/answer_natural": 0.8079592992631673,
+          "v4-both/translation_vs_reference": 0.4828556394278156,
+          "v4-both/naturalness_vs_reference": 0.4430559385273304,
+          "v4-both/answer_quality": 3.5584674437152235,
+          "v4-both/answer_natural": 0.8332763532138207,
+          "v4-grammar/translation_vs_reference": 0.49688059051494166,
+          "v4-grammar/naturalness_vs_reference": 0.49716489921258694,
+          "v4-grammar/answer_quality": 3.5759166000072504,
+          "v4-grammar/answer_natural": 0.8128392228052351,
+          "v4-grammar/answer_grammatical": 0.5035696090048399,
+          "v4-grammar/translation_grammatical": 0.3874338164920556,
+          "v4-adequacy/translation_vs_reference": 0.34611820011806244,
+          "v4-adequacy/naturalness_vs_reference": 0.24657404067948424,
+          "v4-adequacy/answer_quality": 3.5722966701470584,
+          "v4-adequacy/answer_natural": 0.8223965559388978,
+          "v4-adequacy/answer_grammatical": 0.32287249393174733,
+          "v4-adequacy/translation_grammatical": 0.3709899921999837,
+          "log_parameters": 9.503980709436851
+        }
+      },
+      {
+        "model": "ibm-granite/granite-4.0-micro",
+        "leaderboard": {
+          "rank": 2.26,
+          "Sentiment classification": 75.31,
+          "Named entity recognition": 55.52,
+          "Linguistic acceptability": 28.85,
+          "Reading comprehension": 67.87,
+          "Summarization": 36.67,
+          "Knowledge": 30.77,
+          "Common sense reasoning": 32.2,
+          "parameters": 3402836480.0,
+          "leaderboard_name": "ibm-granite/granite-4.0-micro"
+        },
+        "features": {
+          "chrf": 53.86190137762194,
+          "swedish_answers": 0.66,
+          "answer_words": 93.39,
+          "v3/translation_vs_reference": 0.3653916713220605,
+          "v3/naturalness_vs_reference": 0.34764022260619293,
+          "v3/answer_quality": 3.7190048879947937,
+          "v3/answer_natural": 0.9193591589533409,
+          "v4-both/translation_vs_reference": 0.529649322898574,
+          "v4-both/naturalness_vs_reference": 0.4836438969255299,
+          "v4-both/answer_quality": 3.7019599660608007,
+          "v4-both/answer_natural": 0.8956852149481537,
+          "v4-grammar/translation_vs_reference": 0.5562375742649062,
+          "v4-grammar/naturalness_vs_reference": 0.5452723590001544,
+          "v4-grammar/answer_quality": 3.7508318599328887,
+          "v4-grammar/answer_natural": 0.8955288497139857,
+          "v4-grammar/answer_grammatical": 0.5265829124503335,
+          "v4-grammar/translation_grammatical": 0.4078264540542838,
+          "v4-adequacy/translation_vs_reference": 0.40845730900193816,
+          "v4-adequacy/naturalness_vs_reference": 0.31597719863062645,
+          "v4-adequacy/answer_quality": 3.7248261695179097,
+          "v4-adequacy/answer_natural": 0.8933716831803684,
+          "v4-adequacy/answer_grammatical": 0.36410076141036607,
+          "v4-adequacy/translation_grammatical": 0.3963479856847091,
+          "log_parameters": 9.53184107999797
+        }
+      },
+      {
+        "model": "meta-llama/Llama-3.2-1B-Instruct",
+        "leaderboard": {
+          "rank": 3.69,
+          "Sentiment classification": 21.38,
+          "Named entity recognition": 33.15,
+          "Linguistic acceptability": 0.44,
+          "Reading comprehension": 7.34,
+          "Summarization": 32.25,
+          "Knowledge": -0.13,
+          "Common sense reasoning": 0.34,
+          "parameters": 1235814400.0,
+          "leaderboard_name": "meta-llama/Llama-3.2-1B-Instruct"
+        },
+        "features": {
+          "chrf": 50.065247656274195,
+          "swedish_answers": 0.82,
+          "answer_words": 111.48,
+          "v3/translation_vs_reference": 0.4005908166853068,
+          "v3/naturalness_vs_reference": 0.34415642361494997,
+          "v3/answer_quality": 3.524599065251624,
+          "v3/answer_natural": 0.8774921504064039,
+          "v4-both/translation_vs_reference": 0.5286689856944853,
+          "v4-both/naturalness_vs_reference": 0.43948909143764503,
+          "v4-both/answer_quality": 3.5548963789916694,
+          "v4-both/answer_natural": 0.8325401510054603,
+          "v4-grammar/translation_vs_reference": 0.5613686037483787,
+          "v4-grammar/naturalness_vs_reference": 0.5012298940428237,
+          "v4-grammar/answer_quality": 3.5802074543269997,
+          "v4-grammar/answer_natural": 0.8219406912710049,
+          "v4-grammar/answer_grammatical": 0.5143120483130703,
+          "v4-grammar/translation_grammatical": 0.42588404149054876,
+          "v4-adequacy/translation_vs_reference": 0.4153412074772913,
+          "v4-adequacy/naturalness_vs_reference": 0.2827669441763207,
+          "v4-adequacy/answer_quality": 3.562544109314098,
+          "v4-adequacy/answer_natural": 0.8363532088580261,
+          "v4-adequacy/answer_grammatical": 0.46458346086498664,
+          "v4-adequacy/translation_grammatical": 0.40306288542141494,
+          "log_parameters": 9.091953251409473
+        }
+      },
+      {
+        "model": "mii-llm/nesso-4B",
+        "leaderboard": {
+          "rank": 2.02,
+          "Sentiment classification": 76.28,
+          "Named entity recognition": 55.45,
+          "Linguistic acceptability": 38.17,
+          "Reading comprehension": 76.16,
+          "Summarization": 35.75,
+          "Knowledge": 46.27,
+          "Common sense reasoning": 48.71,
+          "parameters": 4022468096.0,
+          "leaderboard_name": "mii-llm/nesso-4B"
+        },
+        "features": {
+          "chrf": 51.38012447521718,
+          "swedish_answers": 0.71,
+          "answer_words": 90.1,
+          "v3/translation_vs_reference": 0.37503284283854554,
+          "v3/naturalness_vs_reference": 0.3926203192943295,
+          "v3/answer_quality": 3.6340948088281113,
+          "v3/answer_natural": 0.8489156988918528,
+          "v4-both/translation_vs_reference": 0.6078472207732207,
+          "v4-both/naturalness_vs_reference": 0.4889984426810041,
+          "v4-both/answer_quality": 3.6052366897371475,
+          "v4-both/answer_natural": 0.8586938835699762,
+          "v4-grammar/translation_vs_reference": 0.6082044766045511,
+          "v4-grammar/naturalness_vs_reference": 0.5082978091339648,
+          "v4-grammar/answer_quality": 3.6334233632971573,
+          "v4-grammar/answer_natural": 0.8449780518278891,
+          "v4-grammar/answer_grammatical": 0.5111972205684391,
+          "v4-grammar/translation_grammatical": 0.4405680002005625,
+          "v4-adequacy/translation_vs_reference": 0.4910701711333024,
+          "v4-adequacy/naturalness_vs_reference": 0.33863439732300127,
+          "v4-adequacy/answer_quality": 3.63210271362258,
+          "v4-adequacy/answer_natural": 0.8759188772111395,
+          "v4-adequacy/answer_grammatical": 0.3955976203322193,
+          "v4-adequacy/translation_grammatical": 0.4233057017243149,
+          "log_parameters": 9.604492608200253
+        }
+      },
+      {
+        "model": "tencent/Hunyuan-4B-Instruct",
+        "leaderboard": {
+          "rank": 3.1,
+          "Sentiment classification": 67.6,
+          "Named entity recognition": 53.58,
+          "Linguistic acceptability": -0.29,
+          "Reading comprehension": 42.46,
+          "Summarization": 30.49,
+          "Knowledge": 0.0,
+          "Common sense reasoning": 0.0,
+          "parameters": 4221757440.0,
+          "leaderboard_name": "tencent/Hunyuan-4B-Instruct (val)"
+        },
+        "features": {
+          "chrf": 44.23739504744938,
+          "swedish_answers": 0.7,
+          "answer_words": 91.83,
+          "v3/translation_vs_reference": 0.27453243043342296,
+          "v3/naturalness_vs_reference": 0.3144135068619467,
+          "v3/answer_quality": 3.3302558456804006,
+          "v3/answer_natural": 0.8226178681063183,
+          "v4-both/translation_vs_reference": 0.6558353777122022,
+          "v4-both/naturalness_vs_reference": 0.425544727352907,
+          "v4-both/answer_quality": 3.507089597260637,
+          "v4-both/answer_natural": 0.8099924039843494,
+          "v4-grammar/translation_vs_reference": 0.7883239516675217,
+          "v4-grammar/naturalness_vs_reference": 0.5514727693265574,
+          "v4-grammar/answer_quality": 3.4804351105345575,
+          "v4-grammar/answer_natural": 0.8051850676494368,
+          "v4-grammar/answer_grammatical": 0.4953717483346358,
+          "v4-grammar/translation_grammatical": 0.36047052446024763,
+          "v4-adequacy/translation_vs_reference": 0.30958107257881834,
+          "v4-adequacy/naturalness_vs_reference": 0.11501005131219283,
+          "v4-adequacy/answer_quality": 3.399142396859791,
+          "v4-adequacy/answer_natural": 0.8231869277969406,
+          "v4-adequacy/answer_grammatical": 0.4313778170717811,
+          "v4-adequacy/translation_grammatical": 0.3313583149213642,
+          "log_parameters": 9.625493277409419
+        }
+      },
+      {
+        "model": "utter-project/EuroMoE-2.6B-A0.6B-Instruct-Preview",
+        "leaderboard": {
+          "rank": 3.53,
+          "Sentiment classification": 26.41,
+          "Named entity recognition": 12.94,
+          "Linguistic acceptability": 0.61,
+          "Reading comprehension": 49.23,
+          "Summarization": 33.65,
+          "Knowledge": 0.79,
+          "Common sense reasoning": 1.44,
+          "parameters": 2611528704.0,
+          "leaderboard_name": "utter-project/EuroMoE-2.6B-A0.6B-Instruct-Preview"
+        },
+        "features": {
+          "chrf": 34.61927490442845,
+          "swedish_answers": 0.83,
+          "answer_words": 184.95,
+          "v3/translation_vs_reference": 0.5846227210862108,
+          "v3/naturalness_vs_reference": 0.5918563512632268,
+          "v3/answer_quality": 3.762173036425983,
+          "v3/answer_natural": 0.9159599563388625,
+          "v4-both/translation_vs_reference": 0.5052688167771902,
+          "v4-both/naturalness_vs_reference": 0.4812452931116218,
+          "v4-both/answer_quality": 3.8322671228594256,
+          "v4-both/answer_natural": 0.9174013684431241,
+          "v4-grammar/translation_vs_reference": 0.4594934854109614,
+          "v4-grammar/naturalness_vs_reference": 0.4598840468106789,
+          "v4-grammar/answer_quality": 3.8579900639563913,
+          "v4-grammar/answer_natural": 0.9011108560756438,
+          "v4-grammar/answer_grammatical": 0.5738039790213346,
+          "v4-grammar/translation_grammatical": 0.5570299147390626,
+          "v4-adequacy/translation_vs_reference": 0.43486599047444296,
+          "v4-adequacy/naturalness_vs_reference": 0.40204526521492484,
+          "v4-adequacy/answer_quality": 3.864148695228445,
+          "v4-adequacy/answer_natural": 0.925065738946305,
+          "v4-adequacy/answer_grammatical": 0.5970606281524408,
+          "v4-adequacy/translation_grammatical": 0.586264251722474,
+          "log_parameters": 9.416894803644313
+        }
+      },
+      {
+        "model": "yulan-team/YuLan-Mini-Instruct",
+        "leaderboard": {
+          "rank": 3.05,
+          "Sentiment classification": 68.61,
+          "Named entity recognition": 29.46,
+          "Linguistic acceptability": 5.6,
+          "Reading comprehension": 44.16,
+          "Summarization": 33.09,
+          "Knowledge": 15.6,
+          "Common sense reasoning": 7.12,
+          "parameters": 2424375168.0,
+          "leaderboard_name": "yulan-team/YuLan-Mini-Instruct"
+        },
+        "features": {
+          "chrf": 39.85560585837188,
+          "swedish_answers": 0.81,
+          "answer_words": 129.01,
+          "v3/translation_vs_reference": 0.23391918125039599,
+          "v3/naturalness_vs_reference": 0.2085450981944878,
+          "v3/answer_quality": 3.437390120693927,
+          "v3/answer_natural": 0.7526453030169905,
+          "v4-both/translation_vs_reference": 0.6833113092738385,
+          "v4-both/naturalness_vs_reference": 0.4643485477502373,
+          "v4-both/answer_quality": 3.5371325899518085,
+          "v4-both/answer_natural": 0.7516358740532298,
+          "v4-grammar/translation_vs_reference": 0.7507199952778039,
+          "v4-grammar/naturalness_vs_reference": 0.5701274910781328,
+          "v4-grammar/answer_quality": 3.4913597330486557,
+          "v4-grammar/answer_natural": 0.7189184808515684,
+          "v4-grammar/answer_grammatical": 0.46034541168505344,
+          "v4-grammar/translation_grammatical": 0.33769879393332125,
+          "v4-adequacy/translation_vs_reference": 0.38899611585550287,
+          "v4-adequacy/naturalness_vs_reference": 0.1522133778656091,
+          "v4-adequacy/answer_quality": 3.4775944205665006,
+          "v4-adequacy/answer_natural": 0.7470009163899455,
+          "v4-adequacy/answer_grammatical": 0.45162594586843435,
+          "v4-adequacy/translation_grammatical": 0.3197393548909134,
+          "log_parameters": 9.384599827039093
+        }
+      }
+    ],
+    "spearman": {
+      "euroeval_rank (negated)": {
+        "answer_words": {
+          "rho": -0.024858761029519453,
+          "ci95": [
+            -0.5088769293143698,
+            0.4373988528091962
+          ],
+          "n_models": 22
+        },
+        "chrf": {
+          "rho": 0.8197741421325621,
+          "ci95": [
+            0.5495362681626975,
+            0.9264665775444606
+          ],
+          "n_models": 22
+        },
+        "log_parameters": {
+          "rho": 0.8151498021481062,
+          "ci95": [
+            0.5476367621245626,
+            0.9210156916426998
+          ],
+          "n_models": 22
+        },
+        "swedish_answers": {
+          "rho": -0.04019531250782976,
+          "ci95": [
+            -0.4625787918854533,
+            0.4035874012423893
+          ],
+          "n_models": 22
+        },
+        "v3/answer_natural": {
+          "rho": 0.3248588089084929,
+          "ci95": [
+            -0.1569083144990021,
+            0.6987565847440446
+          ],
+          "n_models": 22
+        },
+        "v3/answer_quality": {
+          "rho": 0.7638419298161433,
+          "ci95": [
+            0.4380829190222172,
+            0.915498951550085
+          ],
+          "n_models": 22
+        },
+        "v3/naturalness_vs_reference": {
+          "rho": 0.2881356392057937,
+          "ci95": [
+            -0.17332645186264795,
+            0.710457872813402
+          ],
+          "n_models": 22
+        },
+        "v3/translation_vs_reference": {
+          "rho": 0.33389835837377274,
+          "ci95": [
+            -0.11297409323139639,
+            0.6316283162571008
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_grammatical": {
+          "rho": 0.12146894593969736,
+          "ci95": [
+            -0.34817968227796536,
+            0.5470698357235665
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_natural": {
+          "rho": 0.38192096490807165,
+          "ci95": [
+            0.0016913504385516213,
+            0.6600528004761874
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_quality": {
+          "rho": 0.735593337737144,
+          "ci95": [
+            0.389967128229889,
+            0.8806139852188742
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/naturalness_vs_reference": {
+          "rho": 0.6954803369849648,
+          "ci95": [
+            0.4310670166954019,
+            0.8416406436166122
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_grammatical": {
+          "rho": 0.4903955584914293,
+          "ci95": [
+            0.038329648994183826,
+            0.809012787241407
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_vs_reference": {
+          "rho": 0.732203506687664,
+          "ci95": [
+            0.3858414331976296,
+            0.9150887486234616
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_natural": {
+          "rho": 0.45932210720453004,
+          "ci95": [
+            0.05406794593400108,
+            0.7516074652685885
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_quality": {
+          "rho": 0.7271187601134442,
+          "ci95": [
+            0.37696914059962455,
+            0.8912598820543317
+          ],
+          "n_models": 22
+        },
+        "v4-both/naturalness_vs_reference": {
+          "rho": 0.25988704712679433,
+          "ci95": [
+            -0.2532579399323985,
+            0.6717838848232613
+          ],
+          "n_models": 22
+        },
+        "v4-both/translation_vs_reference": {
+          "rho": 0.0638418180985386,
+          "ci95": [
+            -0.3760308674706186,
+            0.49474659582897884
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_grammatical": {
+          "rho": 0.23276839873095492,
+          "ci95": [
+            -0.19228700489415454,
+            0.5765288000714428
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_natural": {
+          "rho": 0.23615822978043488,
+          "ci95": [
+            -0.2098007198478563,
+            0.6600458973973445
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_quality": {
+          "rho": 0.7231639572223842,
+          "ci95": [
+            0.37403663637476176,
+            0.8910387313606203
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/naturalness_vs_reference": {
+          "rho": 0.11864408673179741,
+          "ci95": [
+            -0.3451938545645971,
+            0.5200094091431992
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_grammatical": {
+          "rho": 0.003954802891059914,
+          "ci95": [
+            -0.42951570815684587,
+            0.4464585989540642
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_vs_reference": {
+          "rho": -0.1700565243155763,
+          "ci95": [
+            -0.5568466358377523,
+            0.2840753318035393
+          ],
+          "n_models": 22
+        }
+      },
+      "Linguistic acceptability": {
+        "answer_words": {
+          "rho": 0.09881422924901187,
+          "ci95": [
+            -0.3500191700634109,
+            0.5087998267345601
+          ],
+          "n_models": 22
+        },
+        "chrf": {
+          "rho": 0.7843026538678713,
+          "ci95": [
+            0.5564360916389627,
+            0.894071923507549
+          ],
+          "n_models": 22
+        },
+        "log_parameters": {
+          "rho": 0.6327684625695862,
+          "ci95": [
+            0.18571628925798025,
+            0.8892725313867165
+          ],
+          "n_models": 22
+        },
+        "swedish_answers": {
+          "rho": 0.09402100143286604,
+          "ci95": [
+            -0.29734540011168376,
+            0.501775829354561
+          ],
+          "n_models": 22
+        },
+        "v3/answer_natural": {
+          "rho": 0.4217955957086392,
+          "ci95": [
+            -0.032992975813787156,
+            0.758269308754449
+          ],
+          "n_models": 22
+        },
+        "v3/answer_quality": {
+          "rho": 0.7594579333709771,
+          "ci95": [
+            0.5241299794637232,
+            0.8759266363766453
+          ],
+          "n_models": 22
+        },
+        "v3/naturalness_vs_reference": {
+          "rho": 0.3788819875776398,
+          "ci95": [
+            -0.0068993894993894965,
+            0.6872235282173035
+          ],
+          "n_models": 22
+        },
+        "v3/translation_vs_reference": {
+          "rho": 0.32467532467532473,
+          "ci95": [
+            -0.13105162063890488,
+            0.6828370639380921
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_grammatical": {
+          "rho": 0.24223602484472054,
+          "ci95": [
+            -0.19615117701196705,
+            0.652383897392542
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_natural": {
+          "rho": 0.33032185206098247,
+          "ci95": [
+            -0.08705921226539783,
+            0.6966940911951808
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_quality": {
+          "rho": 0.7097684923771881,
+          "ci95": [
+            0.4526282070364221,
+            0.8488025378003554
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/naturalness_vs_reference": {
+          "rho": 0.7018633540372672,
+          "ci95": [
+            0.4147685614773381,
+            0.8621121861759311
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_grammatical": {
+          "rho": 0.5640880858272164,
+          "ci95": [
+            0.19772694805194804,
+            0.7972863636304569
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_vs_reference": {
+          "rho": 0.647656691134952,
+          "ci95": [
+            0.26307251933110676,
+            0.8465930869598884
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_natural": {
+          "rho": 0.4116318464144552,
+          "ci95": [
+            0.014807995109691618,
+            0.7376537437261639
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_quality": {
+          "rho": 0.699604743083004,
+          "ci95": [
+            0.45541157021588097,
+            0.8419469036939622
+          ],
+          "n_models": 22
+        },
+        "v4-both/naturalness_vs_reference": {
+          "rho": 0.145115753811406,
+          "ci95": [
+            -0.33753557199772344,
+            0.5356775097642299
+          ],
+          "n_models": 22
+        },
+        "v4-both/translation_vs_reference": {
+          "rho": -0.11914172783738003,
+          "ci95": [
+            -0.5431883033916679,
+            0.351653348554033
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_grammatical": {
+          "rho": 0.28514963297572,
+          "ci95": [
+            -0.18177284793325751,
+            0.6400153174692791
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_natural": {
+          "rho": 0.24110671936758896,
+          "ci95": [
+            -0.19280758262878717,
+            0.6255867775045856
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_quality": {
+          "rho": 0.6860530773574253,
+          "ci95": [
+            0.4089030947455736,
+            0.8385821463685502
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/naturalness_vs_reference": {
+          "rho": -0.08752117447769624,
+          "ci95": [
+            -0.5425026624275499,
+            0.3459505620131158
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_grammatical": {
+          "rho": 0.07735742518351214,
+          "ci95": [
+            -0.38000162522346825,
+            0.4861813903199127
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_vs_reference": {
+          "rho": -0.2659514398644834,
+          "ci95": [
+            -0.638154552674829,
+            0.22377283105022808
+          ],
+          "n_models": 22
+        }
+      },
+      "Summarization": {
+        "answer_words": {
+          "rho": 0.16996047430830044,
+          "ci95": [
+            -0.3204583146105355,
+            0.5878927431443898
+          ],
+          "n_models": 22
+        },
+        "chrf": {
+          "rho": 0.6905702992659515,
+          "ci95": [
+            0.2642589613888851,
+            0.9181353041500852
+          ],
+          "n_models": 22
+        },
+        "log_parameters": {
+          "rho": 0.49378538954090917,
+          "ci95": [
+            -0.023445235110984158,
+            0.8487442123452955
+          ],
+          "n_models": 22
+        },
+        "swedish_answers": {
+          "rho": 0.1299199292526876,
+          "ci95": [
+            -0.320571225790562,
+            0.5491072337934607
+          ],
+          "n_models": 22
+        },
+        "v3/answer_natural": {
+          "rho": 0.4952004517221909,
+          "ci95": [
+            0.06996203387328308,
+            0.7796708847712618
+          ],
+          "n_models": 22
+        },
+        "v3/answer_quality": {
+          "rho": 0.7967250141163186,
+          "ci95": [
+            0.4751939864992762,
+            0.9453932675833888
+          ],
+          "n_models": 22
+        },
+        "v3/naturalness_vs_reference": {
+          "rho": 0.2806324110671937,
+          "ci95": [
+            -0.19015641697387414,
+            0.6981948255332365
+          ],
+          "n_models": 22
+        },
+        "v3/translation_vs_reference": {
+          "rho": 0.6024844720496896,
+          "ci95": [
+            0.2709097778361078,
+            0.7993158494868872
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_grammatical": {
+          "rho": 0.3156408808582722,
+          "ci95": [
+            -0.07693842645381985,
+            0.6253416856492023
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_natural": {
+          "rho": 0.40033879164313946,
+          "ci95": [
+            0.02332003156206344,
+            0.6985280718183747
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_quality": {
+          "rho": 0.779785431959345,
+          "ci95": [
+            0.45668093696591416,
+            0.9271080986823936
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/naturalness_vs_reference": {
+          "rho": 0.5268210050818747,
+          "ci95": [
+            0.048175366977751995,
+            0.8271745309835132
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_grammatical": {
+          "rho": 0.3529079616036138,
+          "ci95": [
+            -0.1723042187094849,
+            0.7790748817291845
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_vs_reference": {
+          "rho": 0.4805194805194805,
+          "ci95": [
+            -0.007465735486969986,
+            0.8029973705395168
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_natural": {
+          "rho": 0.41050254093732363,
+          "ci95": [
+            0.012754140649072584,
+            0.7196538478482837
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_quality": {
+          "rho": 0.743647656691135,
+          "ci95": [
+            0.37224317012112645,
+            0.9317797323098054
+          ],
+          "n_models": 22
+        },
+        "v4-both/naturalness_vs_reference": {
+          "rho": 0.04912478825522304,
+          "ci95": [
+            -0.459401144912869,
+            0.5417360054297891
+          ],
+          "n_models": 22
+        },
+        "v4-both/translation_vs_reference": {
+          "rho": -0.32128740824393004,
+          "ci95": [
+            -0.7194034090909092,
+            0.1825753268902781
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_grammatical": {
+          "rho": 0.4387351778656127,
+          "ci95": [
+            0.07300883906499174,
+            0.6910998734429903
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_natural": {
+          "rho": 0.2682100508187465,
+          "ci95": [
+            -0.20462219692657943,
+            0.7055079908675795
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_quality": {
+          "rho": 0.7526821005081875,
+          "ci95": [
+            0.3979420415673266,
+            0.93157827495332
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/naturalness_vs_reference": {
+          "rho": -0.1236589497459063,
+          "ci95": [
+            -0.5803747188707492,
+            0.34785190970932905
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_grammatical": {
+          "rho": 0.22642574816487862,
+          "ci95": [
+            -0.26034228301648854,
+            0.6626197204082138
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_vs_reference": {
+          "rho": -0.4714850367024281,
+          "ci95": [
+            -0.7923345407942666,
+            -0.034670217043125263
+          ],
+          "n_models": 22
+        }
+      },
+      "Reading comprehension": {
+        "answer_words": {
+          "rho": -0.016374929418407683,
+          "ci95": [
+            -0.5074942253567957,
+            0.46385053544204374
+          ],
+          "n_models": 22
+        },
+        "chrf": {
+          "rho": 0.6386222473178995,
+          "ci95": [
+            0.23999810932027144,
+            0.8688748853905035
+          ],
+          "n_models": 22
+        },
+        "log_parameters": {
+          "rho": 0.6570622517575256,
+          "ci95": [
+            0.3067396965792628,
+            0.8659268009952157
+          ],
+          "n_models": 22
+        },
+        "swedish_answers": {
+          "rho": -0.1065571349572482,
+          "ci95": [
+            -0.529124168332197,
+            0.3676806306578024
+          ],
+          "n_models": 22
+        },
+        "v3/answer_natural": {
+          "rho": 0.2682100508187465,
+          "ci95": [
+            -0.1857414040841411,
+            0.6601270024772913
+          ],
+          "n_models": 22
+        },
+        "v3/answer_quality": {
+          "rho": 0.6950875211744778,
+          "ci95": [
+            0.3705214699215447,
+            0.8756435294829323
+          ],
+          "n_models": 22
+        },
+        "v3/naturalness_vs_reference": {
+          "rho": 0.25127046866177305,
+          "ci95": [
+            -0.2143783521263567,
+            0.6246143150238712
+          ],
+          "n_models": 22
+        },
+        "v3/translation_vs_reference": {
+          "rho": 0.30434782608695654,
+          "ci95": [
+            -0.11795208214489446,
+            0.6019977285899101
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_grammatical": {
+          "rho": 0.011857707509881424,
+          "ci95": [
+            -0.41933897409635434,
+            0.4278514644520305
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_natural": {
+          "rho": 0.4285714285714286,
+          "ci95": [
+            0.03912037421218787,
+            0.700807807410463
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_quality": {
+          "rho": 0.6984754376058724,
+          "ci95": [
+            0.36660182528123575,
+            0.8876465706033989
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/naturalness_vs_reference": {
+          "rho": 0.6126482213438735,
+          "ci95": [
+            0.3059356577722619,
+            0.8025255391600454
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_grammatical": {
+          "rho": 0.4195369847543761,
+          "ci95": [
+            -0.03691294689821876,
+            0.7598867104013878
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_vs_reference": {
+          "rho": 0.7357425183512141,
+          "ci95": [
+            0.3714606262867812,
+            0.9329735389610389
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_natural": {
+          "rho": 0.5110107284020329,
+          "ci95": [
+            0.13891977060285424,
+            0.7414688824541796
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_quality": {
+          "rho": 0.6849237718802937,
+          "ci95": [
+            0.3427074090827843,
+            0.8758577450042888
+          ],
+          "n_models": 22
+        },
+        "v4-both/naturalness_vs_reference": {
+          "rho": 0.30660643704121965,
+          "ci95": [
+            -0.17111449398592773,
+            0.7094062508488777
+          ],
+          "n_models": 22
+        },
+        "v4-both/translation_vs_reference": {
+          "rho": 0.18125352907961606,
+          "ci95": [
+            -0.2540254050508023,
+            0.5758953951108583
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_grammatical": {
+          "rho": 0.16770186335403728,
+          "ci95": [
+            -0.24968012303035764,
+            0.5153808488227883
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_natural": {
+          "rho": 0.32241671372106157,
+          "ci95": [
+            -0.14828211744467903,
+            0.6914656260300341
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_quality": {
+          "rho": 0.6837944664031621,
+          "ci95": [
+            0.32720668661644825,
+            0.8863162152374869
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/naturalness_vs_reference": {
+          "rho": 0.13721061547148505,
+          "ci95": [
+            -0.32235202796510604,
+            0.5628201458947085
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_grammatical": {
+          "rho": 0.016374929418407683,
+          "ci95": [
+            -0.43771881947180763,
+            0.43385141089852314
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_vs_reference": {
+          "rho": -0.07622811970638058,
+          "ci95": [
+            -0.4832522737702021,
+            0.3689589641094322
+          ],
+          "n_models": 22
+        }
+      },
+      "Knowledge": {
+        "answer_words": {
+          "rho": -0.0220214568040655,
+          "ci95": [
+            -0.5063139931740614,
+            0.45104341463288494
+          ],
+          "n_models": 22
+        },
+        "chrf": {
+          "rho": 0.7651044607566347,
+          "ci95": [
+            0.48250760874318516,
+            0.8902276839211447
+          ],
+          "n_models": 22
+        },
+        "log_parameters": {
+          "rho": 0.685875815678105,
+          "ci95": [
+            0.3029610732167191,
+            0.8880404130539522
+          ],
+          "n_models": 22
+        },
+        "swedish_answers": {
+          "rho": -0.03475927931760502,
+          "ci95": [
+            -0.45579624211387854,
+            0.41783810458761295
+          ],
+          "n_models": 22
+        },
+        "v3/answer_natural": {
+          "rho": 0.21964991530208924,
+          "ci95": [
+            -0.2270354130117959,
+            0.6473599450510005
+          ],
+          "n_models": 22
+        },
+        "v3/answer_quality": {
+          "rho": 0.7007340485601357,
+          "ci95": [
+            0.3691825491315865,
+            0.8717505439164835
+          ],
+          "n_models": 22
+        },
+        "v3/naturalness_vs_reference": {
+          "rho": 0.24449463579898364,
+          "ci95": [
+            -0.18956819993343213,
+            0.6453158447845146
+          ],
+          "n_models": 22
+        },
+        "v3/translation_vs_reference": {
+          "rho": 0.2862789384528515,
+          "ci95": [
+            -0.16548699492736146,
+            0.647285369286065
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_grammatical": {
+          "rho": 0.04573687182382835,
+          "ci95": [
+            -0.3781976502343296,
+            0.4826807466147383
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_natural": {
+          "rho": 0.33370976849237727,
+          "ci95": [
+            -0.07334819017357787,
+            0.67405874191237
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/answer_quality": {
+          "rho": 0.6544325239977415,
+          "ci95": [
+            0.28427497451580025,
+            0.846606295998756
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/naturalness_vs_reference": {
+          "rho": 0.6216826651609261,
+          "ci95": [
+            0.27369988106641724,
+            0.8324810174639332
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_grammatical": {
+          "rho": 0.44325239977413894,
+          "ci95": [
+            0.013034196844761776,
+            0.7635939041327032
+          ],
+          "n_models": 22
+        },
+        "v4-adequacy/translation_vs_reference": {
+          "rho": 0.6442687747035574,
+          "ci95": [
+            0.21748183238711696,
+            0.91030286468478
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_natural": {
+          "rho": 0.3980801806888764,
+          "ci95": [
+            -0.0011672320488986666,
+            0.7420192933482838
+          ],
+          "n_models": 22
+        },
+        "v4-both/answer_quality": {
+          "rho": 0.6363636363636365,
+          "ci95": [
+            0.27714609877804314,
+            0.8289957156178003
+          ],
+          "n_models": 22
+        },
+        "v4-both/naturalness_vs_reference": {
+          "rho": 0.2670807453416149,
+          "ci95": [
+            -0.2020546255870682,
+            0.6231962877473334
+          ],
+          "n_models": 22
+        },
+        "v4-both/translation_vs_reference": {
+          "rho": 0.02992659514398645,
+          "ci95": [
+            -0.38648340817711874,
+            0.4480759073172065
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_grammatical": {
+          "rho": 0.16996047430830044,
+          "ci95": [
+            -0.2636408961408962,
+            0.5516326440145229
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_natural": {
+          "rho": 0.21287408243929987,
+          "ci95": [
+            -0.2425411538236991,
+            0.6362295694590498
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/answer_quality": {
+          "rho": 0.6318464144551101,
+          "ci95": [
+            0.2636940983619338,
+            0.8351413346190657
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/naturalness_vs_reference": {
+          "rho": 0.05251270468661773,
+          "ci95": [
+            -0.3916788637314057,
+            0.4492773082122481
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_grammatical": {
+          "rho": -0.03670242800677584,
+          "ci95": [
+            -0.4575329558353112,
+            0.4233658457169923
+          ],
+          "n_models": 22
+        },
+        "v4-grammar/translation_vs_reference": {
+          "rho": -0.17560700169395824,
+          "ci95": [
+            -0.5616349020442931,
+            0.28902340820159167
+          ],
+          "n_models": 22
+        }
+      }
+    },
+    "translation_item_level": {
+      "v3/translation_vs_reference": {
+        "spearman_with_chrf": 0.2752853465585317,
+        "n_translations": 4400
+      },
+      "v4-adequacy/translation_vs_reference": {
+        "spearman_with_chrf": 0.41817616439565986,
+        "n_translations": 4400
+      },
+      "v4-both/translation_vs_reference": {
+        "spearman_with_chrf": -0.03471946658768375,
+        "n_translations": 4400
+      },
+      "v4-grammar/translation_vs_reference": {
+        "spearman_with_chrf": -0.16671590360381638,
+        "n_translations": 4400
+      }
+    },
+    "partial_spearman_rank_given_size": {
+      "answer_words": {
+        "rho": -0.06380575945793338,
+        "ci95": [
+          -0.49944866290898815,
+          0.3569291439768921
+        ],
+        "n_models": 22
+      },
+      "chrf": {
+        "rho": 0.5335968379446642,
+        "ci95": [
+          -0.010373248643796582,
+          0.8130405738722437
+        ],
+        "n_models": 22
+      },
+      "swedish_answers": {
+        "rho": -0.3156408808582722,
+        "ci95": [
+          -0.6740964211313344,
+          0.14964688347461805
+        ],
+        "n_models": 22
+      },
+      "v3/answer_natural": {
+        "rho": 0.36984754376058726,
+        "ci95": [
+          -0.16812184343434342,
+          0.7279853637398457
+        ],
+        "n_models": 22
+      },
+      "v3/answer_quality": {
+        "rho": 0.6386222473178995,
+        "ci95": [
+          0.12108134988237206,
+          0.8676723476472633
+        ],
+        "n_models": 22
+      },
+      "v3/naturalness_vs_reference": {
+        "rho": 0.0220214568040655,
+        "ci95": [
+          -0.4416130623774636,
+          0.5068185700973287
+        ],
+        "n_models": 22
+      },
+      "v3/translation_vs_reference": {
+        "rho": 0.21400338791643145,
+        "ci95": [
+          -0.3583617747440273,
+          0.6164885130563496
+        ],
+        "n_models": 22
+      },
+      "v4-adequacy/answer_grammatical": {
+        "rho": 0.0005646527385657821,
+        "ci95": [
+          -0.4980160035165408,
+          0.4227737314744934
+        ],
+        "n_models": 22
+      },
+      "v4-adequacy/answer_natural": {
+        "rho": 0.39130434782608703,
+        "ci95": [
+          -0.15060190530148584,
+          0.7678517715058018
+        ],
+        "n_models": 22
+      },
+      "v4-adequacy/answer_quality": {
+        "rho": 0.6228119706380577,
+        "ci95": [
+          0.10740971395974251,
+          0.8558084227590189
+        ],
+        "n_models": 22
+      },
+      "v4-adequacy/naturalness_vs_reference": {
+        "rho": 0.1575381140598532,
+        "ci95": [
+          -0.36555274912693897,
+          0.680876714683602
+        ],
+        "n_models": 22
+      },
+      "v4-adequacy/translation_grammatical": {
+        "rho": 0.15415019762845852,
+        "ci95": [
+          -0.38066410612569707,
+          0.5870011612516542
+        ],
+        "n_models": 22
+      },
+      "v4-adequacy/translation_vs_reference": {
+        "rho": 0.3754940711462451,
+        "ci95": [
+          -0.23402008094645074,
+          0.8304543864661548
+        ],
+        "n_models": 22
+      },
+      "v4-both/answer_natural": {
+        "rho": 0.40824392998306047,
+        "ci95": [
+          -0.13525503357879998,
+          0.7947598404422059
+        ],
+        "n_models": 22
+      },
+      "v4-both/answer_quality": {
+        "rho": 0.5889328063241107,
+        "ci95": [
+          0.11793280182232346,
+          0.8239069096235031
+        ],
+        "n_models": 22
+      },
+      "v4-both/naturalness_vs_reference": {
+        "rho": 0.2896668548842462,
+        "ci95": [
+          -0.24863464035825159,
+          0.6718156335475813
+        ],
+        "n_models": 22
+      },
+      "v4-both/translation_vs_reference": {
+        "rho": -0.12817617165443254,
+        "ci95": [
+          -0.510566021007986,
+          0.34933856359229465
+        ],
+        "n_models": 22
+      },
+      "v4-grammar/answer_grammatical": {
+        "rho": 0.21061547148503673,
+        "ci95": [
+          -0.3632416587520366,
+          0.5789503622537573
+        ],
+        "n_models": 22
+      },
+      "v4-grammar/answer_natural": {
+        "rho": 0.2704686617730096,
+        "ci95": [
+          -0.23159573327615782,
+          0.7049410291680347
+        ],
+        "n_models": 22
+      },
+      "v4-grammar/answer_quality": {
+        "rho": 0.6002258610954264,
+        "ci95": [
+          0.09089867749661566,
+          0.8373320529019972
+        ],
+        "n_models": 22
+      },
+      "v4-grammar/naturalness_vs_reference": {
+        "rho": 0.13382269904009036,
+        "ci95": [
+          -0.35618173100162936,
+          0.5691952509159001
+        ],
+        "n_models": 22
+      },
+      "v4-grammar/translation_grammatical": {
+        "rho": 0.010728402032749858,
+        "ci95": [
+          -0.4906548618818157,
+          0.4701802856777272
+        ],
+        "n_models": 22
+      },
+      "v4-grammar/translation_vs_reference": {
+        "rho": -0.24788255223037836,
+        "ci95": [
+          -0.608451228328134,
+          0.30833025990473334
+        ],
+        "n_models": 22
+      }
+    }
+  },
+  "publish_data": {
+    "status": "uploaded",
+    "repo_id": "jonasaise/laya-swedish-gate-v4-data",
+    "url": "https://huggingface.co/datasets/jonasaise/laya-swedish-gate-v4-data",
+    "visibility": "public",
+    "configs": {
+      "europarl_human_vs_kimi": {
+        "license": "cc-by-4.0",
+        "rows": {
+          "train": 24000
+        }
+      },
+      "europarl_adequacy": {
+        "license": "cc-by-4.0",
+        "rows": {
+          "train": 17989
+        }
+      },
+      "europarl_eval": {
+        "license": "cc-by-4.0",
+        "rows": {
+          "test": 2022
+        }
+      },
+      "dalaj_pairs": {
+        "license": "cc-by-4.0",
+        "rows": {
+          "train": 16365,
+          "test": 1971
+        }
+      },
+      "swefaq_pairs": {
+        "license": "cc-by-sa-4.0",
+        "rows": {
+          "train": 3074,
+          "test": 3240
+        }
+      },
+      "wmt24pp_en_sv_mt": {
+        "license": "apache-2.0",
+        "rows": {
+          "test": 960
         }
       }
     }

@@ -37,6 +37,8 @@ UPLOAD_DIRS = ("encoder", "tokenizer")
 V2_CHECKPOINT_DIR = CHECKPOINT_DIR.parent / "v2"
 V3_CHECKPOINT_DIR = CHECKPOINT_DIR.parent / "v3"
 V3_ONNX_FILES = ("onnx/model.int8.onnx",)
+V4_CHECKPOINT_DIR = CHECKPOINT_DIR.parent / "v4-adequacy"
+V4_DATA_REPO = "jonasaise/laya-swedish-gate-v4-data"
 
 
 def blockers(m: dict, which: str = "v1") -> list[str]:
@@ -48,11 +50,21 @@ def blockers(m: dict, which: str = "v1") -> list[str]:
     tests = m.get("tests")
     if not (isinstance(tests, dict) and tests.get("all_passed")):
         out.append("not all tests passed (or tests were not run)")
-    if which in ("v2", "v3"):
+    if which == "v4":
+        sanity = readme.get(m, "v4.sanity.checkpoints.adequacy", {})
+        for test in ("garbage_mt", "first_half_only", "untranslated"):
+            v = readme.get(sanity, f"{test}/preference+source.mean")
+            if not (isinstance(v, float) and v >= 0.9):
+                out.append(f"v4 sanity test {test} at {v} (needs >= 0.9)")
+    if which in ("v2", "v3", "v4"):
         if readme.get(m, "fluent_data.source_license") not in ("mit", "apache-2.0", "cc-by-4.0"):
             out.append("license of the fluent-pair source data not recorded as permissive")
         for src in ("original", "fluent"):
-            ece = readme.get(m, f"{which}_eval.{src}/preference.ece_both_orders")
+            ece = (
+                readme.get(m, f"v4.arms.adequacy.standard_eval.{src}/preference.ece_both_orders")
+                if which == "v4"
+                else readme.get(m, f"{which}_eval.{src}/preference.ece_both_orders")
+            )
             if not (isinstance(ece, float) and ece <= ECE_TARGET):
                 out.append(f"{which} {src} val_eval ECE {ece} is not <= {ECE_TARGET}")
     else:
@@ -65,7 +77,9 @@ def blockers(m: dict, which: str = "v1") -> list[str]:
 
 
 def checkpoint_dir(which: str) -> Path:
-    return {"v2": V2_CHECKPOINT_DIR, "v3": V3_CHECKPOINT_DIR}.get(which, CHECKPOINT_DIR)
+    return {"v2": V2_CHECKPOINT_DIR, "v3": V3_CHECKPOINT_DIR, "v4": V4_CHECKPOINT_DIR}.get(
+        which, CHECKPOINT_DIR
+    )
 
 
 def model_card(m: dict, repo_id: str) -> str:
@@ -939,6 +953,206 @@ Check the upstream UltraFeedback terms before commercial use.
 """
 
 
+def model_card_v4(m: dict, repo_id: str) -> str:
+    g, pct, num = readme.get, readme.pct, readme.num
+    A = g(m, "v4.arms", {})
+    S = g(m, "v4.sanity.checkpoints", {})
+    P = g(m, "pilot_euroeval", {})
+    lic = g(m, "data.licenses", {})
+    v4 = g(A, "adequacy", {})
+
+    def t(arm, test):
+        return g(A, f"{arm}.tests.{test}.mean")
+
+    rows = [
+        ("Fluent-vs-fluent probe, `preference`", "probe/preference"),
+        ("DPO validation, `preference`", "original/preference"),
+        ("liu-nlp native vs OPUS-MT, `naturalness`", "liu/naturalness"),
+        ("FLORES+ human vs OPUS-MT, `preference` with source", "flores/preference+source"),
+        ("WMT24++ human vs OPUS-MT, `preference` with source", "wmt24pp/opus/preference+source"),
+        ("WMT24++ human vs Kimi-k3, `preference` with source", "wmt24pp/kimi/preference+source"),
+        ("DaLAJ corrected vs learner, `naturalness`", "dalaj/naturalness"),
+        ("GerLangMod-sv original vs verb misplaced, `naturalness`", "gerlangmod/naturalness"),
+        ("SweFAQ own answer vs other, `preference`", "swefaq/preference"),
+    ]
+    table = "\n".join(
+        f"| {label} | {pct(t('v3', k))} | **{pct(t('adequacy', k))}** |" for label, k in rows
+    )
+    mcc_v3 = readme._scala_mcc(A, "v3")
+    mcc_v4 = readme._scala_mcc(A, "adequacy")
+    sanity = "\n".join(
+        f"| {label} | {pct(g(S, f'v3.{k}.mean'))} | {pct(g(S, f'grammar.{k}.mean'))} | "
+        f"**{pct(g(S, f'adequacy.{k}.mean'))}** |"
+        for k, label in readme.SANITY_ROWS
+    )
+    q = g(P, "spearman.euroeval_rank (negated).v4-adequacy/answer_quality", {})
+    qp = g(P, "partial_spearman_rank_given_size.v4-adequacy/answer_quality", {})
+    temps = ", ".join(
+        f"{k} T = {num(f.get('temperature'))}" for k, f in v4.get("calibration", {}).items()
+    )
+    probe_v4 = t("adequacy", "probe/preference")
+    header = f"""---
+language: [sv]
+license: apache-2.0
+base_model: convaiinnovations/laya
+datasets:
+- jonasaise/dpo-swedish-interpreted
+- argilla/ultrafeedback-binarized-preferences-cleaned
+- sbx/superlim-2
+- {V4_DATA_REPO}
+pipeline_tag: text-classification
+tags: [preference-model, reward-model, swedish, laya, mmbert, llm-as-judge, grammaticality, translation-quality]
+model-index:
+- name: laya-swedish-preference-gate
+  results:
+  - task: {{type: text-classification, name: Linguistic acceptability (ScaLA-sv, EuroEval split)}}
+    dataset: {{type: mteb/scala_sv_classification, name: ScaLA-sv test}}
+    metrics:
+    - {{type: mcc, value: {mcc_v4 if mcc_v4 is not None else "null"}}}
+  - task: {{type: text-classification, name: Pairwise preference (fluent Swedish pairs)}}
+    dataset: {{type: argilla/ultrafeedback-binarized-preferences-cleaned, name: Fluent-vs-fluent probe (299 pairs translated to Swedish)}}
+    metrics:
+    - {{type: accuracy, value: {probe_v4 if probe_v4 is not None else "null"}}}
+---
+"""
+    return f"""{header}
+# Laya Swedish Preference Gate (v4)
+
+**A ~{num(g(v4, "standard_eval.latency_gpu_forward_ms.p50"), 0)} ms judge for Swedish text.** One
+forward pass of a fine-tuned [Laya](https://github.com/NandhaKishorM/laya) decision model
+(mmBERT-base backbone) answers one of five questions, as a "System 1" filter in front of a slow
+LLM judge.
+
+| Question | Input | Output |
+|---|---|---|
+| `preference` | prompt (or English source) + two responses | calibrated P(response A is better) |
+| `naturalness` | two responses (prompt optional) | P(A is more natural, idiomatic Swedish) |
+| `quality` | prompt + one response | 1–5 score |
+| `natural_swedish` | one response | P(natural Swedish vs translationese) |
+| `grammatical` (new) | one text | P(grammatically correct); compare two texts, see limitations |
+
+> **Earlier releases:** `revision="v3"`, `revision="v2"`, `revision="v1"`.
+
+Code, the full ablation and every number below: [github.com/{GITHUB_REPO}](https://github.com/{GITHUB_REPO}).
+Training and evaluation pairs: [`{V4_DATA_REPO}`](https://huggingface.co/datasets/{V4_DATA_REPO}).
+
+## What changed from v3
+
+v4 adds three kinds of training data, chosen in a controlled ablation (same recipe, seed and
+hyperparameters; only the data differs; all tests held out):
+
+- **DaLAJ-GED** (Superlim 2): learner sentences vs the same sentence corrected, for
+  `naturalness` and the new `grammatical` question.
+- **SweFAQ** (Superlim 2): a question's own answer vs other answers from the same FAQ page,
+  for `preference`.
+- **Europarl** (Språkbanken): professional Swedish translations vs Kimi-k3 machine
+  translations of English speeches, plus *adequacy negatives* (another paragraph's
+  translation, a half translation, a word-shuffled translation, the untranslated English).
+
+| Held-out test (share where the reference wins) | v3 | v4 |
+|---|---|---|
+{table}
+| ScaLA-sv MCC (EuroEval's metric), single-response | {num(mcc_v3)} | **{num(mcc_v4)}** |
+
+Calibration: {temps}. ECE on the DPO validation pairs
+{num(g(v4, "standard_eval.original/preference.ece_both_orders"), 4)}.
+
+**A trap we hit on the way.** Human-vs-MT pairs alone teach a gate that "the candidate least like
+the source wins": the intermediate arms preferred a fluent translation of the wrong sentence, half
+translations and nonsense. The adequacy negatives fix it (FLORES+ devtest, English source in the
+prompt, share where the reference wins):
+
+| The reference against … | v3 | without adequacy negatives | **v4** |
+|---|---|---|---|
+{sanity}
+
+On 4,400 translations by 22 small LLMs, v4's translation score agrees with chrF at Spearman
+{num(g(P, "translation_item_level.v4-adequacy/translation_vs_reference.spearman_with_chrf"), 2)}
+per translation (v3: {num(g(P, "translation_item_level.v3/translation_vs_reference.spearman_with_chrf"), 2)}).
+
+## Pilot: a quick proxy for EuroEval Swedish
+
+Scoring 100 Swedish answers per model with `quality` and averaging, over 22 small open LLMs with
+Swedish results on the [EuroEval leaderboard](https://euroeval.com): Spearman with the Swedish
+rank {num(q.get("rho"), 2)} [{num(g(q, "ci95.0"), 2)}, {num(g(q, "ci95.1"), 2)}],
+{num(qp.get("rho"), 2)} [{num(g(qp, "ci95.0"), 2)}, {num(g(qp, "ci95.1"), 2)}] after controlling for
+model size. A pilot on models up to about 4B parameters, not a calibrated predictor.
+
+## Quickstart
+
+```bash
+uv pip install "git+https://github.com/{GITHUB_REPO}"
+```
+
+```python
+from laya_gate.predictor import SwedishPreferenceGate
+
+gate = SwedishPreferenceGate("{repo_id}")
+
+r = gate.predict_preference(
+    prompt="Hur fungerar fotosyntesen?",
+    chosen_candidate="Fotosyntesen är den process där växter omvandlar ljus till energi.",
+    rejected_candidate="Det är när solen lyser på träd och gör magi.",
+)
+# {{"preference": "candidate_a", "p_chosen": <float>, "is_valid_margin": <bool>, ...}}
+
+# translation quality: put the English source in the prompt
+t = gate.predict_preference(
+    prompt="Översätt följande text till svenska:\nThe meeting was postponed.",
+    chosen_candidate="Mötet sköts upp.",
+    rejected_candidate="Mötet ställdes in.",
+)
+
+s = gate.score_quality(prompt="Hur fungerar fotosyntesen?", response="Växter gör mat av solljus.")
+g = gate.score_grammar("Människor är snälla där och alla varor är billiga.")
+a, b = (gate.score_grammar(x)["p_correct"] for x in ("Hon har bott här.", "Hon har bo här."))
+```
+
+## Limitations
+
+- **`grammatical` over-flags as a stand-alone verdict.** At 0.5 it marks
+  {pct(g(v4, "guards.fluent_responses_flagged_incorrect.mean"))} of fluent LLM answers and
+  {pct(g(v4, "guards.wmt24pp_reference_flagged_incorrect.mean"))} of WMT24++ references as
+  incorrect (it was trained on single learner sentences). Compare two versions of a text instead.
+  On lowercased text without punctuation (GerLangMod-sv) it is at chance
+  ({pct(t("adequacy", "gerlangmod/grammatical"))}).
+- **Wrong-content translations still win sometimes:** v4 prefers a fluent translation of a
+  different sentence in {pct(1 - (g(S, "adequacy.wrong_source/preference+source.mean") or 0))} of
+  FLORES+ pairs (v3: {pct(1 - (g(S, "v3.wrong_source/preference+source.mean") or 0))}).
+- **Pairwise preference, not fact-checking;** 1,024-token window; one seed per training arm.
+- **Kimi-k3 is not a neutral reference for its own output:** on WMT24++ it prefers the human
+  translation over OPUS-MT in
+  {pct(g(m, "external_eval.judge.sets.wmt24pp/opus.translation_generic.accuracy"))} of pairs but
+  over its own translation in only
+  {pct(g(m, "external_eval.judge.sets.wmt24pp/kimi.translation_generic.accuracy"))}.
+
+## Training data and licenses
+
+Weights: **Apache-2.0**. Base model `convaiinnovations/laya`: {lic.get("convaiinnovations/laya", "see repo")}.
+Training data:
+- `jonasaise/dpo-swedish-interpreted` ({lic.get("jonasaise/dpo-swedish-interpreted", "see repo")}) and
+  `argilla/ultrafeedback-binarized-preferences-cleaned` ({g(m, "fluent_data.source_license", "see repo")}).
+- Europarl Swedish-English: Koehn (2005), *Europarl: A Parallel Corpus for Statistical Machine
+  Translation*, MT Summit X; enriched and distributed by Språkbanken,
+  https://doi.org/10.23695/mdp4-2p72, CC BY 4.0.
+- DaLAJ-GED (CC BY 4.0) and SweFAQ (CC BY-SA 4.0) from Superlim 2
+  ([`sbx/superlim-2`](https://huggingface.co/datasets/sbx/superlim-2)), Språkbanken.
+- Machine translations by `Helsinki-NLP/opus-mt-en-sv` (evaluation only) and Kimi-k3.
+
+Evaluation only: liu-nlp/translationese-opensubtitles (Apache-2.0), FLORES+, WMT24++
+(Apache-2.0), ScaLA-sv (`mteb/scala_sv_classification`), GerLangMod (Apache-2.0).
+
+```bibtex
+@software{{laya_swedish_preference_gate,
+  title  = {{Laya Swedish Preference Gate}},
+  author = {{Lind, Jonas}},
+  year   = {{2026}},
+  url    = {{https://huggingface.co/{repo_id}}}
+}}
+```
+"""
+
+
 def _probe_line(m: dict) -> str:
     summary = readme.probe_summary(m)
     if summary:
@@ -966,7 +1180,7 @@ def main(argv=None) -> None:
     parser.add_argument(
         "--public", action="store_true", help="make the repo public after a successful upload"
     )
-    parser.add_argument("--checkpoint", choices=["v1", "v2", "v3"], default="v1")
+    parser.add_argument("--checkpoint", choices=["v1", "v2", "v3", "v4"], default="v1")
     parser.add_argument(
         "--tag-previous",
         metavar="TAG",
@@ -1017,7 +1231,7 @@ def main(argv=None) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         stage = Path(tmp)
         files = list(UPLOAD_FILES)
-        if which in ("v2", "v3"):
+        if which in ("v2", "v3", "v4"):
             files.append(QUESTIONS_FILE)
         if which == "v3":
             files += [f for f in V3_ONNX_FILES if (src_dir / f).exists()]
@@ -1028,7 +1242,9 @@ def main(argv=None) -> None:
             shutil.copytree(src_dir / name, stage / name)
         (stage / "results").mkdir()
         shutil.copy2(METRICS_PATH, stage / "results" / "metrics.json")
-        card = {"v2": model_card_v2, "v3": model_card_v3}.get(which, model_card)(m, repo_id)
+        card = {"v2": model_card_v2, "v3": model_card_v3, "v4": model_card_v4}.get(
+            which, model_card
+        )(m, repo_id)
         (stage / "README.md").write_text(card, encoding="utf-8")
         for f in stage.rglob("*"):  # nothing from the judge cache or the environment
             if f.is_file():

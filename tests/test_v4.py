@@ -88,7 +88,58 @@ def test_paired_diff():
 
 
 def test_arms_and_sources_are_consistent():
-    assert set(v4.ARMS) == {"control", "europarl", "native", "both"}
+    assert set(v4.ARMS) == {"control", "europarl", "native", "both", "grammar", "adequacy"}
     for sources in v4.ARMS.values():
-        assert all(s in v4.SOURCE_FILES for s in sources)
+        assert all(s in v4.SOURCE_FILES or s in ("dalaj_grammar", "adequacy") for s in sources)
     assert set(v4.ARMS["both"]) == set(v4.ARMS["europarl"]) | set(v4.ARMS["native"])
+
+
+def test_grammar_rows_label_corrected_as_correct():
+    pairs = [
+        {"id": "d1", "candidate_a": "Hon är snäll.", "candidate_b": "Hon är snälla.", "label": 0},
+        {
+            "id": "d2",
+            "candidate_a": "Vi har bo här.",
+            "candidate_b": "Vi har bott här.",
+            "label": 1,
+        },
+    ]
+    rows = v4.grammar_rows(pairs, "dalaj_grammar")
+    got = {(r["response"], r["label"]) for r in rows}
+    assert got == {
+        ("Hon är snäll.", 0),
+        ("Hon är snälla.", 1),
+        ("Vi har bott här.", 0),
+        ("Vi har bo här.", 1),
+    }
+    assert all(r["qid"] == v4.GRAMMAR_QID and r["prompt"] == "" for r in rows)
+    assert all(r["target"] == ([1.0, 0.0] if r["label"] == 0 else [0.0, 1.0]) for r in rows)
+    assert set(v4.ARMS["grammar"]) == set(v4.ARMS["both"]) | {"dalaj_grammar"}
+
+
+def test_adequacy_data_needs_the_source():
+    pool = [
+        {
+            "id": f"p{i}",
+            "sv": [f"Detta är mening nummer {i} om miljön och unionen."],
+            "en": [f"This is sentence {i} about the environment."],
+            "mt_kimi": f"Det här är mening {i} om miljön.",
+        }
+        for i in range(10)
+    ]
+    d = v4.adequacy_data(pool, {"p0"}, random.Random(0))
+    assert {r["id"].split("-")[0] for r in d["preference"]} <= {f"p{i}" for i in range(1, 10)}
+    for r in d["preference"]:
+        ref = r["candidate_a"] if r["label"] == 0 else r["candidate_b"]
+        pid = r["id"].split("-")[0]
+        assert pid.removeprefix("p") in ref  # the winner always translates this paragraph
+        assert r["prompt"].endswith(f"sentence {pid.removeprefix('p')} about the environment.")
+    assert all(s["label"] == 1 and s["response"].startswith("This is") for s in d["single"])
+    kinds = {r["id"].split("-")[-1] for r in d["preference"]}
+    assert kinds == {"wrong_source", "mt_vs_wrong_source", "half", "shuffled", "untranslated"}
+
+
+def test_shuffle_neighbours_keeps_words():
+    text = "en två tre fyra fem sex sju åtta"
+    out = v4.shuffle_neighbours(text, random.Random(1))
+    assert sorted(out.split()) == sorted(text.split()) and out != text

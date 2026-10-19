@@ -54,13 +54,22 @@ if [[ -f cache/fluent/train.jsonl ]]; then
         step "5o/8 v4 ablation: $arm" v4 run --arm "$arm"
     done
     step "5o/8 v4 ablation: seed"   v4 run --arm control --seed 20261015
+    step "5o/8 v4 ablation: grammar"  v4 run --arm grammar
+    step "5o/8 v4 ablation: adequacy" v4 run --arm adequacy   # v4: builds the adequacy negatives
     step "5o/8 v4 ablation"         v4 compare
+    step "5o/8 v4 sanity tests"     v4 sanity
+    step "5p/8 EuroEval pilot"      pilot generate --batch-size 8   # 22 small LLMs
+    step "5p/8 EuroEval pilot"      pilot score
+    step "5p/8 EuroEval pilot"      pilot analyze
 else
     echo "note: no fluent training pairs; skipping v2 and v3" >&2
 fi
 step "6/8 tests"      testing
 step "7/8 readme"     readme
-if [[ -f checkpoints/v3/model.safetensors ]]; then
+if [[ -f checkpoints/v4-adequacy/model.safetensors ]]; then
+    step "8/8 publish"    publish --checkpoint v4 --public
+    step "8/8 publish"    publish_data --upload
+elif [[ -f checkpoints/v3/model.safetensors ]]; then
     step "8/8 publish"    publish --checkpoint v3
 elif [[ -f checkpoints/v2/model.safetensors ]]; then
     step "8/8 publish"    publish --checkpoint v2

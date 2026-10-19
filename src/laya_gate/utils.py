@@ -84,6 +84,21 @@ POINTWISE_QUESTIONS = {
 }
 POINTWISE_QIDS = tuple(POINTWISE_QUESTIONS)
 QUESTIONS_V3 = {**QUESTIONS_V2, **POINTWISE_QUESTIONS}
+
+# v4 grammar arm: a single-response grammaticality question, state = {"prompt", "response"}
+GRAMMAR_QID = "grammatical"
+GRAMMAR_QUESTION = {
+    GRAMMAR_QID: {
+        "type": "choice",
+        "instructions": "Is the text grammatically correct Swedish "
+        "(spelling, inflection, word choice, word order, punctuation)?",
+        "criteria": {
+            "correct": "grammatically correct Swedish",
+            "incorrect": "contains a grammatical, spelling or word-order error",
+        },
+    }
+}
+QUESTIONS_V4 = {**QUESTIONS_V3, **GRAMMAR_QUESTION}
 QUESTIONS_FILE = "questions.json"
 
 

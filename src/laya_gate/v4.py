@@ -38,6 +38,7 @@ import difflib
 import json
 import random
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -48,11 +49,14 @@ from . import liu_eval, v2, v3
 from .probe import PROBE_DIR, bootstrap_ci
 from .utils import (
     CACHE_DIR,
+    GRAMMAR_QID,
     METRICS_PATH,
+    NATURAL_SINGLE_QID,
     NATURALNESS_QID,
     QID,
     QUESTIONS_V2,
     QUESTIONS_V3,
+    QUESTIONS_V4,
     ROOT,
     SEED,
     load_metrics,
@@ -67,7 +71,10 @@ ARMS = {
     "europarl": ("europarl",),
     "native": ("dalaj", "swefaq"),
     "both": ("europarl", "dalaj", "swefaq"),
+    "grammar": ("europarl", "dalaj", "swefaq", "dalaj_grammar"),
+    "adequacy": ("europarl", "dalaj", "swefaq", "dalaj_grammar", "adequacy"),
 }
+ADEQUACY_PER_TYPE = 3000
 EP_TRAIN = 12000  # Europarl pairs after filtering
 EP_POOL = 18000  # paragraphs translated, before filtering
 FAQ_NEGATIVES = 4  # other answers per SweFAQ question
@@ -220,9 +227,122 @@ SOURCE_FILES = {
 }
 
 
+def grammar_rows(pairs: list[dict[str, Any]], source: str) -> list[dict[str, Any]]:
+    """Single-response `grammatical` rows from (corrected, learner) pairs in the v2 layout:
+    the corrected sentence is `correct`, the learner sentence `incorrect`."""
+    rows = []
+    for p in pairs:
+        ref = p["candidate_a"] if p["label"] == 0 else p["candidate_b"]
+        other = p["candidate_b"] if p["label"] == 0 else p["candidate_a"]
+        for text, ok in ((ref, True), (other, False)):
+            rows.append(
+                {
+                    "source": source,
+                    "qid": GRAMMAR_QID,
+                    "id": p["id"],
+                    "prompt": "",
+                    "response": text,
+                    "target": [1.0, 0.0] if ok else [0.0, 1.0],
+                    "label": 0 if ok else 1,
+                }
+            )
+    return rows
+
+
+def shuffle_neighbours(text: str, rng: random.Random, rate: float = 0.3) -> str:
+    """Swap about `rate` of adjacent word pairs (keeps every word, breaks the order)."""
+    words = text.split()
+    i = 0
+    while i < len(words) - 1:
+        if rng.random() < rate:
+            words[i], words[i + 1] = words[i + 1], words[i]
+            i += 2
+        else:
+            i += 1
+    return " ".join(words)
+
+
+def adequacy_data(pool, used: set[str], rng: random.Random) -> dict[str, list[dict]]:
+    """Negatives that need the source: from Europarl paragraphs not in the main pairs.
+
+    `preference` (English source in the prompt): the correct human translation beats the human
+    translation of another paragraph, a half translation, a word-shuffled translation and the
+    untranslated English; the correct Kimi-k3 translation also beats another paragraph's human
+    translation (adequacy over style). `naturalness`: Swedish beats the English original.
+    Single-response: the English original is neither natural nor grammatical Swedish."""
+    paras = [r for r in pool if r["id"] not in used and r.get("mt_kimi")]
+    rng.shuffle(paras)
+    n = min(ADEQUACY_PER_TYPE, len(paras))
+    sel = paras[:n]
+
+    def other_para(i):
+        return " ".join(sel[(i + 1 + rng.randrange(n - 1)) % n]["sv"])
+
+    pref, nat, single = [], [], []
+    for i, r in enumerate(sel):
+        human, en, mt = " ".join(r["sv"]), " ".join(r["en"]), r["mt_kimi"]
+        prompt = X.SOURCE_PROMPT + en
+        words = human.split()
+        half = " ".join(words[: max(1, len(words) // 2)])
+        for kind, ref, other in (
+            ("wrong_source", human, other_para(i)),
+            ("mt_vs_wrong_source", mt, other_para(i)),
+            ("half", human, half),
+            ("shuffled", human, shuffle_neighbours(human, rng)),
+            ("untranslated", human, en),
+        ):
+            if X._norm(ref) != X._norm(other):
+                pref.append(as_pair(f"{r['id']}-{kind}", prompt, ref, other, rng))
+        nat.append(as_pair(f"{r['id']}-sv-vs-en", "", human, en, rng))
+        for qid in (NATURAL_SINGLE_QID, GRAMMAR_QID):
+            single.append(
+                {
+                    "source": "adequacy",
+                    "qid": qid,
+                    "id": f"{r['id']}-en",
+                    "prompt": "",
+                    "response": en,
+                    "target": [0.0, 1.0],
+                    "label": 1,
+                }
+            )
+    return {"preference": pref, "naturalness": nat, "single": single}
+
+
+def prepare_adequacy() -> dict[str, Any]:
+    pool = read_jsonl(V4_DIR / "europarl_pool.jsonl")
+    used = {r["id"] for r in read_jsonl(V4_DIR / "europarl_preference.jsonl")}
+    data = adequacy_data(pool, used, random.Random(SEED + 7))
+    write_jsonl(V4_DIR / "adequacy_preference.jsonl", data["preference"])
+    write_jsonl(V4_DIR / "adequacy_naturalness.jsonl", data["naturalness"])
+    write_jsonl(V4_DIR / "adequacy_single.jsonl", data["single"])
+    stats = {k: len(v) for k, v in data.items()}
+    stats["by_kind"] = dict(Counter(p["id"].split("-")[-1] for p in data["preference"]))
+    v4 = load_metrics().get("v4") or {}
+    v4.setdefault("data", {})["adequacy"] = stats
+    update_metrics("v4", v4)
+    return stats
+
+
 def extra_units(tok, sources, internal, room, max_len, head_max_len) -> list[dict[str, Any]]:
     units = []
     for source in sources:
+        if source == "adequacy":
+            for fname, qid in (
+                ("adequacy_preference.jsonl", QID),
+                ("adequacy_naturalness.jsonl", NATURALNESS_QID),
+            ):
+                rows = read_jsonl(V4_DIR / fname)
+                units += v2.build_units(
+                    tok, {source: rows}, {qid: internal[qid]}, room, max_len, head_max_len
+                )
+            rows = read_jsonl(V4_DIR / "adequacy_single.jsonl")
+            units += v3.build_single_units(tok, rows, internal, room, max_len, head_max_len)
+            continue
+        if source == "dalaj_grammar":
+            rows = grammar_rows(read_jsonl(V4_DIR / "dalaj_naturalness.jsonl"), source)
+            units += v3.build_single_units(tok, rows, internal, room, max_len, head_max_len)
+            continue
         for fname, qid in SOURCE_FILES[source]:
             rows = read_jsonl(V4_DIR / fname)
             units += v2.build_units(
@@ -247,9 +367,12 @@ def train(arm: str, seed: int) -> None:
     model, tok, cfg = load_checkpoint(BASE_MODEL_SUBFOLDER)
     model.to(device)
 
-    internal = {qid: to_internal(qid, q) for qid, q in QUESTIONS_V3.items()}
+    questions = QUESTIONS_V4 if "dalaj_grammar" in ARMS[arm] else QUESTIONS_V3
+    if "adequacy" in ARMS[arm] and not (V4_DIR / "adequacy_preference.jsonl").exists():
+        print(prepare_adequacy())
+    internal = {qid: to_internal(qid, q) for qid, q in questions.items()}
     pair_internal = {q: internal[q] for q in QUESTIONS_V2}
-    room = state_room_for(tok, QUESTIONS_V3, hp.max_len, hp.head_max_len)
+    room = state_room_for(tok, questions, hp.max_len, hp.head_max_len)
     ratings = v3.load_ratings()
     t = time.perf_counter()
     data = {}
@@ -264,7 +387,7 @@ def train(arm: str, seed: int) -> None:
     print({k: len(v) for k, v in data.items()}, f"encoded in {time.perf_counter() - t:.0f}s")
     section = f"_v4_training_{tag(arm, seed)}"
     v2.run_training(
-        hp, device, model, tok, cfg, data, QUESTIONS_V3, checkpoint_dir(arm, seed), section, "v4"
+        hp, device, model, tok, cfg, data, questions, checkpoint_dir(arm, seed), section, "v4"
     )
     _move(section, tag(arm, seed), "training")
 
@@ -436,6 +559,8 @@ def run_tests(gate) -> tuple[dict[str, np.ndarray], dict[str, Any], dict[str, An
             "flagged_incorrect": float((pt < 0.5).mean()),
             "n": int(len(yt)),
         }
+    if gate.has_grammar:
+        grammar_tests(gate, wins, guards, extra)
     # guard: natural Swedish responses wrongly flagged as translationese (lower is better)
     ev = v2.load_rows("val_eval")["fluent"]
     resp = [r["candidate_a"] for r in ev] + [r["candidate_b"] for r in ev]
@@ -443,6 +568,60 @@ def run_tests(gate) -> tuple[dict[str, np.ndarray], dict[str, Any], dict[str, An
         natural_scores(gate, resp, [r["prompt"] for r in ev] * 2) < 0.5
     ).astype(float)
     return wins, guards, extra
+
+
+def p_correct(gate, texts) -> np.ndarray:
+    return np.array([x["p_correct"] for x in gate.score_grammar_batch(texts, None, 32)])
+
+
+def grammar_tests(gate, wins, guards, extra) -> None:
+    """The `grammatical` question: pairwise via scores, ScaLA-sv as a classifier, and how
+    often good human Swedish is flagged as incorrect (lower is better)."""
+    sets = X.load_sets()
+    for name in ("dalaj", "gerlangmod"):
+        if name in sets:
+            ps = sets[name]
+            wins[f"{name}/grammatical"] = X.versus(
+                p_correct(gate, [p["ref"] for p in ps]), p_correct(gate, [p["other"] for p in ps])
+            )
+    test, val = (
+        read_jsonl(X.EXT_DIR / "scala_test.jsonl"),
+        read_jsonl(X.EXT_DIR / "scala_val.jsonl"),
+    )
+    pt, pv = p_correct(gate, [r["text"] for r in test]), p_correct(gate, [r["text"] for r in val])
+    yt, yv = np.array([r["correct"] for r in test]), np.array([r["correct"] for r in val])
+    thr = max(np.unique(pv), key=lambda t: X.mcc(yv, pv >= t))
+    wins["scala/grammatical_accuracy@0.5"] = ((pt >= 0.5) == yt).astype(float)
+    extra["scala_grammatical"] = {
+        "mcc@0.5": X.mcc(yt, pt >= 0.5),
+        "mcc@val_threshold": X.mcc(yt, pt >= thr),
+        "val_threshold": float(thr),
+        "auc": v3.roc_auc(pt[yt], pt[~yt]),
+        "by_corruption": {
+            str(c): float(
+                ((pt >= 0.5) == yt)[np.array([r["corruption"] == c for r in test])].mean()
+            )
+            for c in sorted({r["corruption"] for r in test}, key=str)
+        },
+        "n": int(len(yt)),
+    }
+    human = {
+        "flores_reference": [r["human"] for r in read_jsonl(_flores_path())],
+        "wmt24pp_reference": [p["ref"] for p in sets.get("wmt24pp/opus", [])],
+        "europarl_human": [p["ref"] for p in sets.get("europarl_en/kimi", [])],
+        "fluent_responses": [
+            r[k] for r in v2.load_rows("val_eval")["fluent"] for k in ("candidate_a", "candidate_b")
+        ],
+    }
+    for k, texts in human.items():
+        if texts:
+            guards[f"{k}_flagged_incorrect"] = (p_correct(gate, texts) < 0.5).astype(float)
+
+
+def _flores_path():
+    from .mtqa import PAIRS_PATH
+
+    return PAIRS_PATH
 
 
 def summary(v: np.ndarray) -> dict[str, Any]:
@@ -475,9 +654,43 @@ def score_suite(path: Path, t: str) -> None:
 
 
 def calibrate(arm: str, seed: int) -> None:
-    t = tag(arm, seed)
-    v3.calibrate(argparse.Namespace(checkpoint=checkpoint_dir(arm, seed), section=f"_v4_cal_{t}"))
+    t, path = tag(arm, seed), checkpoint_dir(arm, seed)
+    v3.calibrate(argparse.Namespace(checkpoint=path, section=f"_v4_cal_{t}"))
     _move(f"_v4_cal_{t}", t, "calibration")
+    if "dalaj_grammar" in ARMS[arm]:
+        calibrate_grammar(path, t)
+
+
+def calibrate_grammar(path: Path, t: str) -> None:
+    """Temperature for `grammatical`, fitted on DaLAJ-GED dev pairs (both sentences)."""
+    from datasets import load_dataset
+    from laya.common import TEMP_MAX, TEMP_MIN
+
+    from .calibrate import fit_temperature, nll
+    from .predictor import TEMPERATURE_FILE
+
+    gate = v2.uncalibrated_gate(path)
+    pairs, _ = X.dalaj_pairs(load_dataset(X.SUPERLIM, "dalaj-ged-superlim", split="dev"))
+    texts = [p["ref"] for p in pairs] + [p["other"] for p in pairs]
+    labels = np.r_[np.zeros(len(pairs), int), np.ones(len(pairs), int)]
+    logits = gate.logits([gate.encode_single("", x, GRAMMAR_QID) for x in texts], 32)
+    temp = fit_temperature(logits, labels)
+    fit = {
+        "temperature": temp,
+        "fit_on": "DaLAJ-GED dev (corrected and learner sentences)",
+        "n": int(len(labels)),
+        "nll_pre": nll(logits, labels),
+        "nll_post": nll(logits, labels, temp),
+        "within_laya_clamp": bool(TEMP_MIN <= temp <= TEMP_MAX),
+    }
+    tf = path / TEMPERATURE_FILE
+    saved = json.loads(tf.read_text())
+    saved.setdefault("temperatures", {})[GRAMMAR_QID] = temp
+    tf.write_text(json.dumps(saved, indent=2) + "\n")
+    m = load_metrics()
+    m["v4"]["arms"][t]["calibration"][GRAMMAR_QID] = fit
+    _write(m)
+    print(json.dumps(fit, indent=2))
 
 
 def run(args) -> None:
@@ -486,6 +699,76 @@ def run(args) -> None:
         train(args.arm, args.seed)
     calibrate(args.arm, args.seed)
     evaluate(args.arm, args.seed)
+
+
+# ----------------------------------------------------------------------- sanity
+
+SANITY_GARBAGE_MODEL = "LiquidAI/LFM2-350M"  # lowest chrF in the EuroEval pilot
+
+
+def sanity_sets() -> dict[str, list[dict[str, str]]]:
+    """FLORES+ devtest (the pilot's 200 sentences): the reference translation against four
+    degraded alternatives, with the English source in the prompt. The reference should win."""
+    from .pilot import PILOT_DIR, TRANSLATE_PROMPT, translation_items
+
+    items = translation_items()
+    n = len(items)
+    garbage_path = PILOT_DIR / "outputs" / f"{SANITY_GARBAGE_MODEL.replace('/', '__')}.jsonl"
+    garbage = {r["id"]: r["output"] for r in read_jsonl(garbage_path) if r["kind"] == "translate"}
+
+    def pair(i, other):
+        r = items[i]
+        return {"prompt": TRANSLATE_PROMPT + r["en"], "ref": r["human"], "other": other}
+
+    def first_half(text: str) -> str:
+        words = text.split()
+        return " ".join(words[: max(1, len(words) // 2)])
+
+    return {
+        "wrong_source": [pair(i, items[(i + 1) % n]["human"]) for i in range(n)],
+        "garbage_mt": [
+            pair(i, garbage[items[i]["id"]]) for i in range(n) if garbage.get(items[i]["id"])
+        ],
+        "untranslated": [pair(i, items[i]["en"]) for i in range(n)],
+        "first_half_only": [pair(i, first_half(items[i]["human"])) for i in range(n)],
+    }
+
+
+def sanity(args) -> None:
+    """Every checkpoint on the sanity sets: share of pairs where the reference wins."""
+    from .predictor import SwedishPreferenceGate
+
+    sets = sanity_sets()
+    ckpts = {"v3": v3.V3_DIR}
+    for t in ("control", "control-s20261015", "europarl", "native", "both", "grammar", "adequacy"):
+        path = ROOT / "checkpoints" / f"v4-{t}"
+        if (path / "model.safetensors").exists():
+            ckpts[t] = path
+    out: dict[str, Any] = {
+        "data": "FLORES+ devtest, the pilot's 200 sentences; reference translation vs a "
+        "degraded alternative; English source in the prompt for `preference`",
+        "garbage_model": SANITY_GARBAGE_MODEL,
+        "n": {k: len(v) for k, v in sets.items()},
+        "checkpoints": {},
+    }
+    for name, path in ckpts.items():
+        gate = SwedishPreferenceGate(path)
+        res = {}
+        for sname, pairs in sets.items():
+            pr = [p["prompt"] for p in pairs]
+            ref, oth = [p["ref"] for p in pairs], [p["other"] for p in pairs]
+            res[f"{sname}/preference+source"] = summary(pair_wins(gate, QID, pr, ref, oth))
+            res[f"{sname}/naturalness"] = summary(
+                pair_wins(gate, NATURALNESS_QID, [""] * len(pairs), ref, oth)
+            )
+            if gate.has_grammar:
+                res[f"{sname}/grammatical"] = summary(
+                    X.versus(p_correct(gate, ref), p_correct(gate, oth))
+                )
+        out["checkpoints"][name] = res
+        print(name, {k: round(v["mean"], 3) for k, v in res.items()}, flush=True)
+        del gate
+    _set_v4("sanity", out)
 
 
 # ---------------------------------------------------------------------- compare
@@ -530,7 +813,7 @@ def main(argv=None) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("command", choices=["prepare", "run", "reference", "compare"])
+    parser.add_argument("command", choices=["prepare", "run", "reference", "compare", "sanity"])
     parser.add_argument("--arm", choices=sorted(ARMS), default="control")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--retrain", action="store_true")
@@ -551,6 +834,8 @@ def main(argv=None) -> None:
             },
         )
         run(args)
+    elif args.command == "sanity":
+        sanity(args)
     elif args.command == "reference":
         score_suite(v3.V3_DIR, "v3")  # the published v3 (2 epochs), scored on the same suite
     else:
