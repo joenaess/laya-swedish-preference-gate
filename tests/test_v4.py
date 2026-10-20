@@ -88,9 +88,10 @@ def test_paired_diff():
 
 
 def test_arms_and_sources_are_consistent():
-    assert set(v4.ARMS) == {"control", "europarl", "native", "both", "grammar", "adequacy"}
+    assert set(v4.ARMS) == {"control", "europarl", "native", "both", "grammar", "adequacy", "v41"}
     for sources in v4.ARMS.values():
-        assert all(s in v4.SOURCE_FILES or s in ("dalaj_grammar", "adequacy") for s in sources)
+        extra = ("dalaj_grammar", "adequacy", "registers", "hard_source")
+        assert all(s in v4.SOURCE_FILES or s in extra for s in sources)
     assert set(v4.ARMS["both"]) == set(v4.ARMS["europarl"]) | set(v4.ARMS["native"])
 
 
@@ -143,3 +144,38 @@ def test_shuffle_neighbours_keeps_words():
     text = "en två tre fyra fem sex sju åtta"
     out = v4.shuffle_neighbours(text, random.Random(1))
     assert sorted(out.split()) == sorted(text.split()) and out != text
+
+
+def test_corrupt_and_lower_no_punct():
+    rng = random.Random(0)
+    text = "Detta innebär att det är kommissionens tolkning."
+    bad = v4.corrupt(text, rng)
+    assert bad != text and abs(len(bad.split()) - len(text.split())) <= 1
+    assert v4.corrupt("Hej då", rng) == "Hej då"  # too short to corrupt
+    assert v4.lower_no_punct("Hej, Världen! Det är EU:s tur.") == "hej världen det är eu s tur"
+
+
+def test_first_sentences_caps_sentences_and_words():
+    text = "En. Två. Tre. Fyra."
+    assert v4.first_sentences(text, n=2) == "En. Två."
+    assert len(v4.first_sentences("ord " * 500).split()) == 120
+
+
+def test_session_neighbour_stays_in_the_same_sitting():
+    ids = ["ep-ep-00-01-17.2", "ep-ep-00-01-17.5", "ep-ep-00-01-17.9", "ep-ep-01-02-03.1"]
+    nb = v4.session_neighbour(ids)
+    assert nb["ep-ep-00-01-17.2"] == "ep-ep-00-01-17.5"
+    assert nb["ep-ep-00-01-17.9"] == "ep-ep-00-01-17.5"
+    assert "ep-ep-01-02-03.1" not in nb  # alone in its sitting
+
+
+def test_registers_data_pairs_correct_with_corrupted():
+    texts = {"src": ["Detta är en ganska lång och helt korrekt svensk mening."] * 5}
+    d = v4.registers_data(texts, random.Random(3))
+    assert len(d["naturalness"]) == 5 and len(d["single"]) == 10
+    for r in d["naturalness"]:
+        ref = r["candidate_a"] if r["label"] == 0 else r["candidate_b"]
+        assert ref.lower().replace(".", "").split() == (
+            ["detta", "är", "en", "ganska", "lång", "och", "helt", "korrekt", "svensk", "mening"]
+        )
+    assert {s["label"] for s in d["single"]} == {0, 1}

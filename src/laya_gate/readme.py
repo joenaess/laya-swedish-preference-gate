@@ -170,7 +170,7 @@ Earlier releases stay loadable: `revision="v2"` and `revision="v1"`."""
         if which == "v3"
         else """
 
-v4 adds a single-response grammar check (use it to compare two versions of a text; as a
+v4 and v4.1 add a single-response grammar check (use it to compare two versions of a text; as a
 stand-alone verdict it flags too much good Swedish) and judges translations with the English
 source in the prompt:
 
@@ -185,7 +185,8 @@ t = gate.predict_preference(
 s = gate.score_quality(prompt="Hur fungerar fotosyntesen?", response="Växter gör mat av solljus.")
 ```
 
-Earlier releases stay loadable: `revision="v3"`, `revision="v2"` and `revision="v1"`."""
+Earlier releases stay loadable: `revision="v4"`, `revision="v3"`, `revision="v2"` and
+`revision="v1"`."""
         if which == "v4"
         else f"""
 
@@ -193,7 +194,8 @@ Earlier releases stay loadable: `revision="v3"`, `revision="v2"` and `revision="
 gate_v1 = SwedishPreferenceGate("{repo}", revision="v1")  # the first release
 ```"""
     )
-    return f"""The Hub checkpoint is **{which}**, which also answers *which response is written in more
+    name = get(m, "publish.release") or which
+    return f"""The Hub checkpoint is **{name}**, which also answers *which response is written in more
 natural, idiomatic Swedish*:
 
 ```python
@@ -1213,8 +1215,10 @@ V4_ORDER = (
     ("native", "+DaLAJ/SweFAQ"),
     ("both", "+both"),
     ("grammar", "+both +grammar"),
-    ("adequacy", "**v4**: +grammar +adequacy"),
+    ("adequacy", "v4: +grammar +adequacy"),
+    ("v41", "**v4.1**: v4 +registers +hard sources"),
 )
+RELEASE_ARM, RELEASE_NAME = "v41", "v4.1"
 V4_GROUPS = (
     (
         "In-domain (DPO validation, fluent pairs, probe)",
@@ -1242,6 +1246,10 @@ V4_GROUPS = (
             "dalaj/grammatical",
             "gerlangmod/naturalness",
             "gerlangmod/grammatical",
+            "blimppi/naturalness",
+            "blimppi/grammatical",
+            "multiblimp/naturalness",
+            "multiblimp/grammatical",
             "scala/accuracy@0.5",
         ),
     ),
@@ -1336,6 +1344,15 @@ def v4_section(m: dict) -> str:
     P = m.get("pilot_euroeval") or {}
     item = get(P, "translation_item_level", {})
     gram = get(A, "adequacy.guards", {})
+    gram41 = get(A, f"{RELEASE_ARM}.guards", {})
+    BL = get(V, "baselines.sets", {})
+    bl_rows = "\n".join(
+        f"| {name} | {get(BL, f'{name}.n', NM)} | {pct(get(BL, f'{name}.longer_wins.mean'))} | "
+        f"{pct(get(BL, f'{name}.unigram_frequency.mean'))} | {pct(get(BL, f'{name}.trigram.mean'))} | "
+        f"{pct(val(RELEASE_ARM, f'{name}/naturalness'))} | {pct(val(RELEASE_ARM, f'{name}/grammatical'))} |"
+        for name in ("dalaj", "gerlangmod", "blimppi", "multiblimp")
+        if get(BL, name)
+    )
 
     def item_rho(name):
         return num(get(item, f"{name}/translation_vs_reference.spearman_with_chrf"), 2)
@@ -1433,7 +1450,54 @@ on single learner sentences). It is useful for comparing two versions of a text,
 verdict on one. On GerLangMod-sv (lowercased, no punctuation) v4's `grammatical` drops to
 {pct(val("adequacy", "gerlangmod/grammatical"))} from {pct(val("grammar", "gerlangmod/grammatical"))}
 with +grammar. In-domain accuracy, calibration and latency stay at the control level. Each arm was
-trained once."""
+trained once.
+
+#### v4.1: correct text from more registers, harder wrong-source negatives
+
+v4.1 adds two sources to v4 aimed at its two weak spots
+(`python -m laya_gate.v4 run --arm v41`), none from the UD treebanks behind ScaLA-sv,
+GerLangMod-sv, BLiMPPI and MultiBLiMP:
+
+- **Registers**: {get(D, "registers.pairs", 0):,} correct texts from four training-only sources
+  (SweFAQ train answers, DaLAJ's correct textbook sentences, the fluent training answers, unused
+  Europarl paragraphs), each against a corrupted copy (a word deleted or two neighbours swapped,
+  as in ScaLA), as `naturalness` pairs and `grammatical` single responses; a fifth lowercased
+  without punctuation.
+- **Hard wrong source**: {get(D, "hard_source.pairs", 0):,} pairs where the correct human or Kimi-k3
+  translation beats the translation of the *adjacent* paragraph of the same sitting.
+
+Against v4 on the same items: the `grammatical` question's ScaLA-sv MCC rises from
+{num((get(A, "adequacy.classifiers.scala_grammatical") or {}).get("mcc@0.5"))} to
+{num((get(A, f"{RELEASE_ARM}.classifiers.scala_grammatical") or {}).get("mcc@0.5"))}, GerLangMod-sv
+from {pct(val("adequacy", "gerlangmod/grammatical"))} to {pct(val(RELEASE_ARM, "gerlangmod/grammatical"))},
+and over-flagging of good Swedish falls (fluent LLM answers
+{pct(get(gram, "fluent_responses_flagged_incorrect.mean"))} →
+{pct(get(gram41, "fluent_responses_flagged_incorrect.mean"))}, FLORES+ references
+{pct(get(gram, "flores_reference_flagged_incorrect.mean"))} →
+{pct(get(gram41, "flores_reference_flagged_incorrect.mean"))}, WMT24++ references
+{pct(get(gram, "wmt24pp_reference_flagged_incorrect.mean"))} →
+{pct(get(gram41, "wmt24pp_reference_flagged_incorrect.mean"))}), though it is still far from a
+reliable stand-alone verdict. The wrong-source sanity test goes from
+{pct(sane("adequacy", "wrong_source/preference+source"))} to
+{pct(sane(RELEASE_ARM, "wrong_source/preference+source"))} (v3:
+{pct(sane("v3", "wrong_source/preference+source"))}). The cost is 1-3 points on several tests
+(FLORES+, DaLAJ, SweFAQ `quality`), within the seed noise. v4.1 is the release.
+
+**Minimal pairs need n-gram baselines** (BLiMPPI's lesson, arXiv:2610.13607). Share of pairs where
+the grammatical side wins, for model-free baselines and v4.1: the longer side, the more frequent
+words (Europarl-SV statistics), a word trigram model trained on
+{get(V, "baselines.trigram", "Europarl-SV").removeprefix("stupid backoff over ")}
+(`python -m laya_gate.ngram build`, `python -m laya_gate.v4 baselines`):
+
+| Set | Pairs | Longer wins | Unigram frequency | Trigram | v4.1 `naturalness` | v4.1 `grammatical` |
+|---|---|---|---|---|---|---|
+{bl_rows}
+
+BLiMPPI (polarity items: the licenser is removed) and MultiBLiMP (subject-verb number agreement;
+the wrong side uses a plural verb form, archaic in modern Swedish) are new held-out tests here.
+Both are nearly solved by length or the trigram model: in BLiMPPI the grammatical sentence is
+the longer one in nearly every pair, in MultiBLiMP the shorter. The gate's lead over the trigram
+is clearest on DaLAJ and GerLangMod-sv."""
 
 
 def pilot_section(m: dict) -> str:
@@ -1443,12 +1507,13 @@ def pilot_section(m: dict) -> str:
     R = get(P, "spearman.euroeval_rank (negated)", {})
     PS = P.get("partial_spearman_rank_given_size", {})
     feats = (
+        ("v4-v41/answer_quality", "v4.1 `quality` of the model's answers"),
         ("v4-adequacy/answer_quality", "v4 `quality` of the model's answers"),
         ("v3/answer_quality", "v3 `quality` of the model's answers"),
-        ("v4-adequacy/translation_vs_reference", "v4 P(model translation beats the reference)"),
+        ("v4-v41/translation_vs_reference", "v4.1 P(model translation beats the reference)"),
         ("v4-grammar/translation_vs_reference", "same, +grammar arm (before the adequacy fix)"),
-        ("v4-adequacy/answer_natural", "v4 `natural_swedish` of the answers"),
-        ("v4-adequacy/answer_grammatical", "v4 `grammatical` of the answers"),
+        ("v4-v41/answer_natural", "v4.1 `natural_swedish` of the answers"),
+        ("v4-v41/answer_grammatical", "v4.1 `grammatical` of the answers"),
         ("chrf", "chrF against the FLORES+ reference (no gate)"),
         ("log_parameters", "log parameter count (no gate)"),
         ("swedish_answers", "share of answers in Swedish (no gate)"),
@@ -1468,14 +1533,21 @@ def pilot_section(m: dict) -> str:
             )
     tasks = []
     for t in ("Linguistic acceptability", "Summarization", "Reading comprehension", "Knowledge"):
-        c = get(P, f"spearman.{t}.v4-adequacy/answer_quality")
+        c = get(P, f"spearman.{t}.v4-v41/answer_quality")
         if c:
             tasks.append(f"{t.lower()} {num(c['rho'], 2)}")
     models = sorted(P["models"], key=lambda r: r["leaderboard"]["rank"])
     n = len(models)
     best, worst = models[0], models[-1]
+    n4 = get(P, "n_models_by_precision.4-bit NF4", 0)
+    bf = get(P, "spearman_rank_bf16_only.v4-v41/answer_quality", {})
+    pmax = max((r["leaderboard"].get("parameters") or 0) for r in models) / 1e9
+    failed = sorted(
+        k for k, v in (P.get("generation") or {}).items() if str(v).startswith("failed")
+    )
     return f"""Can the gate act as a quick predictor of EuroEval's Swedish results? A pilot
-(`python -m laya_gate.pilot`): {n} small open LLMs that have Swedish results on the
+(`python -m laya_gate.pilot`): {n} open LLMs (up to {pmax:.0f}B parameters; {n4} loaded in 4-bit NF4
+to fit a 12 GB GPU) that have Swedish results on the
 [EuroEval leaderboard](https://euroeval.com) (overall Swedish rank {num(best["leaderboard"]["rank"], 2)}
 for `{best["model"]}` to {num(worst["leaderboard"]["rank"], 2)} for `{worst["model"]}`; lower is
 better) each translate the same {get(P, "design.translation_items", NM)} FLORES+ devtest sentences
@@ -1492,9 +1564,14 @@ count).
 **The single-response `quality` score of a model's Swedish answers tracks the leaderboard, and
 not only through model size.** No reference answers are needed. It correlates with the task scores too ({", ".join(tasks)}). The
 translation score only becomes predictive once the Europarl shortcut is removed (the +grammar
-arm's score is uncorrelated with rank). With {n} models from one size band (up to about 4B
-parameters) the intervals are wide; a pilot, not a calibrated predictor. The models' outputs are
-not redistributed (their licenses differ); the scores are in `metrics.json`."""
+arm's score correlates negatively with rank). v4.1's `quality` correlation is slightly lower than
+v4's and v3's, well within the intervals. EuroEval ran full precision; on the {n - n4} models run in
+bf16 alone the v4.1 `quality` correlation is {num(bf.get("rho"), 2)}, so the 4-bit models do not drive
+it. {len(failed)} further models are missing: they ran out of GPU memory next to another process
+on the shared GPU, except `google/gemma-3n-E4B-it`, which needs Pillow for its vision tower
+({", ".join(f"`{x}`" for x in failed)}). With {n} models the intervals are still wide; a pilot,
+not a calibrated predictor. The models' outputs are not redistributed (their licenses differ); the
+scores are in `metrics.json`."""
 
 
 def mt_section(m: dict) -> str:
@@ -1798,20 +1875,20 @@ def limitations(m: dict) -> str:
             f"{pct(get(m, 'external_eval.judge.sets.dalaj.grammar.accuracy'))} and "
             f"{pct(get(m, 'external_eval.judge.sets.swefaq.preference.accuracy'))}."
         )
-    if get(m, "v4.arms.adequacy.tests"):
+    if get(m, f"v4.arms.{RELEASE_ARM}.tests"):
         items.append(
-            "**v4's `grammatical` question over-flags.** At threshold 0.5 it marks "
-            f"{pct(get(m, 'v4.arms.adequacy.guards.fluent_responses_flagged_incorrect.mean'))} of "
+            f"**{RELEASE_NAME}'s `grammatical` question over-flags.** At threshold 0.5 it marks "
+            f"{pct(get(m, f'v4.arms.{RELEASE_ARM}.guards.fluent_responses_flagged_incorrect.mean'))} of "
             "fluent LLM answers and "
-            f"{pct(get(m, 'v4.arms.adequacy.guards.wmt24pp_reference_flagged_incorrect.mean'))} of "
+            f"{pct(get(m, f'v4.arms.{RELEASE_ARM}.guards.wmt24pp_reference_flagged_incorrect.mean'))} of "
             "WMT24++ references as incorrect; use it to compare two versions of a text, not as "
             "a verdict on one."
         )
         items.append(
             "**Translation preference is source-sensitive only after the adequacy fix.** "
             "Europarl human-vs-MT pairs alone teach 'the less literal side wins' (see the v4 "
-            "sanity tests); v4 still picks a fluent translation of the wrong sentence in "
-            f"{pct(1 - (get(m, 'v4.sanity.checkpoints.adequacy.wrong_source/preference+source.mean') or 0))} "
+            f"sanity tests); {RELEASE_NAME} still picks a fluent translation of the wrong sentence in "
+            f"{pct(1 - (get(m, f'v4.sanity.checkpoints.{RELEASE_ARM}.wrong_source/preference+source.mean') or 0))} "
             "of FLORES+ pairs."
         )
     cpu = get(m, "cpu_inference.variants.torch-fp32.latency_ms.p50")
@@ -1909,21 +1986,21 @@ def conclusion(m: dict) -> str:
 
 def v4_summary(m: dict) -> str | None:
     A = get(m, "v4.arms", {})
-    if not get(A, "adequacy.tests"):
+    if not get(A, f"{RELEASE_ARM}.tests"):
         return None
 
     def v(arm, t):
         return get(A, f"{arm}.tests.{t}.mean")
 
-    q = get(m, "pilot_euroeval.spearman.euroeval_rank (negated).v4-adequacy/answer_quality", {})
-    qp = get(m, "pilot_euroeval.partial_spearman_rank_given_size.v4-adequacy/answer_quality", {})
+    q = get(m, "pilot_euroeval.spearman.euroeval_rank (negated).v4-v41/answer_quality", {})
+    qp = get(m, "pilot_euroeval.partial_spearman_rank_given_size.v4-v41/answer_quality", {})
     return (
-        "**v4** closes the two gaps the external benchmarks exposed: grammar (DaLAJ "
-        f"{pct(v('v3', 'dalaj/naturalness'))} → {pct(v('adequacy', 'dalaj/naturalness'))}, "
-        f"ScaLA-sv MCC {num(_scala_mcc(A, 'v3'))} → {num(_scala_mcc(A, 'adequacy'))}) and "
+        f"**{RELEASE_NAME}** closes the two gaps the external benchmarks exposed: grammar (DaLAJ "
+        f"{pct(v('v3', 'dalaj/naturalness'))} → {pct(v(RELEASE_ARM, 'dalaj/naturalness'))}, "
+        f"ScaLA-sv MCC {num(_scala_mcc(A, 'v3'))} → {num(_scala_mcc(A, RELEASE_ARM))}) and "
         f"relevance (SweFAQ {pct(v('v3', 'swefaq/preference'))} → "
-        f"{pct(v('adequacy', 'swefaq/preference'))}), and judges translations better (FLORES+ "
-        f"{pct(v('v3', 'flores/preference+source'))} → {pct(v('adequacy', 'flores/preference+source'))}), "
+        f"{pct(v(RELEASE_ARM, 'swefaq/preference'))}), and judges translations better (FLORES+ "
+        f"{pct(v('v3', 'flores/preference+source'))} → {pct(v(RELEASE_ARM, 'flores/preference+source'))}), "
         "with in-domain accuracy, calibration and latency about the same as v3's. Getting there "
         "exposed a trap worth knowing: human-vs-MT pairs alone teach a gate to reward whatever "
         "is least like the source; source-dependent negatives fixed it. Its `grammatical` "

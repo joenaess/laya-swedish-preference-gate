@@ -37,7 +37,7 @@ UPLOAD_DIRS = ("encoder", "tokenizer")
 V2_CHECKPOINT_DIR = CHECKPOINT_DIR.parent / "v2"
 V3_CHECKPOINT_DIR = CHECKPOINT_DIR.parent / "v3"
 V3_ONNX_FILES = ("onnx/model.int8.onnx",)
-V4_CHECKPOINT_DIR = CHECKPOINT_DIR.parent / "v4-adequacy"
+V4_CHECKPOINT_DIR = CHECKPOINT_DIR.parent / f"v4-{readme.RELEASE_ARM}"
 V4_DATA_REPO = "jonasaise/laya-swedish-gate-v4-data"
 
 
@@ -51,7 +51,7 @@ def blockers(m: dict, which: str = "v1") -> list[str]:
     if not (isinstance(tests, dict) and tests.get("all_passed")):
         out.append("not all tests passed (or tests were not run)")
     if which == "v4":
-        sanity = readme.get(m, "v4.sanity.checkpoints.adequacy", {})
+        sanity = readme.get(m, f"v4.sanity.checkpoints.{readme.RELEASE_ARM}", {})
         for test in ("garbage_mt", "first_half_only", "untranslated"):
             v = readme.get(sanity, f"{test}/preference+source.mean")
             if not (isinstance(v, float) and v >= 0.9):
@@ -61,7 +61,10 @@ def blockers(m: dict, which: str = "v1") -> list[str]:
             out.append("license of the fluent-pair source data not recorded as permissive")
         for src in ("original", "fluent"):
             ece = (
-                readme.get(m, f"v4.arms.adequacy.standard_eval.{src}/preference.ece_both_orders")
+                readme.get(
+                    m,
+                    f"v4.arms.{readme.RELEASE_ARM}.standard_eval.{src}/preference.ece_both_orders",
+                )
                 if which == "v4"
                 else readme.get(m, f"{which}_eval.{src}/preference.ece_both_orders")
             )
@@ -959,7 +962,8 @@ def model_card_v4(m: dict, repo_id: str) -> str:
     S = g(m, "v4.sanity.checkpoints", {})
     P = g(m, "pilot_euroeval", {})
     lic = g(m, "data.licenses", {})
-    v4 = g(A, "adequacy", {})
+    R, NAME = readme.RELEASE_ARM, readme.RELEASE_NAME
+    v4 = g(A, R, {})
 
     def t(arm, test):
         return g(A, f"{arm}.tests.{test}.mean")
@@ -974,23 +978,27 @@ def model_card_v4(m: dict, repo_id: str) -> str:
         ("DaLAJ corrected vs learner, `naturalness`", "dalaj/naturalness"),
         ("GerLangMod-sv original vs verb misplaced, `naturalness`", "gerlangmod/naturalness"),
         ("SweFAQ own answer vs other, `preference`", "swefaq/preference"),
+        ("BLiMPPI-sv polarity items, `naturalness`", "blimppi/naturalness"),
+        ("MultiBLiMP-sv agreement, `naturalness`", "multiblimp/naturalness"),
     ]
     table = "\n".join(
-        f"| {label} | {pct(t('v3', k))} | **{pct(t('adequacy', k))}** |" for label, k in rows
+        f"| {label} | {pct(t('v3', k))} | {pct(t('adequacy', k))} | **{pct(t(R, k))}** |"
+        for label, k in rows
     )
     mcc_v3 = readme._scala_mcc(A, "v3")
-    mcc_v4 = readme._scala_mcc(A, "adequacy")
+    mcc_v4 = readme._scala_mcc(A, R)
+    mcc_v40 = readme._scala_mcc(A, "adequacy")
     sanity = "\n".join(
         f"| {label} | {pct(g(S, f'v3.{k}.mean'))} | {pct(g(S, f'grammar.{k}.mean'))} | "
-        f"**{pct(g(S, f'adequacy.{k}.mean'))}** |"
+        f"{pct(g(S, f'adequacy.{k}.mean'))} | **{pct(g(S, f'{R}.{k}.mean'))}** |"
         for k, label in readme.SANITY_ROWS
     )
-    q = g(P, "spearman.euroeval_rank (negated).v4-adequacy/answer_quality", {})
-    qp = g(P, "partial_spearman_rank_given_size.v4-adequacy/answer_quality", {})
+    q = g(P, "spearman.euroeval_rank (negated).v4-v41/answer_quality", {})
+    qp = g(P, "partial_spearman_rank_given_size.v4-v41/answer_quality", {})
     temps = ", ".join(
         f"{k} T = {num(f.get('temperature'))}" for k, f in v4.get("calibration", {}).items()
     )
-    probe_v4 = t("adequacy", "probe/preference")
+    probe_v4 = t(R, "probe/preference")
     header = f"""---
 language: [sv]
 license: apache-2.0
@@ -1016,7 +1024,7 @@ model-index:
 ---
 """
     return f"""{header}
-# Laya Swedish Preference Gate (v4)
+# Laya Swedish Preference Gate ({NAME})
 
 **A ~{num(g(v4, "standard_eval.latency_gpu_forward_ms.p50"), 0)} ms judge for Swedish text.** One
 forward pass of a fine-tuned [Laya](https://github.com/NandhaKishorM/laya) decision model
@@ -1031,14 +1039,14 @@ LLM judge.
 | `natural_swedish` | one response | P(natural Swedish vs translationese) |
 | `grammatical` (new) | one text | P(grammatically correct); compare two texts, see limitations |
 
-> **Earlier releases:** `revision="v3"`, `revision="v2"`, `revision="v1"`.
+> **Earlier releases:** `revision="v4"`, `revision="v3"`, `revision="v2"`, `revision="v1"`.
 
 Code, the full ablation and every number below: [github.com/{GITHUB_REPO}](https://github.com/{GITHUB_REPO}).
 Training and evaluation pairs: [`{V4_DATA_REPO}`](https://huggingface.co/datasets/{V4_DATA_REPO}).
 
 ## What changed from v3
 
-v4 adds three kinds of training data, chosen in a controlled ablation (same recipe, seed and
+v4 and {NAME} add training data chosen in a controlled ablation (same recipe, seed and
 hyperparameters; only the data differs; all tests held out):
 
 - **DaLAJ-GED** (Superlim 2): learner sentences vs the same sentence corrected, for
@@ -1048,11 +1056,14 @@ hyperparameters; only the data differs; all tests held out):
 - **Europarl** (Språkbanken): professional Swedish translations vs Kimi-k3 machine
   translations of English speeches, plus *adequacy negatives* (another paragraph's
   translation, a half translation, a word-shuffled translation, the untranslated English).
+- **{NAME} only:** correct text from four registers against corrupted copies (a word deleted or
+  two neighbours swapped), and wrong-source negatives from the adjacent paragraph of the same
+  debate, to reduce `grammatical` over-flagging and fluent-but-wrong translations winning.
 
-| Held-out test (share where the reference wins) | v3 | v4 |
-|---|---|---|
+| Held-out test (share where the reference wins) | v3 | v4 | {NAME} |
+|---|---|---|---|
 {table}
-| ScaLA-sv MCC (EuroEval's metric), single-response | {num(mcc_v3)} | **{num(mcc_v4)}** |
+| ScaLA-sv MCC (EuroEval's metric), single-response | {num(mcc_v3)} | {num(mcc_v40)} | **{num(mcc_v4)}** |
 
 Calibration: {temps}. ECE on the DPO validation pairs
 {num(g(v4, "standard_eval.original/preference.ece_both_orders"), 4)}.
@@ -1062,21 +1073,22 @@ the source wins": the intermediate arms preferred a fluent translation of the wr
 translations and nonsense. The adequacy negatives fix it (FLORES+ devtest, English source in the
 prompt, share where the reference wins):
 
-| The reference against … | v3 | without adequacy negatives | **v4** |
-|---|---|---|---|
+| The reference against … | v3 | without adequacy negatives | v4 | **{NAME}** |
+|---|---|---|---|---|
 {sanity}
 
-On 4,400 translations by 22 small LLMs, v4's translation score agrees with chrF at Spearman
-{num(g(P, "translation_item_level.v4-adequacy/translation_vs_reference.spearman_with_chrf"), 2)}
+On {200 * len(g(P, "models", []))} translations by {len(g(P, "models", []))} LLMs, {NAME}'s translation score agrees with chrF at Spearman
+{num(g(P, "translation_item_level.v4-v41/translation_vs_reference.spearman_with_chrf"), 2)}
 per translation (v3: {num(g(P, "translation_item_level.v3/translation_vs_reference.spearman_with_chrf"), 2)}).
 
 ## Pilot: a quick proxy for EuroEval Swedish
 
-Scoring 100 Swedish answers per model with `quality` and averaging, over 22 small open LLMs with
+Scoring 100 Swedish answers per model with `quality` and averaging, over {len(g(P, "models", []))} open LLMs with
 Swedish results on the [EuroEval leaderboard](https://euroeval.com): Spearman with the Swedish
 rank {num(q.get("rho"), 2)} [{num(g(q, "ci95.0"), 2)}, {num(g(q, "ci95.1"), 2)}],
 {num(qp.get("rho"), 2)} [{num(g(qp, "ci95.0"), 2)}, {num(g(qp, "ci95.1"), 2)}] after controlling for
-model size. A pilot on models up to about 4B parameters, not a calibrated predictor.
+model size. A pilot (models up to 11B parameters, 6 of them in 4-bit), not a calibrated
+predictor.
 
 ## Quickstart
 
@@ -1115,9 +1127,10 @@ a, b = (gate.score_grammar(x)["p_correct"] for x in ("Hon har bott här.", "Hon 
   {pct(g(v4, "guards.wmt24pp_reference_flagged_incorrect.mean"))} of WMT24++ references as
   incorrect (it was trained on single learner sentences). Compare two versions of a text instead.
   On lowercased text without punctuation (GerLangMod-sv) it is at chance
-  ({pct(t("adequacy", "gerlangmod/grammatical"))}).
+  ({pct(t(R, "gerlangmod/grammatical"))}); v4 was at
+  {pct(t("adequacy", "gerlangmod/grammatical"))}.
 - **Wrong-content translations still win sometimes:** v4 prefers a fluent translation of a
-  different sentence in {pct(1 - (g(S, "adequacy.wrong_source/preference+source.mean") or 0))} of
+  different sentence in {pct(1 - (g(S, f"{R}.wrong_source/preference+source.mean") or 0))} of
   FLORES+ pairs (v3: {pct(1 - (g(S, "v3.wrong_source/preference+source.mean") or 0))}).
 - **Pairwise preference, not fact-checking;** 1,024-token window; one seed per training arm.
 - **Kimi-k3 is not a neutral reference for its own output:** on WMT24++ it prefers the human
@@ -1140,7 +1153,9 @@ Training data:
 - Machine translations by `Helsinki-NLP/opus-mt-en-sv` (evaluation only) and Kimi-k3.
 
 Evaluation only: liu-nlp/translationese-opensubtitles (Apache-2.0), FLORES+, WMT24++
-(Apache-2.0), ScaLA-sv (`mteb/scala_sv_classification`), GerLangMod (Apache-2.0).
+(Apache-2.0), ScaLA-sv (`mteb/scala_sv_classification`), GerLangMod (Apache-2.0), BLiMPPI
+(arXiv:2610.13607; Swedish subset from UD SweLL/Talbanken CC BY-SA 4.0 and LinES CC BY-NC-SA
+4.0), MultiBLiMP (`jumelet/multiblimp`, CC BY 4.0).
 
 ```bibtex
 @software{{laya_swedish_preference_gate,
@@ -1270,6 +1285,7 @@ def main(argv=None) -> None:
         "visibility": "private" if info.private else "public",
         "commit": getattr(commit, "oid", None),
         "checkpoint": which,
+        "release": readme.RELEASE_NAME if which == "v4" else which,
         "previous_revision_tag": tagged,
         "files": sorted([*files, *UPLOAD_DIRS, "results/metrics.json", "README.md"]),
     }

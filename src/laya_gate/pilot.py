@@ -67,6 +67,26 @@ MODELS = (
     "mii-llm/nesso-4B",
     "tencent/Hunyuan-4B-Instruct",
 )
+# second round: stronger models; those above ~5B parameters load in 4-bit NF4 (12 GB GPU)
+MODELS_2 = (
+    "Qwen/Qwen3.5-4B",
+    "google/gemma-4-E2B-it",
+)
+MODELS_4BIT = (
+    "google/gemma-4-E4B-it",
+    "google/gemma-3n-E4B-it",
+    "deepcogito/cogito-v1-preview-llama-8B",
+    "allenai/Llama-3.1-Tulu-3-8B-SFT",
+    "allenai/Olmo-3-7B-Instruct",
+    "BSC-LT/salamandra-7b-instruct",
+    "tencent/Hunyuan-7B-Instruct",
+    "Unbabel/Tower-Plus-9B",
+    "Qwen/Qwen3.5-9B",
+    "speakleash/Bielik-11B-v2.3-Instruct",
+    "google/gemma-3-12b-it",
+    "NbAiLab/borealis-12b-instruct-preview",
+)
+ALL_MODELS = MODELS + MODELS_2 + MODELS_4BIT
 N_TRANSLATE, N_PROMPTS = 200, 100
 TRANSLATE_INSTRUCTION = (
     "Översätt följande text från engelska till svenska. Svara endast med översättningen.\n\n"
@@ -171,7 +191,9 @@ def _chat(tok, user: str) -> str:
     return user + "\n"
 
 
-def generate_model(model_id: str, items: list[dict], max_new: dict[str, int], bs: int = 16):
+def generate_model(
+    model_id: str, items: list[dict], max_new: dict[str, int], bs: int = 16, four_bit: bool = False
+):
     import torch
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -179,13 +201,24 @@ def generate_model(model_id: str, items: list[dict], max_new: dict[str, int], bs
     tok.padding_side = "left"
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
-    model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16)
-    model = model.to("cuda").eval()
+    if four_bit:  # needs the `pilot` extra (bitsandbytes, accelerate)
+        from transformers import BitsAndBytesConfig
+
+        quant = BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_quant_type="nf4", bnb_4bit_compute_dtype=torch.bfloat16
+        )
+        model = AutoModelForCausalLM.from_pretrained(
+            model_id, quantization_config=quant, device_map="cuda", dtype=torch.bfloat16
+        ).eval()
+    else:
+        model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.bfloat16)
+        model = model.to("cuda").eval()
     out = []
     for kind in ("translate", "answer"):
         sel = [it for it in items if it["kind"] == kind]
         sel_sorted = sorted(sel, key=lambda it: len(it["user"]))
-        for s in range(0, len(sel_sorted), bs):
+        s = 0
+        while s < len(sel_sorted):
             chunk = sel_sorted[s : s + bs]
             enc = tok(
                 [_chat(tok, it["user"]) for it in chunk],
@@ -193,19 +226,44 @@ def generate_model(model_id: str, items: list[dict], max_new: dict[str, int], bs
                 padding=True,
                 add_special_tokens=False,
             ).to("cuda")
-            with torch.inference_mode():
-                gen = model.generate(
-                    **enc,
-                    max_new_tokens=max_new[kind],
-                    do_sample=False,
-                    pad_token_id=tok.pad_token_id,
-                )
+            try:
+                with torch.inference_mode():
+                    gen = model.generate(
+                        **enc,
+                        max_new_tokens=max_new[kind],
+                        do_sample=False,
+                        pad_token_id=tok.pad_token_id,
+                    )
+            except torch.OutOfMemoryError:
+                if bs == 1:
+                    raise
+                del enc
+                torch.cuda.empty_cache()
+                bs //= 2  # greedy decoding: the batch size does not change the output text
+                print(f"  out of memory; batch size -> {bs}", flush=True)
+                continue
             texts = tok.batch_decode(gen[:, enc["input_ids"].shape[1] :], skip_special_tokens=True)
             for it, t in zip(chunk, texts, strict=True):
                 out.append({**it, "output": clean_output(t)})
+            s += len(chunk)
     del model
     torch.cuda.empty_cache()
     return out
+
+
+def delete_from_cache(model_id: str) -> int:
+    """Remove a pilot model's weights from the Hugging Face cache; returns bytes freed."""
+    from huggingface_hub import scan_cache_dir
+
+    info = scan_cache_dir()
+    revs = [
+        r.commit_hash for repo in info.repos if repo.repo_id == model_id for r in repo.revisions
+    ]
+    if not revs:
+        return 0
+    strategy = info.delete_revisions(*revs)
+    strategy.execute()
+    return strategy.expected_freed_size
 
 
 def _free_gpu() -> None:
@@ -235,15 +293,16 @@ def generate(args) -> None:
     ]
     status_path = PILOT_DIR / "generate_status.json"
     status = json.loads(status_path.read_text()) if status_path.exists() else {}
-    for model_id in args.models or MODELS:
+    for model_id in args.models or ALL_MODELS:
         path = PILOT_DIR / "outputs" / f"{model_id.replace('/', '__')}.jsonl"
         if path.exists():
             status.setdefault(model_id, "cached")
             continue
         t = time.perf_counter()
         try:
+            four_bit = model_id in MODELS_4BIT or args.four_bit_all
             rows = generate_model(
-                model_id, items, {"translate": 256, "answer": 384}, args.batch_size
+                model_id, items, {"translate": 256, "answer": 384}, args.batch_size, four_bit
             )
         except Exception as exc:  # noqa: BLE001 - one model failing must not stop the pilot
             status[model_id] = f"failed: {type(exc).__name__}: {str(exc)[:200]}"
@@ -251,7 +310,10 @@ def generate(args) -> None:
             print(model_id, status[model_id], flush=True)
             continue
         write_jsonl(path, rows)
-        status[model_id] = f"{time.perf_counter() - t:.0f}s"
+        status[model_id] = f"{time.perf_counter() - t:.0f}s" + (" (4-bit)" if four_bit else "")
+        if args.delete_after:
+            freed = delete_from_cache(model_id)
+            print(f"  deleted {model_id} from the HF cache ({freed / 2**30:.1f} GiB)", flush=True)
         print(model_id, status[model_id], flush=True)
     status_path.write_text(json.dumps(status, indent=2) + "\n")
 
@@ -305,7 +367,7 @@ def gate_checkpoints() -> dict[str, Path]:
     from .v3 import V3_DIR
 
     out = {"v3": V3_DIR}
-    for arm in ("both", "grammar", "adequacy"):
+    for arm in ("both", "grammar", "adequacy", "v41"):
         path = ROOT / "checkpoints" / f"v4-{arm}"
         if (path / "model.safetensors").exists():
             out[f"v4-{arm}"] = path
@@ -405,6 +467,7 @@ def partial_spearman_ci(x, y, z, n_boot: int = 2000, seed: int = SEED) -> dict[s
 def analyze(args) -> None:
     board = load_leaderboard()
     per_item = json.loads((PILOT_DIR / "scores.json").read_text())
+    gen_status = json.loads((PILOT_DIR / "generate_status.json").read_text())
     models, rows = [], []
     for m, d in per_item.items():
         lb = leaderboard_row(board, m)
@@ -413,7 +476,14 @@ def analyze(args) -> None:
         feats = {k: float(np.mean(v)) for k, v in d.items()}
         feats["log_parameters"] = math.log10(lb["parameters"]) if lb.get("parameters") else math.nan
         models.append(m)
-        rows.append({"model": m, "leaderboard": lb, "features": feats})
+        rows.append(
+            {
+                "model": m,
+                "leaderboard": lb,
+                "features": feats,
+                "precision": "4-bit NF4" if "(4-bit)" in str(gen_status.get(m, "")) else "bf16",
+            }
+        )
     targets = {"euroeval_rank (negated)": [-r["leaderboard"]["rank"] for r in rows]}
     for t in ("Linguistic acceptability", "Summarization", "Reading comprehension", "Knowledge"):
         targets[t] = [r["leaderboard"].get(t) for r in rows]
@@ -435,6 +505,14 @@ def analyze(args) -> None:
         )
         for f in feature_names
         if f != "log_parameters"
+    }
+    bf16 = [r for r in rows if r["precision"] == "bf16"]
+    bf16_corr = {
+        f: spearman_ci(
+            [r["features"].get(f, math.nan) for r in bf16],
+            [-r["leaderboard"]["rank"] for r in bf16],
+        )
+        for f in feature_names
     }
     # independent adequacy check: per translation, does the gate agree with chrF?
     from scipy.stats import spearmanr
@@ -467,6 +545,8 @@ def analyze(args) -> None:
         "spearman": corr,
         "translation_item_level": item_level,
         "partial_spearman_rank_given_size": partial,
+        "spearman_rank_bf16_only": bf16_corr,
+        "n_models_by_precision": dict(Counter(r["precision"] for r in rows)),
     }
     update_metrics("pilot_euroeval", out)
     print(json.dumps(item_level, indent=2))
@@ -483,6 +563,12 @@ def main(argv=None) -> None:
     parser.add_argument("command", choices=["generate", "score", "analyze"])
     parser.add_argument("--models", nargs="*")
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument(
+        "--four-bit-all", action="store_true", help="load every model in 4-bit (low GPU memory)"
+    )
+    parser.add_argument(
+        "--delete-after", action="store_true", help="remove each model from the HF cache after use"
+    )
     args = parser.parse_args(argv)
     {"generate": generate, "score": score, "analyze": analyze}[args.command](args)
 

@@ -73,7 +73,10 @@ ARMS = {
     "both": ("europarl", "dalaj", "swefaq"),
     "grammar": ("europarl", "dalaj", "swefaq", "dalaj_grammar"),
     "adequacy": ("europarl", "dalaj", "swefaq", "dalaj_grammar", "adequacy"),
+    "v41": ("europarl", "dalaj", "swefaq", "dalaj_grammar", "adequacy", "registers", "hard_source"),
 }
+REGISTER_PER_SOURCE = 1000
+HARD_SOURCE_PAIRS = 1500
 ADEQUACY_PER_TYPE = 3000
 EP_TRAIN = 12000  # Europarl pairs after filtering
 EP_POOL = 18000  # paragraphs translated, before filtering
@@ -309,6 +312,156 @@ def adequacy_data(pool, used: set[str], rng: random.Random) -> dict[str, list[di
     return {"preference": pref, "naturalness": nat, "single": single}
 
 
+_PUNCT_RE = __import__("re").compile(r"[^\w\s-]")
+
+
+def lower_no_punct(text: str) -> str:
+    return " ".join(_PUNCT_RE.sub(" ", text.lower()).split())
+
+
+def corrupt(text: str, rng: random.Random) -> str:
+    """ScaLA-style corruption: delete one word or swap two neighbouring words."""
+    words = text.split()
+    if len(words) < 4:
+        return text
+    i = rng.randrange(1, len(words) - 1)
+    if rng.random() < 0.5:
+        out = words[:i] + words[i + 1 :]
+    else:
+        out = words[: i - 1] + [words[i], words[i - 1]] + words[i + 1 :]
+    return " ".join(out)
+
+
+def first_sentences(text: str, n: int = 3, max_words: int = 120) -> str:
+    import re
+
+    parts = re.split(r"(?<=[.!?])\s+", " ".join(text.split()))
+    return " ".join(" ".join(parts[:n]).split()[:max_words])
+
+
+def register_texts(rng: random.Random) -> dict[str, list[str]]:
+    """Correct Swedish from training-only sources in four registers (no UD treebank, so
+    ScaLA-sv, GerLangMod-sv, BLiMPPI and MultiBLiMP stay unseen)."""
+    from datasets import load_dataset
+
+    faq = load_dataset(X.SUPERLIM, "swefaq", split="train")
+    answers = sorted({a for r in faq for a in r["candidate_answers"]})
+    dalaj = load_dataset(X.SUPERLIM, "dalaj-ged-superlim", split="train")
+    textbook = sorted(
+        r["sentence"]
+        for r in dalaj
+        if str(r["label"]) == "0" and r["meta"]["data_source"].startswith("COCTAILL")
+    )
+    from .fluent import FLUENT_DIR
+
+    fluent = sorted(
+        {
+            r[k]
+            for r in read_jsonl(FLUENT_DIR / "train.jsonl")
+            for k in ("candidate_a", "candidate_b")
+        }
+    )
+    pool = read_jsonl(V4_DIR / "europarl_pool.jsonl")
+    used = {r["id"] for r in read_jsonl(V4_DIR / "europarl_preference.jsonl")}
+    used |= {r["id"].rsplit("-", 1)[0] for r in read_jsonl(V4_DIR / "adequacy_naturalness.jsonl")}
+    europarl = sorted(" ".join(r["sv"]) for r in pool if r["id"] not in used)
+    out = {}
+    for name, texts in (
+        ("swefaq_answers", answers),
+        ("textbook_sentences", textbook),
+        ("fluent_answers", fluent),
+        ("europarl", europarl),
+    ):
+        texts = [first_sentences(t) for t in texts if len(t.split()) >= 6]
+        out[name] = rng.sample(texts, min(REGISTER_PER_SOURCE, len(texts)))
+    return out
+
+
+def registers_data(texts: dict[str, list[str]], rng: random.Random) -> dict[str, list[dict]]:
+    """Correct text vs a corrupted copy: `naturalness` pairs (no prompt) and single-response
+    `grammatical` rows for both sides; a fifth is lowercased without punctuation."""
+    pairs, single = [], []
+    for source, items in texts.items():
+        for i, text in enumerate(items):
+            bad = corrupt(text, rng)
+            if X._norm(bad) == X._norm(text):
+                continue
+            if rng.random() < 0.2:
+                text, bad = lower_no_punct(text), lower_no_punct(bad)
+            rid = f"reg-{source}-{i}"
+            pairs.append(as_pair(rid, "", text, bad, rng))
+            for resp, ok in ((text, True), (bad, False)):
+                single.append(
+                    {
+                        "source": "registers",
+                        "qid": GRAMMAR_QID,
+                        "id": rid,
+                        "prompt": "",
+                        "response": resp,
+                        "target": [1.0, 0.0] if ok else [0.0, 1.0],
+                        "label": 0 if ok else 1,
+                    }
+                )
+    return {"naturalness": pairs, "single": single}
+
+
+def session_neighbour(ids: list[str]) -> dict[str, str]:
+    """For each Europarl paragraph id, the closest other paragraph of the same sitting."""
+    by_session: dict[str, list[tuple[int, str]]] = {}
+    for pid in ids:
+        sess, _, num = pid.rpartition(".")
+        if num.isdigit():
+            by_session.setdefault(sess, []).append((int(num), pid))
+    out = {}
+    for items in by_session.values():
+        items.sort()
+        for j, (_, pid) in enumerate(items):
+            if len(items) > 1:
+                k = j + 1 if j + 1 < len(items) else j - 1
+                out[pid] = items[k][1]
+    return out
+
+
+def hard_source_data(pool, rng: random.Random) -> list[dict[str, Any]]:
+    """Wrong-source negatives from the same sitting (same topic, similar wording): the correct
+    human or Kimi-k3 translation beats the human translation of a neighbouring paragraph."""
+    by_id = {r["id"]: r for r in pool if r.get("mt_kimi")}
+    nb = session_neighbour(sorted(by_id))
+    ids = sorted(nb)
+    rng.shuffle(ids)
+    out = []
+    for i, pid in enumerate(ids[:HARD_SOURCE_PAIRS]):
+        r, other = by_id[pid], " ".join(by_id[nb[pid]]["sv"])
+        ref = " ".join(r["sv"]) if i % 2 == 0 else r["mt_kimi"]
+        if X._norm(ref) != X._norm(other):
+            kind = "human" if i % 2 == 0 else "mt"
+            out.append(
+                as_pair(f"{pid}-hard_{kind}", X.SOURCE_PROMPT + " ".join(r["en"]), ref, other, rng)
+            )
+    return out
+
+
+def prepare_v41() -> dict[str, Any]:
+    rng = random.Random(SEED + 41)
+    reg = registers_data(register_texts(rng), rng)
+    hard = hard_source_data(read_jsonl(V4_DIR / "europarl_pool.jsonl"), rng)
+    write_jsonl(V4_DIR / "registers_naturalness.jsonl", reg["naturalness"])
+    write_jsonl(V4_DIR / "registers_single.jsonl", reg["single"])
+    write_jsonl(V4_DIR / "hard_source_preference.jsonl", hard)
+    stats = {
+        "registers": {
+            "pairs": len(reg["naturalness"]),
+            "single": len(reg["single"]),
+            "by_source": dict(Counter(p["id"].split("-")[1] for p in reg["naturalness"])),
+        },
+        "hard_source": {"pairs": len(hard)},
+    }
+    v4 = load_metrics().get("v4") or {}
+    v4.setdefault("data", {}).update(stats)
+    update_metrics("v4", v4)
+    return stats
+
+
 def prepare_adequacy() -> dict[str, Any]:
     pool = read_jsonl(V4_DIR / "europarl_pool.jsonl")
     used = {r["id"] for r in read_jsonl(V4_DIR / "europarl_preference.jsonl")}
@@ -327,6 +480,25 @@ def prepare_adequacy() -> dict[str, Any]:
 def extra_units(tok, sources, internal, room, max_len, head_max_len) -> list[dict[str, Any]]:
     units = []
     for source in sources:
+        if source == "registers":
+            rows = read_jsonl(V4_DIR / "registers_naturalness.jsonl")
+            units += v2.build_units(
+                tok,
+                {source: rows},
+                {NATURALNESS_QID: internal[NATURALNESS_QID]},
+                room,
+                max_len,
+                head_max_len,
+            )
+            rows = read_jsonl(V4_DIR / "registers_single.jsonl")
+            units += v3.build_single_units(tok, rows, internal, room, max_len, head_max_len)
+            continue
+        if source == "hard_source":
+            rows = read_jsonl(V4_DIR / "hard_source_preference.jsonl")
+            units += v2.build_units(
+                tok, {source: rows}, {QID: internal[QID]}, room, max_len, head_max_len
+            )
+            continue
         if source == "adequacy":
             for fname, qid in (
                 ("adequacy_preference.jsonl", QID),
@@ -370,6 +542,8 @@ def train(arm: str, seed: int) -> None:
     questions = QUESTIONS_V4 if "dalaj_grammar" in ARMS[arm] else QUESTIONS_V3
     if "adequacy" in ARMS[arm] and not (V4_DIR / "adequacy_preference.jsonl").exists():
         print(prepare_adequacy())
+    if "registers" in ARMS[arm] and not (V4_DIR / "registers_single.jsonl").exists():
+        print(prepare_v41())
     internal = {qid: to_internal(qid, q) for qid, q in questions.items()}
     pair_internal = {q: internal[q] for q in QUESTIONS_V2}
     room = state_room_for(tok, questions, hp.max_len, hp.head_max_len)
@@ -499,6 +673,12 @@ def test_suite() -> list[dict[str, Any]]:
     fp, fr, fo = [p["prompt"] for p in f], [p["ref"] for p in f], [p["other"] for p in f]
     add("swefaq/preference", QID, fp, fr, fo, "relevance")
     add("swefaq/quality", "quality", fp, fr, fo, "relevance")
+    for name in ("blimppi", "multiblimp"):
+        if name in sets:
+            mp = sets[name]
+            mr, mo = [p["ref"] for p in mp], [p["other"] for p in mp]
+            add(f"{name}/naturalness", NATURALNESS_QID, [""] * len(mp), mr, mo, "grammar")
+            add(f"{name}/natural_swedish", "natural_swedish", [""] * len(mp), mr, mo, "grammar")
     if "gerlangmod" in sets:
         g = sets["gerlangmod"]
         gr, go = [p["ref"] for p in g], [p["other"] for p in g]
@@ -578,7 +758,7 @@ def grammar_tests(gate, wins, guards, extra) -> None:
     """The `grammatical` question: pairwise via scores, ScaLA-sv as a classifier, and how
     often good human Swedish is flagged as incorrect (lower is better)."""
     sets = X.load_sets()
-    for name in ("dalaj", "gerlangmod"):
+    for name in ("dalaj", "gerlangmod", "blimppi", "multiblimp"):
         if name in sets:
             ps = sets[name]
             wins[f"{name}/grammatical"] = X.versus(
@@ -740,7 +920,16 @@ def sanity(args) -> None:
 
     sets = sanity_sets()
     ckpts = {"v3": v3.V3_DIR}
-    for t in ("control", "control-s20261015", "europarl", "native", "both", "grammar", "adequacy"):
+    for t in (
+        "control",
+        "control-s20261015",
+        "europarl",
+        "native",
+        "both",
+        "grammar",
+        "adequacy",
+        "v41",
+    ):
         path = ROOT / "checkpoints" / f"v4-{t}"
         if (path / "model.safetensors").exists():
             ckpts[t] = path
@@ -769,6 +958,59 @@ def sanity(args) -> None:
         print(name, {k: round(v["mean"], 3) for k, v in res.items()}, flush=True)
         del gate
     _set_v4("sanity", out)
+
+
+# -------------------------------------------------------------------- baselines
+
+MINIMAL_PAIR_SETS = ("dalaj", "gerlangmod", "blimppi", "multiblimp")
+
+
+def baselines(args) -> None:
+    """Model-free references on the minimal-pair sets: longer wins, unigram frequency
+    (Europarl-SV word statistics) and a Europarl-SV word trigram (mean log-probability)."""
+    from . import ngram
+
+    sets = X.load_sets()
+    tri = ngram.load()
+    freq = X.load_stats()
+    total, vocab = sum(freq.values()), len(freq)
+    out: dict[str, Any] = {
+        "trigram": f"stupid backoff over {tri.total:,} Europarl-SV tokens",
+        "sets": {},
+    }
+    for name in MINIMAL_PAIR_SETS:
+        if name not in sets:
+            continue
+        ps = sets[name]
+        ref, oth = [p["ref"] for p in ps], [p["other"] for p in ps]
+        length = X.versus(np.array([len(x) for x in ref]), np.array([len(x) for x in oth]))
+        uni = X.versus(
+            np.array([X.unigram_logprob(x, freq, total, vocab) for x in ref]),
+            np.array([X.unigram_logprob(x, freq, total, vocab) for x in oth]),
+        )
+        trig = X.versus(
+            np.array([tri.mean_logprob(x) for x in ref]),
+            np.array([tri.mean_logprob(x) for x in oth]),
+        )
+        out["sets"][name] = {
+            "n": len(ps),
+            "longer_wins": summary(length),
+            "unigram_frequency": summary(uni),
+            "trigram": summary(trig),
+        }
+        np.save(V4_DIR / f"trigram_wins_{name}.npy", trig)
+    _set_v4("baselines", out)
+    print(json.dumps(out, indent=2))
+
+
+def rescore(args) -> None:
+    """Re-run the held-out suite (not training or the standard evaluation) for existing arms,
+    e.g. after tests were added."""
+    for t in args.tags:
+        path = v3.V3_DIR if t == "v3" else ROOT / "checkpoints" / f"v4-{t}"
+        if (path / "model.safetensors").exists():
+            score_suite(path, t)
+            print(f"rescored {t}", flush=True)
 
 
 # ---------------------------------------------------------------------- compare
@@ -813,10 +1055,14 @@ def main(argv=None) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("command", choices=["prepare", "run", "reference", "compare", "sanity"])
+    parser.add_argument(
+        "command",
+        choices=["prepare", "run", "reference", "compare", "sanity", "baselines", "rescore"],
+    )
     parser.add_argument("--arm", choices=sorted(ARMS), default="control")
     parser.add_argument("--seed", type=int, default=SEED)
     parser.add_argument("--retrain", action="store_true")
+    parser.add_argument("--tags", nargs="*", default=["v3", "control", "adequacy"])
     parser.add_argument("--concurrency", type=int, default=64)
     args = parser.parse_args(argv)
     if args.command == "prepare":
@@ -836,6 +1082,10 @@ def main(argv=None) -> None:
         run(args)
     elif args.command == "sanity":
         sanity(args)
+    elif args.command == "baselines":
+        baselines(args)
+    elif args.command == "rescore":
+        rescore(args)
     elif args.command == "reference":
         score_suite(v3.V3_DIR, "v3")  # the published v3 (2 epochs), scored on the same suite
     else:

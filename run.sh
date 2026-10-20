@@ -23,7 +23,7 @@ step() {
     uv run --env-file "$ENV_FILE" python -m "laya_gate.$1" "${@:2}"
 }
 
-uv sync --extra dev
+uv sync --extra dev --extra pilot
 step "1/8 data"       data
 step "2/8 train"      train
 step "3/8 calibrate"  calibrate
@@ -56,9 +56,14 @@ if [[ -f cache/fluent/train.jsonl ]]; then
     step "5o/8 v4 ablation: seed"   v4 run --arm control --seed 20261015
     step "5o/8 v4 ablation: grammar"  v4 run --arm grammar
     step "5o/8 v4 ablation: adequacy" v4 run --arm adequacy   # v4: builds the adequacy negatives
+    step "5o/8 minimal pairs"       external_eval prepare-minimal-pairs   # BLiMPPI-sv, MultiBLiMP-sv
+    step "5o/8 v4.1"                v4 run --arm v41          # v4.1: registers + hard wrong sources
+    step "5o/8 v4 rescore"          v4 rescore --tags v3 control adequacy v41
+    step "5o/8 n-gram baseline"     ngram build
+    step "5o/8 v4 baselines"        v4 baselines
     step "5o/8 v4 ablation"         v4 compare
     step "5o/8 v4 sanity tests"     v4 sanity
-    step "5p/8 EuroEval pilot"      pilot generate --batch-size 8   # 22 small LLMs
+    step "5p/8 EuroEval pilot"      pilot generate --batch-size 8 --delete-after   # needs --extra pilot for 4-bit
     step "5p/8 EuroEval pilot"      pilot score
     step "5p/8 EuroEval pilot"      pilot analyze
 else

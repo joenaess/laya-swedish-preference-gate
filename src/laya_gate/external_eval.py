@@ -54,7 +54,16 @@ STATS_URL = "https://svn.spraakbanken.gu.se/sb-arkiv/pub/frekvens/stats_EUROPARL
 MT_MODEL = "Helsinki-NLP/opus-mt-en-sv"
 EXT_DIR = CACHE_DIR / "external"
 EP_DIR = CACHE_DIR / "europarl"
-SETS = ("dalaj", "swefaq", "europarl_en", "europarl_sv", "gerlangmod", "wmt24pp")
+SETS = (
+    "dalaj",
+    "swefaq",
+    "europarl_en",
+    "europarl_sv",
+    "gerlangmod",
+    "wmt24pp",
+    "blimppi",
+    "multiblimp",
+)
 MT_SYSTEMS = ("opus", "kimi")
 EP_SAMPLE = 1000
 SOURCE_PROMPT = "Översätt följande text till svenska:\n"
@@ -523,6 +532,83 @@ def load_gerlangmod() -> list[dict[str, Any]]:
     return pairs
 
 
+BLIMPPI_URL = (
+    "https://raw.githubusercontent.com/arzuburcuguven/blimppi-data/main/data/npi/swedish/"
+    "swedish_minimal_pairs.tsv"
+)
+MULTIBLIMP = "jumelet/multiblimp"
+
+
+def _tsv(path: Path) -> list[dict[str, str]]:
+    import csv
+
+    with open(path, encoding="utf-8") as f:
+        return list(csv.DictReader(f, delimiter="\t"))
+
+
+def blimppi_pairs(rows) -> list[dict[str, Any]]:
+    """BLiMPPI Swedish polarity-item minimal pairs: licensed NPI vs licenser removed/swapped."""
+    return [
+        {
+            "id": f"blimppi-{i}",
+            "prompt": "",
+            "ref": r["sen"].strip(),
+            "other": r["wrong_sen"].strip(),
+            "env": r["env"],
+            "source": r["sent_id"].split("-")[0],
+        }
+        for i, r in enumerate(rows)
+        if r["sen"].strip()
+        and r["wrong_sen"].strip()
+        and r["sen"].strip() != r["wrong_sen"].strip()
+    ]
+
+
+def multiblimp_pairs(rows) -> list[dict[str, Any]]:
+    """MultiBLiMP Swedish subject-verb number agreement pairs (the wrong side uses a plural or
+    singular verb form that does not agree; Swedish plural verb forms are archaic)."""
+    return [
+        {
+            "id": f"multiblimp-{i}",
+            "prompt": "",
+            "ref": r["sen"].strip(),
+            "other": r["wrong_sen"].strip(),
+            "feature": r["feature_vals"],
+        }
+        for i, r in enumerate(rows)
+        if r["sen"].strip()
+        and r["wrong_sen"].strip()
+        and r["sen"].strip() != r["wrong_sen"].strip()
+    ]
+
+
+def prepare_minimal_pairs(args=None) -> None:
+    from huggingface_hub import hf_hub_download
+
+    bl = blimppi_pairs(_tsv(_download(BLIMPPI_URL, EP_DIR.parent / "blimppi" / "swedish.tsv")))
+    mb = multiblimp_pairs(
+        _tsv(Path(hf_hub_download(MULTIBLIMP, "swe/data.tsv", repo_type="dataset")))
+    )
+    write_jsonl(EXT_DIR / "blimppi.jsonl", bl)
+    write_jsonl(EXT_DIR / "multiblimp.jsonl", mb)
+    data = load_metrics().get("external_data") or {}
+    data["minimal_pairs"] = {
+        "blimppi": {
+            "pairs": len(bl),
+            "source": "arzuburcuguven/blimppi-data (arXiv:2610.13607)",
+            "by_env": dict(Counter(p["env"] for p in bl)),
+            "by_treebank": dict(Counter(p["source"] for p in bl)),
+        },
+        "multiblimp": {
+            "pairs": len(mb),
+            "source": f"{MULTIBLIMP} swe (CC BY 4.0)",
+            "by_feature": dict(Counter(p["feature"] for p in mb)),
+        },
+    }
+    update_metrics("external_data", data)
+    print(json.dumps(data["minimal_pairs"], indent=2))
+
+
 def wmt_rows() -> list[dict[str, Any]]:
     """WMT24++ en->sv segments not marked bad: source, post-edited human reference, domain."""
     from huggingface_hub import hf_hub_download
@@ -601,6 +687,9 @@ def load_sets() -> dict[str, list[dict[str, Any]]]:
     if (EXT_DIR / "gerlangmod.jsonl").exists():
         glm = read_jsonl(EXT_DIR / "gerlangmod.jsonl")
         sets["gerlangmod"] = [p for p in glm if p["treebank"] == "talbanken"]
+    for name in ("blimppi", "multiblimp"):
+        if (EXT_DIR / f"{name}.jsonl").exists():
+            sets[name] = read_jsonl(EXT_DIR / f"{name}.jsonl")
     if (EXT_DIR / "wmt24pp.jsonl").exists():
         wmt = read_jsonl(EXT_DIR / "wmt24pp.jsonl")
         for mt in MT_SYSTEMS:
@@ -873,6 +962,8 @@ JUDGE_PLAN = {
     "europarl_en": [("translation", "preference", True), ("naturalness", "naturalness", False)],
     "europarl_sv": [("translation", "preference", True), ("naturalness", "naturalness", False)],
     "gerlangmod": [("grammar", "naturalness", False)],
+    "blimppi": [("grammar", "naturalness", False)],
+    "multiblimp": [("grammar", "naturalness", False)],
     "wmt24pp": [
         ("translation_generic", "preference", True),
         ("naturalness", "naturalness", False),
@@ -1092,7 +1183,16 @@ def main(argv=None) -> None:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     parser.add_argument(
-        "command", choices=["prepare", "translate", "prepare-euroeval", "gate", "judge", "length"]
+        "command",
+        choices=[
+            "prepare",
+            "translate",
+            "prepare-euroeval",
+            "prepare-minimal-pairs",
+            "gate",
+            "judge",
+            "length",
+        ],
     )
     parser.add_argument("--n-europarl", type=int, default=EP_SAMPLE)
     parser.add_argument("--n", type=int, default=300, help="judge pairs per set")
@@ -1103,6 +1203,7 @@ def main(argv=None) -> None:
         "prepare": prepare,
         "translate": translate,
         "prepare-euroeval": prepare_euroeval,
+        "prepare-minimal-pairs": prepare_minimal_pairs,
         "gate": gate_eval,
         "judge": judge_eval,
         "length": length_eval,

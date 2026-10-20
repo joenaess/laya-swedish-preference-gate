@@ -75,6 +75,32 @@ def configs() -> dict[str, dict[str, Any]]:
                 + _pairs_v2(read_jsonl(V4_DIR / "adequacy_naturalness.jsonl"), "naturalness")
             },
         }
+    if (V4_DIR / "hard_source_preference.jsonl").exists():
+        out["europarl_hard_source"] = {
+            "license": "cc-by-4.0",
+            "description": "v4.1: the correct human or Kimi-k3 translation (preferred) vs the "
+            "human translation of the adjacent paragraph of the same sitting (same topic), "
+            "English source in the prompt.",
+            "splits": {
+                "train": _pairs_v2(
+                    read_jsonl(V4_DIR / "hard_source_preference.jsonl"), "preference"
+                )
+            },
+        }
+    if (V4_DIR / "registers_naturalness.jsonl").exists():
+        out["registers_corrupted"] = {
+            "license": "cc-by-sa-4.0",
+            "description": "v4.1: correct Swedish from four registers (SweFAQ train answers, "
+            "DaLAJ-GED correct textbook sentences, fluent Swedish answers from "
+            "`jonasaise/dpo-swedish-interpreted`'s fluent pairs, Europarl) vs a copy with one "
+            "word deleted or two neighbouring words swapped; a fifth lowercased without "
+            "punctuation. CC BY-SA 4.0 because it contains SweFAQ text.",
+            "splits": {
+                "train": _pairs_v2(
+                    read_jsonl(V4_DIR / "registers_naturalness.jsonl"), "naturalness"
+                )
+            },
+        }
     ep = read_jsonl(X.EXT_DIR / "europarl.jsonl")
     out["europarl_eval"] = {
         "license": "cc-by-4.0",
@@ -175,16 +201,16 @@ language: [sv, en]
 license: other
 license_name: per-config
 license_details: "Each config keeps the license of its source text: see the table."
-pretty_name: Laya Swedish gate v4 training and evaluation pairs
+pretty_name: Laya Swedish gate v4/v4.1 training and evaluation pairs
 task_categories: [text-classification, translation]
 tags: [preference, swedish, translationese, grammaticality, europarl, superlim]
 configs:
 {yaml_cfgs}
 ---
 
-# Laya Swedish gate v4: training and evaluation pairs
+# Laya Swedish gate v4/v4.1: training and evaluation pairs
 
-The derived pairs behind the v4 ablation of the
+The derived pairs behind the v4 ablation and the v4.1 release of the
 [Laya Swedish preference gate](https://huggingface.co/jonasaise/laya-swedish-preference-gate)
 (code and full results: [github.com/{GITHUB_REPO}](https://github.com/{GITHUB_REPO})). Each row
 has a `preferred` and a `rejected` text for one question (`preference`: which response or

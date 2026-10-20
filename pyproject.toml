@@ -37,6 +37,10 @@ onnx = [
     "onnxruntime>=1.18",
     "onnxscript>=0.1",
 ]
+pilot = [
+    "accelerate>=1.0",
+    "bitsandbytes>=0.45",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/laya_gate"]

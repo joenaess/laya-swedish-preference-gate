@@ -502,38 +502,39 @@
   },
   "tests": {
     "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
-    "total": 153,
-    "passed": 153,
+    "total": 160,
+    "passed": 160,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "skipped_tests": {},
     "all_passed": true,
-    "coverage_percent": 46.9,
+    "coverage_percent": 46.3,
     "coverage_per_module": {
       "__init__.py": 100.0,
       "benchmark.py": 63.2,
       "calibrate.py": 64.3,
       "cpu.py": 0.0,
       "data.py": 70.9,
-      "external_eval.py": 37.7,
+      "external_eval.py": 37.2,
       "fluent.py": 20.6,
       "judge.py": 79.3,
       "liu_eval.py": 36.6,
       "mtqa.py": 0.0,
+      "ngram.py": 61.0,
       "onnx_export.py": 87.2,
-      "pilot.py": 40.5,
+      "pilot.py": 37.1,
       "predictor.py": 81.1,
       "probe.py": 46.0,
-      "publish.py": 61.5,
+      "publish.py": 60.9,
       "publish_data.py": 0.0,
-      "readme.py": 73.9,
+      "readme.py": 72.7,
       "testing.py": 0.0,
       "train.py": 37.3,
       "utils.py": 100.0,
       "v2.py": 29.4,
       "v3.py": 18.0,
-      "v4.py": 29.8
+      "v4.py": 31.5
     }
   },
   "publish": {
@@ -541,11 +542,11 @@
     "repo_id": "jonasaise/laya-swedish-preference-gate",
     "url": "https://huggingface.co/jonasaise/laya-swedish-preference-gate",
     "visibility": "public",
-    "commit": "ff962639806f8a731d742ea512db902d6cbb785c",
+    "commit": "8d82e94bb4d8ef6edba21aaaec686ed0a9d5b4cf",
     "checkpoint": "v4",
     "previous_revision_tag": {
-      "tag": "v3",
-      "revision": "b38bea2cc2aadcb70889d53845fbf5c9c637cd82"
+      "tag": "v4",
+      "revision": "ff962639806f8a731d742ea512db902d6cbb785c"
     },
     "files": [
       "README.md",
@@ -556,7 +557,8 @@
       "rl_agent_config.json",
       "temperature.json",
       "tokenizer"
-    ]
+    ],
+    "release": "v4.1"
   },
   "probe": {
     "source": "argilla/ultrafeedback-binarized-preferences-cleaned",
@@ -5307,6 +5309,29 @@
           "latency_s_median": 4.222777343493362
         }
       }
+    },
+    "minimal_pairs": {
+      "blimppi": {
+        "pairs": 59,
+        "source": "arzuburcuguven/blimppi-data (arXiv:2610.13607)",
+        "by_env": {
+          "neg": 52,
+          "DE_licensor": 1,
+          "n_series_neg": 6
+        },
+        "by_treebank": {
+          "org": 1,
+          "sv_lines": 31,
+          "sv": 27
+        }
+      },
+      "multiblimp": {
+        "pairs": 201,
+        "source": "jumelet/multiblimp swe (CC BY 4.0)",
+        "by_feature": {
+          "SG -> PL": 201
+        }
+      }
     }
   },
   "context_length": {
@@ -7367,6 +7392,19 @@
           "shuffled": 2989,
           "untranslated": 3000
         }
+      },
+      "registers": {
+        "pairs": 3779,
+        "single": 7558,
+        "by_source": {
+          "swefaq_answers": 779,
+          "textbook_sentences": 1000,
+          "fluent_answers": 1000,
+          "europarl": 1000
+        }
+      },
+      "hard_source": {
+        "pairs": 1500
       }
     },
     "arms": {
@@ -7475,6 +7513,38 @@
               0.6839506172839506
             ],
             "n": 3240
+          },
+          "blimppi/naturalness": {
+            "mean": 0.4067796610169492,
+            "ci95": [
+              0.2711864406779661,
+              0.5423728813559322
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "mean": 0.5677966101694916,
+            "ci95": [
+              0.4406779661016949,
+              0.6864406779661016
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "mean": 0.8308457711442786,
+            "ci95": [
+              0.7761194029850746,
+              0.8805970149253731
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "mean": 0.8631840796019901,
+            "ci95": [
+              0.8134328358208955,
+              0.9104477611940298
+            ],
+            "n": 201
           },
           "gerlangmod/naturalness": {
             "mean": 0.8329383886255924,
@@ -8244,6 +8314,38 @@
               0.6950617283950618
             ],
             "n": 3240
+          },
+          "blimppi/naturalness": {
+            "mean": 0.13559322033898305,
+            "ci95": [
+              0.05084745762711865,
+              0.22033898305084745
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "mean": 0.4745762711864407,
+            "ci95": [
+              0.3389830508474576,
+              0.5932203389830508
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "mean": 0.8009950248756219,
+            "ci95": [
+              0.746268656716418,
+              0.8557213930348259
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "mean": 0.7263681592039801,
+            "ci95": [
+              0.6616915422885572,
+              0.7860696517412935
+            ],
+            "n": 201
           },
           "gerlangmod/naturalness": {
             "mean": 0.8507109004739336,
@@ -12985,6 +13087,38 @@
             ],
             "n": 3240
           },
+          "blimppi/naturalness": {
+            "mean": 0.864406779661017,
+            "ci95": [
+              0.7796610169491526,
+              0.9491525423728814
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "mean": 0.8135593220338984,
+            "ci95": [
+              0.711864406779661,
+              0.8983050847457628
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "mean": 0.9701492537313433,
+            "ci95": [
+              0.945273631840796,
+              0.9900497512437811
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "mean": 0.9253731343283582,
+            "ci95": [
+              0.8855721393034826,
+              0.9601990049751243
+            ],
+            "n": 201
+          },
           "gerlangmod/naturalness": {
             "mean": 0.9549763033175356,
             "ci95": [
@@ -13137,6 +13271,22 @@
             ],
             "n": 844
           },
+          "blimppi/grammatical": {
+            "mean": 0.847457627118644,
+            "ci95": [
+              0.7457627118644068,
+              0.9322033898305084
+            ],
+            "n": 59
+          },
+          "multiblimp/grammatical": {
+            "mean": 0.9402985074626866,
+            "ci95": [
+              0.9054726368159204,
+              0.9701492537313433
+            ],
+            "n": 201
+          },
           "scala/grammatical_accuracy@0.5": {
             "mean": 0.6689453125,
             "ci95": [
@@ -13210,6 +13360,921 @@
             "n": 2048
           }
         }
+      },
+      "v41": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            },
+            "grammatical": {
+              "type": "choice",
+              "instructions": "Is the text grammatically correct Swedish (spelling, inflection, word choice, word order, punctuation)?",
+              "criteria": {
+                "correct": "grammatically correct Swedish",
+                "incorrect": "contains a grammatical, spelling or word-order error"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": true,
+            "eval_batch": 32,
+            "seed": 20261014,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "gradient_checkpointing"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 223521,
+          "train_units_by_source_question": {
+            "original/preference": 12750,
+            "original/naturalness": 12750,
+            "fluent/preference": 9921,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842,
+            "europarl/preference": 12000,
+            "europarl/naturalness": 12000,
+            "dalaj/naturalness": 16365,
+            "swefaq/preference": 3074,
+            "dalaj_grammar/grammatical": 32730,
+            "adequacy/preference": 14989,
+            "adequacy/naturalness": 3000,
+            "adequacy/natural_swedish": 3000,
+            "adequacy/grammatical": 3000,
+            "registers/naturalness": 3779,
+            "registers/grammatical": 7558,
+            "hard_source/preference": 1500
+          },
+          "optimizer_updates": 13971,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.49909857204515823,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.12700006454888274,
+                  "acc": 0.956,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.18652481682869398,
+                  "acc": 0.9288908765652951,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.036689538083093505,
+                  "acc": 0.9847942754919499,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.05951095209078021,
+                  "acc": 0.9838998211091234,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.3912579918650112,
+                  "acc": 0.4193302891933029,
+                  "n": 1750,
+                  "mae": 0.8903275358605481
+                },
+                "fluent/preference": {
+                  "loss": 0.5852618770077014,
+                  "acc": 0.7314285714285714,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.7554992076745922,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.4488206354426793
+              },
+              "epoch_seconds": 9958.023207746039
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 9958.686340943968,
+          "per_epoch_seconds": [
+            9958.023207746039
+          ],
+          "peak_gpu_memory_allocated_gib": 6.008941173553467,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.673816115510415,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.2815865781185326,
+            "nll_post": 0.255173703084505,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.4852447573934643,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.0607247053258788,
+            "nll_post": 0.04930835015419822,
+            "within_laya_clamp": false
+          },
+          "quality": {
+            "temperature": 1.2255011150555108,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.3910623359222578,
+            "nll_post": 1.3840534290872324,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.495146150426489,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.16059802209610563,
+            "nll_post": 0.14588210353270445,
+            "within_laya_clamp": true
+          },
+          "grammatical": {
+            "temperature": 1.4269156492036361,
+            "fit_on": "DaLAJ-GED dev (corrected and learner sentences)",
+            "n": 4192,
+            "nll_pre": 0.623844107762759,
+            "nll_post": 0.6133129900327626,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_v41_eval",
+          "temperatures": {
+            "preference": 1.673816115510415,
+            "naturalness": 0.4852447573934643,
+            "quality": 1.2255011150555108,
+            "natural_swedish": 1.495146150426489,
+            "grammatical": 1.4269156492036361
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9852415026833632,
+              "ci95": [
+                0.9798747763864043,
+                0.9901610017889088
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9883720930232558,
+              "ci95": [
+                0.981216457960644,
+                0.9946332737030411
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9838998211091234,
+            "accuracy_chosen_in_b": 0.9865831842576028,
+            "positional_consistency": 0.9883720930232558,
+            "ece_both_orders": 0.01643944346045569,
+            "mean_confidence": 0.9688991564255185,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.975402504472272,
+              "accuracy_on_covered": 0.9922054103622192
+            },
+            "ece_order_averaged": 0.02091195522068197,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9758497316636852,
+              "accuracy_on_covered": 0.9926672777268561,
+              "accuracy_on_routed": 0.8148148148148148
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9843470483005367,
+              "ci95": [
+                0.9789803220035778,
+                0.9892665474060823
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9874776386404294,
+              "ci95": [
+                0.9803220035778175,
+                0.9937388193202147
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.983005366726297,
+            "accuracy_chosen_in_b": 0.9856887298747764,
+            "positional_consistency": 0.9847942754919499,
+            "ece_both_orders": 0.014030472297697801,
+            "mean_confidence": 0.9722423911924978,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9597495527728086,
+              "accuracy_on_covered": 0.9920782851817335
+            },
+            "ece_order_averaged": 0.016683108785771363,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9597495527728086,
+              "accuracy_on_covered": 0.9934762348555451,
+              "accuracy_on_routed": 0.8444444444444444
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.7602739726027398,
+              "ci95": [
+                0.7414383561643836,
+                0.7802511415525114
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7682648401826484,
+              "ci95": [
+                0.7397260273972602,
+                0.7968036529680366
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.7659817351598174,
+            "accuracy_chosen_in_b": 0.7545662100456622,
+            "positional_consistency": 0.8778538812785388,
+            "ece_both_orders": 0.011998721860127116,
+            "mean_confidence": 0.7645865189727039,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6358447488584474,
+              "accuracy_on_covered": 0.855475763016158
+            },
+            "ece_order_averaged": 0.028348313774703905,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6244292237442922,
+              "accuracy_on_covered": 0.8574040219378428,
+              "accuracy_on_routed": 0.6200607902735562
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.08655214026246047,
+            "fraction_within_0.2": 0.860730593607306
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.774247491638796,
+              "ci95": [
+                0.7408026755852842,
+                0.8076923076923077
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7926421404682275,
+              "ci95": [
+                0.745819397993311,
+                0.8394648829431438
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.7692307692307693,
+            "accuracy_chosen_in_b": 0.7792642140468228,
+            "positional_consistency": 0.8963210702341137,
+            "ece_both_orders": 0.04698293187479321,
+            "mean_confidence": 0.7707433170447483,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.657190635451505,
+              "accuracy_on_covered": 0.8473282442748091
+            },
+            "ece_order_averaged": 0.052298392577953275,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6387959866220736,
+              "accuracy_on_covered": 0.8586387434554974,
+              "accuracy_on_routed": 0.6759259259259259
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.3612040133779264,
+                "accuracy": 0.6759259259259259
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.40468227424749165,
+                "accuracy": 0.7933884297520661
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.23411371237458195,
+                "accuracy": 0.9714285714285714
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.10638971113088852,
+            "fraction_within_0.2": 0.8361204013377926
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.774247491638796,
+                "expected_latency_ms": 9.80063050519675,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.09364548494983277,
+                "cascade_accuracy": 0.8076923076923077,
+                "expected_latency_ms": 902.3555645845319,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.16555183946488294,
+                "cascade_accuracy": 0.8177257525083612,
+                "expected_latency_ms": 1587.7102461097359,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.25585284280936454,
+                "cascade_accuracy": 0.8277591973244147,
+                "expected_latency_ms": 2448.3882182576663,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.342809364548495,
+                "cascade_accuracy": 0.842809364548495,
+                "expected_latency_ms": 3277.1892284741916,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.4280936454849498,
+                "cascade_accuracy": 0.8595317725752508,
+                "expected_latency_ms": 4090.051757725015,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.5317725752508361,
+                "cascade_accuracy": 0.8795986622073578,
+                "expected_latency_ms": 5078.237577598565,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.6270903010033445,
+                "cascade_accuracy": 0.8762541806020067,
+                "expected_latency_ms": 5986.730992643603,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.7558528428093646,
+                "cascade_accuracy": 0.8795986622073578,
+                "expected_latency_ms": 7213.994027002688,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.8745819397993311,
+                "cascade_accuracy": 0.8695652173913043,
+                "expected_latency_ms": 8345.626175567559,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.3,
+              "routed_fraction": 0.5317725752508361,
+              "cascade_accuracy": 0.8795986622073578,
+              "expected_latency_ms": 5078.237577598565,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 9.80063050519675,
+            "p95": 11.04250192292966,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.673816115510415,
+            "naturalness": 0.4852447573934643,
+            "quality": 1.2255011150555108,
+            "natural_swedish": 1.495146150426489,
+            "grammatical": 1.4269156492036361
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.8013698630136986,
+              "ci95": [
+                0.7750856164383562,
+                0.8276255707762558
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.1336077283331727,
+            "mean_score_chosen": 3.7692857243544653,
+            "mean_score_rejected": 3.1699742463604164,
+            "spearman_vs_rating": 0.55599854543255,
+            "pearson_vs_rating": 0.5588123026198031,
+            "mae_vs_rating": 0.8693251233271865
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.7959866220735786,
+              "ci95": [
+                0.7491638795986622,
+                0.842809364548495
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.11929409226413974,
+            "mean_score_chosen": 3.794337716525729,
+            "mean_score_rejected": 3.1690363907573253,
+            "spearman_vs_rating": 0.5291773320959353
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.9880308722770345,
+            "accuracy": {
+              "accuracy": 0.917262969588551,
+              "ci95": [
+                0.90608228980322,
+                0.9284436493738819
+              ],
+              "n": 2236
+            },
+            "ece": 0.023335173572304104,
+            "natural_flagged_translationese": 0.017889087656529516,
+            "translationese_passed_as_natural": 0.1475849731663685,
+            "within_pair_natural_scores_higher": 0.9856887298747764
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.03881278538812785,
+            "mean_p_natural": 0.9274235533008802
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.03678929765886288,
+            "mean_p_natural": 0.9457595904980332
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 5.985768511891365,
+            "p95": 9.845438241609362,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9883720930232558,
+            "ci95": [
+              0.981216457960644,
+              0.9946332737030411
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.7659817351598174,
+            "ci95": [
+              0.7374429223744292,
+              0.7945205479452054
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.7926421404682275,
+            "ci95": [
+              0.745819397993311,
+              0.8394648829431438
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.51,
+            "ci95": [
+              0.47,
+              0.5483333333333333
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.5141666666666667,
+            "ci95": [
+              0.4741666666666667,
+              0.5525
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.575,
+            "ci95": [
+              0.535,
+              0.6133333333333333
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.620412267471091,
+            "ci95": [
+              0.5987933634992458,
+              0.6420311714429362
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.5980392156862745,
+            "ci95": [
+              0.5759175465057818,
+              0.6196644042232278
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.7194570135746606,
+            "ci95": [
+              0.7003519356460532,
+              0.738562091503268
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.8802638254693049,
+            "ci95": [
+              0.8655504819888381,
+              0.8939624556062912
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.8132927447995941,
+            "ci95": [
+              0.7960426179604262,
+              0.8297818366311517
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.8858024691358025,
+            "ci95": [
+              0.8743827160493827,
+              0.8972222222222223
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.7126543209876544,
+            "ci95": [
+              0.6972222222222222,
+              0.7284027777777777
+            ],
+            "n": 3240
+          },
+          "blimppi/naturalness": {
+            "mean": 0.8983050847457628,
+            "ci95": [
+              0.8135593220338984,
+              0.9661016949152542
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "mean": 0.5847457627118644,
+            "ci95": [
+              0.4576271186440678,
+              0.7033898305084746
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "mean": 0.9751243781094527,
+            "ci95": [
+              0.9550995024875621,
+              0.9950248756218906
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "mean": 0.9303482587064676,
+            "ci95": [
+              0.8955223880597015,
+              0.9601990049751243
+            ],
+            "n": 201
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.957345971563981,
+            "ci95": [
+              0.943127962085308,
+              0.9703791469194313
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.8868483412322274,
+            "ci95": [
+              0.865521327014218,
+              0.9075829383886256
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.7275641025641025,
+            "ci95": [
+              0.7008547008547008,
+              0.7564102564102564
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6848290598290598,
+            "ci95": [
+              0.6538461538461539,
+              0.7168803418803419
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.5982241953385128,
+            "ci95": [
+              0.564927857935627,
+              0.6304106548279689
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.537180910099889,
+            "ci95": [
+              0.5049944506104328,
+              0.5693673695893452
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.6830985915492958,
+            "ci95": [
+              0.6559356136820925,
+              0.7132796780684104
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.682092555331992,
+            "ci95": [
+              0.6529175050301811,
+              0.7122736418511066
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.7587939698492462,
+            "ci95": [
+              0.7306532663316583,
+              0.7849246231155779
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.7688442211055276,
+            "ci95": [
+              0.742713567839196,
+              0.7949748743718593
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.7966269841269841,
+            "ci95": [
+              0.7718253968253969,
+              0.8224206349206349
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.6924603174603174,
+            "ci95": [
+              0.6646825396825397,
+              0.7212301587301587
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.8277227722772277,
+            "ci95": [
+              0.804950495049505,
+              0.8524752475247525
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.7574257425742574,
+            "ci95": [
+              0.7306930693069307,
+              0.7841584158415842
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.2328767123287671,
+            "ci95": [
+              0.1780821917808219,
+              0.2922374429223744
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.6982421875,
+            "ci95": [
+              0.67919921875,
+              0.7182739257812499
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.69580078125,
+            "ci95": [
+              0.67626953125,
+              0.71533203125
+            ],
+            "n": 2048
+          },
+          "dalaj/grammatical": {
+            "mean": 0.8138001014713343,
+            "ci95": [
+              0.7960426179604262,
+              0.8305428716387621
+            ],
+            "n": 1971
+          },
+          "gerlangmod/grammatical": {
+            "mean": 0.8625592417061612,
+            "ci95": [
+              0.8388625592417062,
+              0.8850710900473934
+            ],
+            "n": 844
+          },
+          "blimppi/grammatical": {
+            "mean": 0.711864406779661,
+            "ci95": [
+              0.5932203389830508,
+              0.8220338983050848
+            ],
+            "n": 59
+          },
+          "multiblimp/grammatical": {
+            "mean": 0.9527363184079602,
+            "ci95": [
+              0.9228855721393034,
+              0.9800995024875622
+            ],
+            "n": 201
+          },
+          "scala/grammatical_accuracy@0.5": {
+            "mean": 0.73291015625,
+            "ci95": [
+              0.71484375,
+              0.75146484375
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "flores_reference_flagged_incorrect": {
+            "mean": 0.26729716276754606,
+            "ci95": [
+              0.2483698357391737,
+              0.28720756595321056
+            ],
+            "n": 2009
+          },
+          "wmt24pp_reference_flagged_incorrect": {
+            "mean": 0.47863247863247865,
+            "ci95": [
+              0.4465811965811966,
+              0.5107104700854699
+            ],
+            "n": 936
+          },
+          "europarl_human_flagged_incorrect": {
+            "mean": 0.1658291457286432,
+            "ci95": [
+              0.14371859296482412,
+              0.1899497487437186
+            ],
+            "n": 995
+          },
+          "fluent_responses_flagged_incorrect": {
+            "mean": 0.2522831050228311,
+            "ci95": [
+              0.23230593607305935,
+              0.2728310502283105
+            ],
+            "n": 1752
+          },
+          "fluent_flagged_translationese": {
+            "mean": 0.039383561643835614,
+            "ci95": [
+              0.030821917808219176,
+              0.04908675799086758
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.39692068489236554,
+            "mcc@val_threshold": 0.41022057304402126,
+            "val_threshold": 0.2531986179965085,
+            "auc": 0.7655329704284668,
+            "flagged_incorrect": 0.5234375,
+            "n": 2048
+          },
+          "scala_grammatical": {
+            "mcc@0.5": 0.4660926486727124,
+            "mcc@val_threshold": 0.4650433678046797,
+            "val_threshold": 0.49452512293750156,
+            "auc": 0.8018441200256348,
+            "by_corruption": {
+              "None": 0.7158203125,
+              "delete": 0.6666666666666666,
+              "flip_neighbours": 0.8270676691729323
+            },
+            "n": 2048
+          }
+        }
       }
     },
     "design": {
@@ -13239,6 +14304,15 @@
           "swefaq",
           "dalaj_grammar",
           "adequacy"
+        ],
+        "v41": [
+          "europarl",
+          "dalaj",
+          "swefaq",
+          "dalaj_grammar",
+          "adequacy",
+          "registers",
+          "hard_source"
         ]
       },
       "recipe": "v3 data and questions, 1 epoch, from the base checkpoint",
@@ -13355,6 +14429,38 @@
               0.06450617283950617
             ],
             "n": 3240
+          },
+          "blimppi/naturalness": {
+            "diff": 0.7288135593220338,
+            "ci95": [
+              0.6101694915254238,
+              0.847457627118644
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "diff": 0.3389830508474576,
+            "ci95": [
+              0.1864406779661017,
+              0.4915254237288136
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "diff": 0.1691542288557214,
+            "ci95": [
+              0.11442786069651742,
+              0.22885572139303484
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "diff": 0.19900497512437812,
+            "ci95": [
+              0.12935323383084577,
+              0.26865671641791045
+            ],
+            "n": 201
           },
           "gerlangmod/naturalness": {
             "diff": 0.10426540284360189,
@@ -14856,6 +15962,38 @@
             ],
             "n": 3240
           },
+          "blimppi/naturalness": {
+            "diff": 0.2711864406779661,
+            "ci95": [
+              0.15211864406779665,
+              0.4067796610169492
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "diff": 0.09322033898305085,
+            "ci95": [
+              -0.01694915254237288,
+              0.211864406779661
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "diff": 0.029850746268656716,
+            "ci95": [
+              -0.029850746268656716,
+              0.08955223880597014
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "diff": 0.13681592039800994,
+            "ci95": [
+              0.07462686567164178,
+              0.20149253731343283
+            ],
+            "n": 201
+          },
           "gerlangmod/naturalness": {
             "diff": -0.017772511848341232,
             "ci95": [
@@ -14994,6 +16132,288 @@
           },
           "guard:fluent_flagged_translationese": {
             "diff": -0.006278538812785388,
+            "ci95": [
+              -0.014269406392694063,
+              0.0028538812785388126
+            ],
+            "n": 1752
+          }
+        },
+        "v41": {
+          "original/preference": {
+            "diff": -0.0008944543828264759,
+            "ci95": [
+              -0.007155635062611807,
+              0.004472271914132379
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": -0.01141552511415525,
+            "ci95": [
+              -0.03538812785388128,
+              0.012557077625570776
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": 0.010033444816053512,
+            "ci95": [
+              -0.030100334448160536,
+              0.05359531772575205
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.075,
+            "ci95": [
+              0.02,
+              0.12833333333333333
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": 0.019166666666666665,
+            "ci95": [
+              -0.035854166666666666,
+              0.07166666666666667
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": 0.21,
+            "ci95": [
+              0.15666666666666668,
+              0.26337499999999975
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.06535947712418301,
+            "ci95": [
+              0.038712921065862244,
+              0.0915032679738562
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": -0.0047762694821518355,
+            "ci95": [
+              -0.02992081447963801,
+              0.020361990950226245
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": 0.24786324786324787,
+            "ci95": [
+              0.22021116138763197,
+              0.277526395173454
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": 0.27600202942668695,
+            "ci95": [
+              0.2496194824961948,
+              0.3008751902587518
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": 0.14561136478944697,
+            "ci95": [
+              0.12278031456113647,
+              0.16793505834601724
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": 0.2777777777777778,
+            "ci95": [
+              0.25925925925925924,
+              0.2969212962962962
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": 0.033950617283950615,
+            "ci95": [
+              0.01912808641975309,
+              0.04938271604938271
+            ],
+            "n": 3240
+          },
+          "blimppi/naturalness": {
+            "diff": 0.7627118644067796,
+            "ci95": [
+              0.6440677966101694,
+              0.8813559322033898
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "diff": 0.11016949152542373,
+            "ci95": [
+              -0.05084745762711865,
+              0.2711864406779661
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "diff": 0.17412935323383086,
+            "ci95": [
+              0.11442786069651742,
+              0.23383084577114427
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "diff": 0.20398009950248755,
+            "ci95": [
+              0.13930348258706468,
+              0.26865671641791045
+            ],
+            "n": 201
+          },
+          "gerlangmod/naturalness": {
+            "diff": 0.1066350710900474,
+            "ci95": [
+              0.08293838862559241,
+              0.13270142180094788
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": 0.03376777251184834,
+            "ci95": [
+              0.004739336492890996,
+              0.0628110189573459
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.21153846153846154,
+            "ci95": [
+              0.17305021367521367,
+              0.2510950854700853
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": 0.03952991452991453,
+            "ci95": [
+              0.004246794871794874,
+              0.07478632478632478
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.19755826859045506,
+            "ci95": [
+              0.15538290788013318,
+              0.2397336293007769
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": 0.051054384017758046,
+            "ci95": [
+              0.009988901220865706,
+              0.08990011098779134
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.306841046277666,
+            "ci95": [
+              0.2686116700201207,
+              0.34808853118712274
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.193158953722334,
+            "ci95": [
+              0.15492957746478872,
+              0.23440643863179075
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": 0.4,
+            "ci95": [
+              0.36381909547738694,
+              0.43517587939698493
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.28241206030150756,
+            "ci95": [
+              0.24321608040201004,
+              0.32060301507537686
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.44047619047619047,
+            "ci95": [
+              0.40275297619047623,
+              0.48115079365079366
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": 0.2003968253968254,
+            "ci95": [
+              0.16170634920634921,
+              0.2400793650793651
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.4910891089108911,
+            "ci95": [
+              0.45544554455445546,
+              0.5316831683168317
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": 0.297029702970297,
+            "ci95": [
+              0.2603712871287129,
+              0.33564356435643566
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": 0.0639269406392694,
+            "ci95": [
+              0.0182648401826484,
+              0.1141552511415525
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": 0.16943359375,
+            "ci95": [
+              0.1416015625,
+              0.19921875
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": 0.12646484375,
+            "ci95": [
+              0.099609375,
+              0.15380859375
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": -0.005707762557077625,
             "ci95": [
               -0.014269406392694063,
               0.0028538812785388126
@@ -15604,6 +17024,217 @@
             ],
             "n": 200
           }
+        },
+        "v41": {
+          "wrong_source/preference+source": {
+            "mean": 0.895,
+            "ci95": [
+              0.85,
+              0.9351249999999993
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.495,
+            "ci95": [
+              0.425,
+              0.56
+            ],
+            "n": 200
+          },
+          "wrong_source/grammatical": {
+            "mean": 0.4925,
+            "ci95": [
+              0.4275,
+              0.5625624999999996
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.975,
+            "ci95": [
+              0.95,
+              0.995
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.965,
+            "ci95": [
+              0.935,
+              0.99
+            ],
+            "n": 200
+          },
+          "garbage_mt/grammatical": {
+            "mean": 0.9325,
+            "ci95": [
+              0.8974375,
+              0.965
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 0.995,
+            "ci95": [
+              0.985,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/grammatical": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/grammatical": {
+            "mean": 0.9475,
+            "ci95": [
+              0.915,
+              0.975
+            ],
+            "n": 200
+          }
+        }
+      }
+    },
+    "baselines": {
+      "trigram": "stupid backoff over 23,875,904 Europarl-SV tokens",
+      "sets": {
+        "dalaj": {
+          "n": 1971,
+          "longer_wins": {
+            "mean": 0.6443429731100964,
+            "ci95": [
+              0.6258181126331811,
+              0.6633751902587519
+            ],
+            "n": 1971
+          },
+          "unigram_frequency": {
+            "mean": 0.6511922881785895,
+            "ci95": [
+              0.6321664129883308,
+              0.6702181633688483
+            ],
+            "n": 1971
+          },
+          "trigram": {
+            "mean": 0.8049213597158803,
+            "ci95": [
+              0.7874175545408422,
+              0.8224251648909183
+            ],
+            "n": 1971
+          }
+        },
+        "gerlangmod": {
+          "n": 844,
+          "longer_wins": {
+            "mean": 0.5,
+            "ci95": [
+              0.5,
+              0.5
+            ],
+            "n": 844
+          },
+          "unigram_frequency": {
+            "mean": 0.5011848341232228,
+            "ci95": [
+              0.48518957345971564,
+              0.5171800947867299
+            ],
+            "n": 844
+          },
+          "trigram": {
+            "mean": 0.9087677725118484,
+            "ci95": [
+              0.8904028436018957,
+              0.9277251184834123
+            ],
+            "n": 844
+          }
+        },
+        "blimppi": {
+          "n": 59,
+          "longer_wins": {
+            "mean": 0.9322033898305084,
+            "ci95": [
+              0.8728813559322034,
+              0.9745762711864406
+            ],
+            "n": 59
+          },
+          "unigram_frequency": {
+            "mean": 0.8983050847457628,
+            "ci95": [
+              0.8135593220338984,
+              0.9661016949152542
+            ],
+            "n": 59
+          },
+          "trigram": {
+            "mean": 0.9322033898305084,
+            "ci95": [
+              0.864406779661017,
+              0.9830508474576272
+            ],
+            "n": 59
+          }
+        },
+        "multiblimp": {
+          "n": 201,
+          "longer_wins": {
+            "mean": 0.05223880597014925,
+            "ci95": [
+              0.024875621890547265,
+              0.0845771144278607
+            ],
+            "n": 201
+          },
+          "unigram_frequency": {
+            "mean": 0.9925373134328358,
+            "ci95": [
+              0.9825870646766169,
+              1.0
+            ],
+            "n": 201
+          },
+          "trigram": {
+            "mean": 0.9875621890547264,
+            "ci95": [
+              0.972636815920398,
+              0.9975124378109452
+            ],
+            "n": 201
+          }
         }
       }
     }
@@ -15640,7 +17271,21 @@
       "NbAiLab/borealis-4b-instruct-preview": "193s",
       "google/gemma-3-4b-it": "194s",
       "mii-llm/nesso-4B": "226s",
-      "tencent/Hunyuan-4B-Instruct": "237s"
+      "tencent/Hunyuan-4B-Instruct": "237s",
+      "Qwen/Qwen3.5-4B": "228s (4-bit)",
+      "google/gemma-4-E2B-it": "failed: OutOfMemoryError: CUDA out of memory. Tried to allocate 4.38 GiB. GPU 0 has a total capacity of 11.60 GiB of which 4.28 GiB is free. Process 1070595 has 3.65 GiB memory in use. Including non-PyTorch memory, this proces",
+      "google/gemma-4-E4B-it": "failed: OutOfMemoryError: CUDA out of memory. Tried to allocate 5.25 GiB. GPU 0 has a total capacity of 11.60 GiB of which 1.65 GiB is free. Process 1070595 has 3.65 GiB memory in use. Including non-PyTorch memory, this proces",
+      "google/gemma-3n-E4B-it": "failed: ImportError: \nTimmWrapperModel requires the PIL library but it was not found in your environment. You can install it with pip:\n`pip install pillow`. Please note that you may need to restart your runtime after inst",
+      "deepcogito/cogito-v1-preview-llama-8B": "5206s (4-bit)",
+      "allenai/Llama-3.1-Tulu-3-8B-SFT": "1348s (4-bit)",
+      "allenai/Olmo-3-7B-Instruct": "349s (4-bit)",
+      "BSC-LT/salamandra-7b-instruct": "failed: OutOfMemoryError: CUDA out of memory. Tried to allocate 86.00 MiB. GPU 0 has a total capacity of 11.60 GiB of which 89.69 MiB is free. Process 1070595 has 3.65 GiB memory in use. Including non-PyTorch memory, this proc",
+      "tencent/Hunyuan-7B-Instruct": "failed: OutOfMemoryError: CUDA out of memory. Tried to allocate 112.00 MiB. GPU 0 has a total capacity of 11.60 GiB of which 87.69 MiB is free. Process 1070595 has 3.65 GiB memory in use. Including non-PyTorch memory, this pro",
+      "Unbabel/Tower-Plus-9B": "430s (4-bit)",
+      "Qwen/Qwen3.5-9B": "failed: OutOfMemoryError: CUDA out of memory. Tried to allocate 5.15 GiB. GPU 0 has a total capacity of 11.60 GiB of which 1.07 GiB is free. Process 1070595 has 3.65 GiB memory in use. Including non-PyTorch memory, this proces",
+      "speakleash/Bielik-11B-v2.3-Instruct": "491s (4-bit)",
+      "google/gemma-3-12b-it": "failed: OutOfMemoryError: CUDA out of memory. Tried to allocate 114.00 MiB. GPU 0 has a total capacity of 11.60 GiB of which 19.69 MiB is free. Process 1070595 has 3.65 GiB memory in use. Including non-PyTorch memory, this pro",
+      "NbAiLab/borealis-12b-instruct-preview": "failed: OutOfMemoryError: CUDA out of memory. Tried to allocate 114.00 MiB. GPU 0 has a total capacity of 11.60 GiB of which 71.69 MiB is free. Process 1070595 has 3.65 GiB memory in use. Including non-PyTorch memory, this pro"
     },
     "models": [
       {
@@ -15681,8 +17326,15 @@
           "v4-adequacy/answer_natural": 0.865751421087453,
           "v4-adequacy/answer_grammatical": 0.43306063895588826,
           "v4-adequacy/translation_grammatical": 0.516161775937389,
+          "v4-v41/translation_vs_reference": 0.10818861140161783,
+          "v4-v41/naturalness_vs_reference": 0.21069359642033944,
+          "v4-v41/answer_quality": 3.0381123384003472,
+          "v4-v41/answer_natural": 0.8676510515825936,
+          "v4-v41/answer_grammatical": 0.46341923693092696,
+          "v4-v41/translation_grammatical": 0.5386938926076887,
           "log_parameters": 8.128770741795426
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "HuggingFaceTB/SmolLM2-360M-Instruct",
@@ -15722,8 +17374,15 @@
           "v4-adequacy/answer_natural": 0.882302047973807,
           "v4-adequacy/answer_grammatical": 0.4055217153593552,
           "v4-adequacy/translation_grammatical": 0.2701687077796292,
+          "v4-v41/translation_vs_reference": 0.07408964768439401,
+          "v4-v41/naturalness_vs_reference": 0.10619006601578164,
+          "v4-v41/answer_quality": 3.023795355602132,
+          "v4-v41/answer_natural": 0.878355435390093,
+          "v4-v41/answer_grammatical": 0.4695421495674299,
+          "v4-v41/translation_grammatical": 0.283165017158842,
           "log_parameters": 8.558493913634223
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "LiquidAI/LFM2-1.2B",
@@ -15763,8 +17422,15 @@
           "v4-adequacy/answer_natural": 0.540169399179632,
           "v4-adequacy/answer_grammatical": 0.33377260710170653,
           "v4-adequacy/translation_grammatical": 0.24261917053385676,
+          "v4-v41/translation_vs_reference": 0.13139248635132827,
+          "v4-v41/naturalness_vs_reference": 0.043079918212758465,
+          "v4-v41/answer_quality": 3.1772083969904803,
+          "v4-v41/answer_natural": 0.5412171693712934,
+          "v4-v41/answer_grammatical": 0.36600920329216413,
+          "v4-v41/translation_grammatical": 0.27423817726900634,
           "log_parameters": 9.068312274265288
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "LiquidAI/LFM2-350M",
@@ -15804,8 +17470,15 @@
           "v4-adequacy/answer_natural": 0.5437804288175296,
           "v4-adequacy/answer_grammatical": 0.3346827381664509,
           "v4-adequacy/translation_grammatical": 0.26269868274470126,
+          "v4-v41/translation_vs_reference": 0.08011358806201034,
+          "v4-v41/naturalness_vs_reference": 0.055514742113009684,
+          "v4-v41/answer_quality": 2.8901852283128107,
+          "v4-v41/answer_natural": 0.5276831490236051,
+          "v4-v41/answer_grammatical": 0.36720263254769897,
+          "v4-v41/translation_grammatical": 0.28209925450131584,
           "log_parameters": 8.549596598428597
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "LiquidAI/LFM2-700M",
@@ -15845,8 +17518,15 @@
           "v4-adequacy/answer_natural": 0.5707464131731042,
           "v4-adequacy/answer_grammatical": 0.3315282302534741,
           "v4-adequacy/translation_grammatical": 0.20123123361532275,
+          "v4-v41/translation_vs_reference": 0.14425810277843434,
+          "v4-v41/naturalness_vs_reference": 0.04469321303548652,
+          "v4-v41/answer_quality": 3.1824498319521894,
+          "v4-v41/answer_natural": 0.5724095571559812,
+          "v4-v41/answer_grammatical": 0.39538445096729014,
+          "v4-v41/translation_grammatical": 0.24230688056320093,
           "log_parameters": 8.870690225160688
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "NbAiLab/borealis-1b-instruct-preview",
@@ -15886,8 +17566,15 @@
           "v4-adequacy/answer_natural": 0.9029109881210018,
           "v4-adequacy/answer_grammatical": 0.42891018737180614,
           "v4-adequacy/translation_grammatical": 0.36336335451714363,
+          "v4-v41/translation_vs_reference": 0.2973619375164812,
+          "v4-v41/naturalness_vs_reference": 0.2406975264758069,
+          "v4-v41/answer_quality": 3.625128771701876,
+          "v4-v41/answer_natural": 0.9091739103393935,
+          "v4-v41/answer_grammatical": 0.4876247539993249,
+          "v4-v41/translation_grammatical": 0.43448646854420175,
           "log_parameters": 8.99995046675829
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "NbAiLab/borealis-270m-instruct-preview",
@@ -15927,8 +17614,15 @@
           "v4-adequacy/answer_natural": 0.8854002967737066,
           "v4-adequacy/answer_grammatical": 0.41194161833942844,
           "v4-adequacy/translation_grammatical": 0.20406778392990288,
+          "v4-v41/translation_vs_reference": 0.15017816865943026,
+          "v4-v41/naturalness_vs_reference": 0.11615574626052406,
+          "v4-v41/answer_quality": 3.3462843939250244,
+          "v4-v41/answer_natural": 0.8775355359425002,
+          "v4-v41/answer_grammatical": 0.5027730218119878,
+          "v4-v41/translation_grammatical": 0.2624256606952088,
           "log_parameters": 8.428293859280046
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "NbAiLab/borealis-4b-instruct-preview",
@@ -15968,8 +17662,15 @@
           "v4-adequacy/answer_natural": 0.878869121573171,
           "v4-adequacy/answer_grammatical": 0.4088980571242859,
           "v4-adequacy/translation_grammatical": 0.4649899729566016,
+          "v4-v41/translation_vs_reference": 0.42429930323042364,
+          "v4-v41/naturalness_vs_reference": 0.38023212324320504,
+          "v4-v41/answer_quality": 3.491661372839858,
+          "v4-v41/answer_natural": 0.880945412153309,
+          "v4-v41/answer_grammatical": 0.50125633633208,
+          "v4-v41/translation_grammatical": 0.5182271684969255,
           "log_parameters": 9.588861181402027
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "Qwen/Qwen3.5-0.8B",
@@ -16009,8 +17710,15 @@
           "v4-adequacy/answer_natural": 0.9008506994486634,
           "v4-adequacy/answer_grammatical": 0.467789798166816,
           "v4-adequacy/translation_grammatical": 0.36683518295989004,
+          "v4-v41/translation_vs_reference": 0.3883729838365319,
+          "v4-v41/naturalness_vs_reference": 0.2811137818513414,
+          "v4-v41/answer_quality": 3.7834662137706863,
+          "v4-v41/answer_natural": 0.854702011814496,
+          "v4-v41/answer_grammatical": 0.5018665292438422,
+          "v4-v41/translation_grammatical": 0.41439030597011806,
           "log_parameters": 8.941231183532466
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "Qwen/Qwen3.5-2B",
@@ -16050,8 +17758,63 @@
           "v4-adequacy/answer_natural": 0.930157249993987,
           "v4-adequacy/answer_grammatical": 0.45324821893587364,
           "v4-adequacy/translation_grammatical": 0.4150424083189438,
+          "v4-v41/translation_vs_reference": 0.38234348263376544,
+          "v4-v41/naturalness_vs_reference": 0.31961738400005374,
+          "v4-v41/answer_quality": 3.8720268583247743,
+          "v4-v41/answer_natural": 0.9153181238463444,
+          "v4-v41/answer_grammatical": 0.5245805731122315,
+          "v4-v41/translation_grammatical": 0.47880615909930346,
           "log_parameters": 9.356803300305534
-        }
+        },
+        "precision": "bf16"
+      },
+      {
+        "model": "Qwen/Qwen3.5-4B",
+        "leaderboard": {
+          "rank": 2.1,
+          "Sentiment classification": 78.17,
+          "Named entity recognition": 52.12,
+          "Linguistic acceptability": 38.66,
+          "Reading comprehension": 45.48,
+          "Summarization": 33.54,
+          "Knowledge": 67.8,
+          "Common sense reasoning": 52.02,
+          "parameters": 4659861248.0,
+          "leaderboard_name": "Qwen/Qwen3.5-4B (val)"
+        },
+        "features": {
+          "chrf": 60.11329978308322,
+          "swedish_answers": 0.71,
+          "answer_words": 109.87,
+          "v3/translation_vs_reference": 0.46930413712896907,
+          "v3/naturalness_vs_reference": 0.4420479242466044,
+          "v3/answer_quality": 3.9064639357191795,
+          "v3/answer_natural": 0.9491309195842791,
+          "v4-both/translation_vs_reference": 0.4523339945661018,
+          "v4-both/naturalness_vs_reference": 0.45683774468467375,
+          "v4-both/answer_quality": 3.85902293203139,
+          "v4-both/answer_natural": 0.9219982785778056,
+          "v4-grammar/translation_vs_reference": 0.4541511887238998,
+          "v4-grammar/naturalness_vs_reference": 0.44397693906147184,
+          "v4-grammar/answer_quality": 3.8987921921978845,
+          "v4-grammar/answer_natural": 0.9461448656867206,
+          "v4-grammar/answer_grammatical": 0.5576915785072142,
+          "v4-grammar/translation_grammatical": 0.4870448283341904,
+          "v4-adequacy/translation_vs_reference": 0.41538003224439335,
+          "v4-adequacy/naturalness_vs_reference": 0.3690382807245057,
+          "v4-adequacy/answer_quality": 3.906995507469318,
+          "v4-adequacy/answer_natural": 0.9448717327840034,
+          "v4-adequacy/answer_grammatical": 0.44596659385510373,
+          "v4-adequacy/translation_grammatical": 0.465257159070659,
+          "v4-v41/translation_vs_reference": 0.40665841221131316,
+          "v4-v41/naturalness_vs_reference": 0.37102834170290594,
+          "v4-v41/answer_quality": 3.8539096096984493,
+          "v4-v41/answer_natural": 0.9172869295711377,
+          "v4-v41/answer_grammatical": 0.5041879590114514,
+          "v4-v41/translation_grammatical": 0.5148815805845461,
+          "log_parameters": 9.668372985332686
+        },
+        "precision": "4-bit NF4"
       },
       {
         "model": "Unbabel/Tower-Plus-2B",
@@ -16091,8 +17854,159 @@
           "v4-adequacy/answer_natural": 0.88805816622825,
           "v4-adequacy/answer_grammatical": 0.4574854199484246,
           "v4-adequacy/translation_grammatical": 0.5232409552948744,
+          "v4-v41/translation_vs_reference": 0.40317970841441153,
+          "v4-v41/naturalness_vs_reference": 0.4191351463884244,
+          "v4-v41/answer_quality": 3.875235004612238,
+          "v4-v41/answer_natural": 0.875187006276591,
+          "v4-v41/answer_grammatical": 0.5178431391755676,
+          "v4-v41/translation_grammatical": 0.5752029641762997,
           "log_parameters": 9.417362381394005
-        }
+        },
+        "precision": "bf16"
+      },
+      {
+        "model": "Unbabel/Tower-Plus-9B",
+        "leaderboard": {
+          "rank": 1.99,
+          "Sentiment classification": 76.86,
+          "Named entity recognition": 41.13,
+          "Linguistic acceptability": 54.05,
+          "Reading comprehension": 74.36,
+          "Summarization": 38.33,
+          "Knowledge": 43.22,
+          "Common sense reasoning": 48.23,
+          "parameters": 9241705984.0,
+          "leaderboard_name": "Unbabel/Tower-Plus-9B (val)"
+        },
+        "features": {
+          "chrf": 69.49251074529846,
+          "swedish_answers": 0.79,
+          "answer_words": 109.29,
+          "v3/translation_vs_reference": 0.519864716064354,
+          "v3/naturalness_vs_reference": 0.46730002778303514,
+          "v3/answer_quality": 3.8937116203533697,
+          "v3/answer_natural": 0.9415782871966123,
+          "v4-both/translation_vs_reference": 0.3368940994984623,
+          "v4-both/naturalness_vs_reference": 0.4528100647568904,
+          "v4-both/answer_quality": 3.9346935581014595,
+          "v4-both/answer_natural": 0.9585821396290362,
+          "v4-grammar/translation_vs_reference": 0.32738577309666267,
+          "v4-grammar/naturalness_vs_reference": 0.4743172834654188,
+          "v4-grammar/answer_quality": 3.9453310583037755,
+          "v4-grammar/answer_natural": 0.9495267931212966,
+          "v4-grammar/answer_grammatical": 0.5676305543753888,
+          "v4-grammar/translation_grammatical": 0.5302925275108349,
+          "v4-adequacy/translation_vs_reference": 0.38434008945703674,
+          "v4-adequacy/naturalness_vs_reference": 0.41850441696909113,
+          "v4-adequacy/answer_quality": 3.895805659515872,
+          "v4-adequacy/answer_natural": 0.9474986569916184,
+          "v4-adequacy/answer_grammatical": 0.5189768428599499,
+          "v4-adequacy/translation_grammatical": 0.5401253328772269,
+          "v4-v41/translation_vs_reference": 0.40342988592177237,
+          "v4-v41/naturalness_vs_reference": 0.44846990651862256,
+          "v4-v41/answer_quality": 3.8872542476212657,
+          "v4-v41/answer_natural": 0.9290530210871004,
+          "v4-v41/answer_grammatical": 0.5359535946101837,
+          "v4-v41/translation_grammatical": 0.5789346627069359,
+          "log_parameters": 9.965752147740625
+        },
+        "precision": "4-bit NF4"
+      },
+      {
+        "model": "allenai/Llama-3.1-Tulu-3-8B-SFT",
+        "leaderboard": {
+          "rank": 2.43,
+          "Sentiment classification": 79.56,
+          "Named entity recognition": 56.69,
+          "Linguistic acceptability": 21.7,
+          "Reading comprehension": 77.41,
+          "Summarization": 28.96,
+          "Knowledge": 32.14,
+          "Common sense reasoning": 23.58,
+          "parameters": 8030326784.0,
+          "leaderboard_name": "allenai/Llama-3.1-Tulu-3-8B-SFT"
+        },
+        "features": {
+          "chrf": 60.989052541776736,
+          "swedish_answers": 0.62,
+          "answer_words": 59.12,
+          "v3/translation_vs_reference": 0.46878172445283484,
+          "v3/naturalness_vs_reference": 0.44634927439002214,
+          "v3/answer_quality": 3.43655696062493,
+          "v3/answer_natural": 0.8591895191223499,
+          "v4-both/translation_vs_reference": 0.4186488613739947,
+          "v4-both/naturalness_vs_reference": 0.4560830611217143,
+          "v4-both/answer_quality": 3.4615431921663484,
+          "v4-both/answer_natural": 0.8619890413926937,
+          "v4-grammar/translation_vs_reference": 0.4373316919865749,
+          "v4-grammar/naturalness_vs_reference": 0.49164447434976283,
+          "v4-grammar/answer_quality": 3.5195843833613134,
+          "v4-grammar/answer_natural": 0.8796982147593543,
+          "v4-grammar/answer_grammatical": 0.5614899539425655,
+          "v4-grammar/translation_grammatical": 0.4693561030579345,
+          "v4-adequacy/translation_vs_reference": 0.39773934981324116,
+          "v4-adequacy/naturalness_vs_reference": 0.3917387732229354,
+          "v4-adequacy/answer_quality": 3.520408173231534,
+          "v4-adequacy/answer_natural": 0.8946146301267772,
+          "v4-adequacy/answer_grammatical": 0.3875255606253429,
+          "v4-adequacy/translation_grammatical": 0.4819496076074934,
+          "v4-v41/translation_vs_reference": 0.39551575968151653,
+          "v4-v41/naturalness_vs_reference": 0.39328631934059805,
+          "v4-v41/answer_quality": 3.49369484662628,
+          "v4-v41/answer_natural": 0.8630851693524134,
+          "v4-v41/answer_grammatical": 0.4696879558718321,
+          "v4-v41/translation_grammatical": 0.5123394266211327,
+          "log_parameters": 9.904733218703376
+        },
+        "precision": "4-bit NF4"
+      },
+      {
+        "model": "allenai/Olmo-3-7B-Instruct",
+        "leaderboard": {
+          "rank": 2.83,
+          "Sentiment classification": 62.32,
+          "Named entity recognition": 40.29,
+          "Linguistic acceptability": 18.02,
+          "Reading comprehension": 63.87,
+          "Summarization": 33.01,
+          "Knowledge": 13.8,
+          "Common sense reasoning": 11.07,
+          "parameters": 7298011136.0,
+          "leaderboard_name": "allenai/Olmo-3-7B-Instruct"
+        },
+        "features": {
+          "chrf": 46.66702316010657,
+          "swedish_answers": 0.75,
+          "answer_words": 108.32,
+          "v3/translation_vs_reference": 0.31156146546126134,
+          "v3/naturalness_vs_reference": 0.25313638287494833,
+          "v3/answer_quality": 3.6276636046047845,
+          "v3/answer_natural": 0.7793343659022149,
+          "v4-both/translation_vs_reference": 0.6528743934043527,
+          "v4-both/naturalness_vs_reference": 0.426693407332133,
+          "v4-both/answer_quality": 3.5856981098221268,
+          "v4-both/answer_natural": 0.7785691764508702,
+          "v4-grammar/translation_vs_reference": 0.6927933817634744,
+          "v4-grammar/naturalness_vs_reference": 0.5080769860107707,
+          "v4-grammar/answer_quality": 3.544498805225993,
+          "v4-grammar/answer_natural": 0.7635834399813894,
+          "v4-grammar/answer_grammatical": 0.4365069331321416,
+          "v4-grammar/translation_grammatical": 0.3192339774899456,
+          "v4-adequacy/translation_vs_reference": 0.39413966830498426,
+          "v4-adequacy/naturalness_vs_reference": 0.1797739701501408,
+          "v4-adequacy/answer_quality": 3.563556282980404,
+          "v4-adequacy/answer_natural": 0.7707231085950791,
+          "v4-adequacy/answer_grammatical": 0.3694131459456615,
+          "v4-adequacy/translation_grammatical": 0.29982973348666664,
+          "v4-v41/translation_vs_reference": 0.3589332623772881,
+          "v4-v41/naturalness_vs_reference": 0.2090684673268643,
+          "v4-v41/answer_quality": 3.54599045276813,
+          "v4-v41/answer_natural": 0.7458876364147835,
+          "v4-v41/answer_grammatical": 0.45758122770450854,
+          "v4-v41/translation_grammatical": 0.35353112396403363,
+          "log_parameters": 9.863204521716991
+        },
+        "precision": "4-bit NF4"
       },
       {
         "model": "deepcogito/cogito-v1-preview-llama-3B",
@@ -16132,8 +18046,63 @@
           "v4-adequacy/answer_natural": 0.8886051702900478,
           "v4-adequacy/answer_grammatical": 0.532022074687567,
           "v4-adequacy/translation_grammatical": 0.4321155502570953,
+          "v4-v41/translation_vs_reference": 0.372694056625604,
+          "v4-v41/naturalness_vs_reference": 0.36160974275989377,
+          "v4-v41/answer_quality": 3.6340871920721467,
+          "v4-v41/answer_natural": 0.8523683053476548,
+          "v4-v41/answer_grammatical": 0.5381652784638661,
+          "v4-v41/translation_grammatical": 0.49204218907681285,
           "log_parameters": 9.557116312113957
-        }
+        },
+        "precision": "bf16"
+      },
+      {
+        "model": "deepcogito/cogito-v1-preview-llama-8B",
+        "leaderboard": {
+          "rank": 2.39,
+          "Sentiment classification": 77.82,
+          "Named entity recognition": 53.07,
+          "Linguistic acceptability": 31.59,
+          "Reading comprehension": 26.69,
+          "Summarization": 36.99,
+          "Knowledge": 43.92,
+          "Common sense reasoning": 35.25,
+          "parameters": 8030261248.0,
+          "leaderboard_name": "deepcogito/cogito-v1-preview-llama-8B"
+        },
+        "features": {
+          "chrf": 61.305519106878634,
+          "swedish_answers": 0.89,
+          "answer_words": 79.07,
+          "v3/translation_vs_reference": 0.4901732160435047,
+          "v3/naturalness_vs_reference": 0.4642757108724733,
+          "v3/answer_quality": 3.596326640110056,
+          "v3/answer_natural": 0.8456476251571041,
+          "v4-both/translation_vs_reference": 0.3943378549683116,
+          "v4-both/naturalness_vs_reference": 0.453988808268152,
+          "v4-both/answer_quality": 3.5392758286538397,
+          "v4-both/answer_natural": 0.867591873764196,
+          "v4-grammar/translation_vs_reference": 0.3946433442294209,
+          "v4-grammar/naturalness_vs_reference": 0.483146987264593,
+          "v4-grammar/answer_quality": 3.664852165744402,
+          "v4-grammar/answer_natural": 0.8692971320126855,
+          "v4-grammar/answer_grammatical": 0.5504902988263372,
+          "v4-grammar/translation_grammatical": 0.4895148219636906,
+          "v4-adequacy/translation_vs_reference": 0.4026446167196852,
+          "v4-adequacy/naturalness_vs_reference": 0.4044243717416102,
+          "v4-adequacy/answer_quality": 3.602197464600619,
+          "v4-adequacy/answer_natural": 0.8883301432835493,
+          "v4-adequacy/answer_grammatical": 0.4897773916783634,
+          "v4-adequacy/translation_grammatical": 0.49425040932512426,
+          "v4-v41/translation_vs_reference": 0.39921625566940977,
+          "v4-v41/naturalness_vs_reference": 0.4087672862461087,
+          "v4-v41/answer_quality": 3.5749341538140063,
+          "v4-v41/answer_natural": 0.8518046571458625,
+          "v4-v41/answer_grammatical": 0.5365081343942633,
+          "v4-v41/translation_grammatical": 0.5384799277106723,
+          "log_parameters": 9.904729674384436
+        },
+        "precision": "4-bit NF4"
       },
       {
         "model": "google/gemma-3-1b-it",
@@ -16173,8 +18142,15 @@
           "v4-adequacy/answer_natural": 0.8469500180385513,
           "v4-adequacy/answer_grammatical": 0.4817883079681883,
           "v4-adequacy/translation_grammatical": 0.41416127634445055,
+          "v4-v41/translation_vs_reference": 0.3306674943593697,
+          "v4-v41/naturalness_vs_reference": 0.2756871077125476,
+          "v4-v41/answer_quality": 3.7179702759403166,
+          "v4-v41/answer_natural": 0.8327746074489528,
+          "v4-v41/answer_grammatical": 0.5142698661925007,
+          "v4-v41/translation_grammatical": 0.46381383551802924,
           "log_parameters": 8.99995046675829
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "google/gemma-3-270m-it",
@@ -16214,8 +18190,15 @@
           "v4-adequacy/answer_natural": 0.8779309655786538,
           "v4-adequacy/answer_grammatical": 0.42155052230291257,
           "v4-adequacy/translation_grammatical": 0.06134581512069318,
+          "v4-v41/translation_vs_reference": 0.05622853589690866,
+          "v4-v41/naturalness_vs_reference": 0.03286747847220464,
+          "v4-v41/answer_quality": 3.5053111428250605,
+          "v4-v41/answer_natural": 0.8745903838011688,
+          "v4-v41/answer_grammatical": 0.5038892568902098,
+          "v4-v41/translation_grammatical": 0.10295068785167333,
           "log_parameters": 8.428293859280046
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "google/gemma-3-4b-it",
@@ -16255,8 +18238,15 @@
           "v4-adequacy/answer_natural": 0.8935625078928884,
           "v4-adequacy/answer_grammatical": 0.47785074843434777,
           "v4-adequacy/translation_grammatical": 0.49523468203330223,
+          "v4-v41/translation_vs_reference": 0.40395038920357407,
+          "v4-v41/naturalness_vs_reference": 0.4198302183254542,
+          "v4-v41/answer_quality": 3.807292264851069,
+          "v4-v41/answer_natural": 0.8932131057328975,
+          "v4-v41/answer_grammatical": 0.5246587144380562,
+          "v4-v41/translation_grammatical": 0.5469071397099219,
           "log_parameters": 9.63347648207543
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "ibm-granite/granite-4.0-h-micro",
@@ -16296,8 +18286,15 @@
           "v4-adequacy/answer_natural": 0.8223965559388978,
           "v4-adequacy/answer_grammatical": 0.32287249393174733,
           "v4-adequacy/translation_grammatical": 0.3709899921999837,
+          "v4-v41/translation_vs_reference": 0.33475195440183714,
+          "v4-v41/naturalness_vs_reference": 0.27167535896274814,
+          "v4-v41/answer_quality": 3.539381626106453,
+          "v4-v41/answer_natural": 0.8062920494375689,
+          "v4-v41/answer_grammatical": 0.4306169121105679,
+          "v4-v41/translation_grammatical": 0.4093836660507841,
           "log_parameters": 9.503980709436851
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "ibm-granite/granite-4.0-micro",
@@ -16337,8 +18334,15 @@
           "v4-adequacy/answer_natural": 0.8933716831803684,
           "v4-adequacy/answer_grammatical": 0.36410076141036607,
           "v4-adequacy/translation_grammatical": 0.3963479856847091,
+          "v4-v41/translation_vs_reference": 0.38948450401020673,
+          "v4-v41/naturalness_vs_reference": 0.33436789658444793,
+          "v4-v41/answer_quality": 3.678757900675433,
+          "v4-v41/answer_natural": 0.8628512483790807,
+          "v4-v41/answer_grammatical": 0.4595268436784675,
+          "v4-v41/translation_grammatical": 0.4391271879960372,
           "log_parameters": 9.53184107999797
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "meta-llama/Llama-3.2-1B-Instruct",
@@ -16378,8 +18382,15 @@
           "v4-adequacy/answer_natural": 0.8363532088580261,
           "v4-adequacy/answer_grammatical": 0.46458346086498664,
           "v4-adequacy/translation_grammatical": 0.40306288542141494,
+          "v4-v41/translation_vs_reference": 0.39244565438812584,
+          "v4-v41/naturalness_vs_reference": 0.32293853524512095,
+          "v4-v41/answer_quality": 3.5568093487142103,
+          "v4-v41/answer_natural": 0.8330412533641289,
+          "v4-v41/answer_grammatical": 0.5318477807717072,
+          "v4-v41/translation_grammatical": 0.4639215523522754,
           "log_parameters": 9.091953251409473
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "mii-llm/nesso-4B",
@@ -16419,8 +18430,63 @@
           "v4-adequacy/answer_natural": 0.8759188772111395,
           "v4-adequacy/answer_grammatical": 0.3955976203322193,
           "v4-adequacy/translation_grammatical": 0.4233057017243149,
+          "v4-v41/translation_vs_reference": 0.44468169331778107,
+          "v4-v41/naturalness_vs_reference": 0.376657991513724,
+          "v4-v41/answer_quality": 3.6121721416614627,
+          "v4-v41/answer_natural": 0.8405072127562248,
+          "v4-v41/answer_grammatical": 0.46699963373478903,
+          "v4-v41/translation_grammatical": 0.46635517806577625,
           "log_parameters": 9.604492608200253
-        }
+        },
+        "precision": "bf16"
+      },
+      {
+        "model": "speakleash/Bielik-11B-v2.3-Instruct",
+        "leaderboard": {
+          "rank": 1.94,
+          "Sentiment classification": 77.37,
+          "Named entity recognition": 61.34,
+          "Linguistic acceptability": 39.0,
+          "Reading comprehension": 76.51,
+          "Summarization": 38.8,
+          "Knowledge": 35.56,
+          "Common sense reasoning": 51.79,
+          "parameters": 11168796672.0,
+          "leaderboard_name": "speakleash/Bielik-11B-v2.3-Instruct (val)"
+        },
+        "features": {
+          "chrf": 60.38870311194358,
+          "swedish_answers": 0.7,
+          "answer_words": 94.01,
+          "v3/translation_vs_reference": 0.4634200628238743,
+          "v3/naturalness_vs_reference": 0.41730648128293213,
+          "v3/answer_quality": 3.63830519905092,
+          "v3/answer_natural": 0.8711764524054365,
+          "v4-both/translation_vs_reference": 0.4494727588730237,
+          "v4-both/naturalness_vs_reference": 0.4656050693728033,
+          "v4-both/answer_quality": 3.654576473731339,
+          "v4-both/answer_natural": 0.8581851354833541,
+          "v4-grammar/translation_vs_reference": 0.4445043440908366,
+          "v4-grammar/naturalness_vs_reference": 0.4928103803945562,
+          "v4-grammar/answer_quality": 3.657206585160554,
+          "v4-grammar/answer_natural": 0.8541839372939218,
+          "v4-grammar/answer_grammatical": 0.5204229367526216,
+          "v4-grammar/translation_grammatical": 0.45466924860206553,
+          "v4-adequacy/translation_vs_reference": 0.38751684592762503,
+          "v4-adequacy/naturalness_vs_reference": 0.3118959686917108,
+          "v4-adequacy/answer_quality": 3.664420839874302,
+          "v4-adequacy/answer_natural": 0.8792984084116381,
+          "v4-adequacy/answer_grammatical": 0.40686989268955626,
+          "v4-adequacy/translation_grammatical": 0.4615883657030301,
+          "v4-v41/translation_vs_reference": 0.38074805922949906,
+          "v4-v41/naturalness_vs_reference": 0.3557508504394901,
+          "v4-v41/answer_quality": 3.623980824776911,
+          "v4-v41/answer_natural": 0.8383731449484931,
+          "v4-v41/answer_grammatical": 0.464150930575899,
+          "v4-v41/translation_grammatical": 0.5053722156103505,
+          "log_parameters": 10.048006384676778
+        },
+        "precision": "4-bit NF4"
       },
       {
         "model": "tencent/Hunyuan-4B-Instruct",
@@ -16460,8 +18526,15 @@
           "v4-adequacy/answer_natural": 0.8231869277969406,
           "v4-adequacy/answer_grammatical": 0.4313778170717811,
           "v4-adequacy/translation_grammatical": 0.3313583149213642,
+          "v4-v41/translation_vs_reference": 0.2834981251025139,
+          "v4-v41/naturalness_vs_reference": 0.1839337797897475,
+          "v4-v41/answer_quality": 3.4241887241020548,
+          "v4-v41/answer_natural": 0.7703315617946331,
+          "v4-v41/answer_grammatical": 0.4964475945843351,
+          "v4-v41/translation_grammatical": 0.38287616703515776,
           "log_parameters": 9.625493277409419
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "utter-project/EuroMoE-2.6B-A0.6B-Instruct-Preview",
@@ -16501,8 +18574,15 @@
           "v4-adequacy/answer_natural": 0.925065738946305,
           "v4-adequacy/answer_grammatical": 0.5970606281524408,
           "v4-adequacy/translation_grammatical": 0.586264251722474,
+          "v4-v41/translation_vs_reference": 0.4758036258179146,
+          "v4-v41/naturalness_vs_reference": 0.40143306071801527,
+          "v4-v41/answer_quality": 3.8309244715316715,
+          "v4-v41/answer_natural": 0.897862157004896,
+          "v4-v41/answer_grammatical": 0.5822032114439356,
+          "v4-v41/translation_grammatical": 0.5794615411909187,
           "log_parameters": 9.416894803644313
-        }
+        },
+        "precision": "bf16"
       },
       {
         "model": "yulan-team/YuLan-Mini-Instruct",
@@ -16542,1185 +18622,1730 @@
           "v4-adequacy/answer_natural": 0.7470009163899455,
           "v4-adequacy/answer_grammatical": 0.45162594586843435,
           "v4-adequacy/translation_grammatical": 0.3197393548909134,
+          "v4-v41/translation_vs_reference": 0.3223350845619153,
+          "v4-v41/naturalness_vs_reference": 0.19153935443332018,
+          "v4-v41/answer_quality": 3.415559252380157,
+          "v4-v41/answer_natural": 0.7280967172252697,
+          "v4-v41/answer_grammatical": 0.48739604350552534,
+          "v4-v41/translation_grammatical": 0.35322117326987623,
           "log_parameters": 9.384599827039093
-        }
+        },
+        "precision": "bf16"
       }
     ],
     "spearman": {
       "euroeval_rank (negated)": {
         "answer_words": {
-          "rho": -0.024858761029519453,
+          "rho": -0.08814673201888273,
           "ci95": [
-            -0.5088769293143698,
-            0.4373988528091962
+            -0.4969395622943976,
+            0.31976579409531825
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "chrf": {
-          "rho": 0.8197741421325621,
+          "rho": 0.8258965543508361,
           "ci95": [
-            0.5495362681626975,
-            0.9264665775444606
+            0.5957382681636477,
+            0.9278470424259371
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "log_parameters": {
-          "rho": 0.8151498021481062,
+          "rho": 0.834884994523549,
           "ci95": [
-            0.5476367621245626,
-            0.9210156916426998
+            0.6370117334290883,
+            0.9211114835037731
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "swedish_answers": {
-          "rho": -0.04019531250782976,
+          "rho": -0.011567254875075405,
           "ci95": [
-            -0.4625787918854533,
-            0.4035874012423893
+            -0.3494434933324477,
+            0.33729917949907073
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_natural": {
-          "rho": 0.3248588089084929,
+          "rho": 0.36079935652449513,
           "ci95": [
-            -0.1569083144990021,
-            0.6987565847440446
+            -0.03894404140907715,
+            0.6853497214324178
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_quality": {
-          "rho": 0.7638419298161433,
+          "rho": 0.7339173557224368,
           "ci95": [
-            0.4380829190222172,
-            0.915498951550085
+            0.42954521995761274,
+            0.8913389662752064
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/naturalness_vs_reference": {
-          "rho": 0.2881356392057937,
+          "rho": 0.394744060780214,
           "ci95": [
-            -0.17332645186264795,
-            0.710457872813402
+            -0.005282755865913098,
+            0.7248555064074306
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/translation_vs_reference": {
-          "rho": 0.33389835837377274,
+          "rho": 0.4519573123079981,
           "ci95": [
-            -0.11297409323139639,
-            0.6316283162571008
+            0.056841888461240456,
+            0.7243397761209377
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_grammatical": {
-          "rho": 0.12146894593969736,
+          "rho": 0.11771147443515396,
           "ci95": [
-            -0.34817968227796536,
-            0.5470698357235665
+            -0.2862101850665746,
+            0.4780665566556651
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_natural": {
-          "rho": 0.38192096490807165,
+          "rho": 0.46673968351613376,
           "ci95": [
-            0.0016913504385516213,
-            0.6600528004761874
+            0.14486819845607113,
+            0.7088725187887401
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_quality": {
-          "rho": 0.735593337737144,
+          "rho": 0.7276211605782308,
           "ci95": [
-            0.389967128229889,
-            0.8806139852188742
+            0.4362577485644617,
+            0.8833903355735362
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/naturalness_vs_reference": {
-          "rho": 0.6954803369849648,
+          "rho": 0.7120175465251988,
           "ci95": [
-            0.4310670166954019,
-            0.8416406436166122
+            0.480732655835245,
+            0.8401264266036993
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_grammatical": {
-          "rho": 0.4903955584914293,
+          "rho": 0.5376403157921916,
           "ci95": [
-            0.038329648994183826,
-            0.809012787241407
+            0.1277661764855844,
+            0.8060058457339745
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_vs_reference": {
-          "rho": 0.732203506687664,
+          "rho": 0.6318094953403148,
           "ci95": [
-            0.3858414331976296,
-            0.9150887486234616
+            0.264945333605661,
+            0.8511484639250663
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_natural": {
-          "rho": 0.45932210720453004,
+          "rho": 0.4839857832589587,
           "ci95": [
-            0.05406794593400108,
-            0.7516074652685885
+            0.15129067834499016,
+            0.7466580271084055
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_quality": {
-          "rho": 0.7271187601134442,
+          "rho": 0.694223951552443,
           "ci95": [
-            0.37696914059962455,
-            0.8912598820543317
+            0.384993549892288,
+            0.871845661838911
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/naturalness_vs_reference": {
-          "rho": 0.25988704712679433,
+          "rho": 0.2313167346458258,
           "ci95": [
-            -0.2532579399323985,
-            0.6717838848232613
+            -0.23556706614976874,
+            0.6170422923076172
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/translation_vs_reference": {
-          "rho": 0.0638418180985386,
+          "rho": -0.16917602604866316,
           "ci95": [
-            -0.3760308674706186,
-            0.49474659582897884
+            -0.5214461905051831,
+            0.21665750412314427
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_grammatical": {
-          "rho": 0.23276839873095492,
+          "rho": 0.30741857160622765,
           "ci95": [
-            -0.19228700489415454,
-            0.5765288000714428
+            -0.05876505031306684,
+            0.6075756806997324
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_natural": {
-          "rho": 0.23615822978043488,
+          "rho": 0.35614564707008217,
           "ci95": [
-            -0.2098007198478563,
-            0.6600458973973445
+            -0.025119964480634027,
+            0.6866109545197243
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_quality": {
-          "rho": 0.7231639572223842,
+          "rho": 0.6923077182476847,
           "ci95": [
-            0.37403663637476176,
-            0.8910387313606203
+            0.37884941291134405,
+            0.8659359253622798
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/naturalness_vs_reference": {
-          "rho": 0.11864408673179741,
+          "rho": -0.0106761569836535,
           "ci95": [
-            -0.3451938545645971,
-            0.5200094091431992
+            -0.4410537663745116,
+            0.3723185347885719
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_grammatical": {
-          "rho": 0.003954802891059914,
+          "rho": 0.16397482136431915,
           "ci95": [
-            -0.42951570815684587,
-            0.4464585989540642
+            -0.22332490511728606,
+            0.5400162136974715
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_vs_reference": {
-          "rho": -0.1700565243155763,
+          "rho": -0.3096085525259515,
           "ci95": [
-            -0.5568466358377523,
-            0.2840753318035393
+            -0.624737213960469,
+            0.09217516566711373
           ],
-          "n_models": 22
+          "n_models": 28
+        },
+        "v4-v41/answer_grammatical": {
+          "rho": 0.1886121067112118,
+          "ci95": [
+            -0.21045714855072029,
+            0.5411528812016573
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_natural": {
+          "rho": 0.27374761496547434,
+          "ci95": [
+            -0.12558762029682374,
+            0.613557262037907
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_quality": {
+          "rho": 0.660279247296724,
+          "ci95": [
+            0.3330289514178835,
+            0.8456175727473317
+          ],
+          "n_models": 28
+        },
+        "v4-v41/naturalness_vs_reference": {
+          "rho": 0.7142075274449226,
+          "ci95": [
+            0.47391980716260756,
+            0.840207544744876
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_grammatical": {
+          "rho": 0.5354503348724678,
+          "ci95": [
+            0.1418000947000592,
+            0.79659629406752
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_vs_reference": {
+          "rho": 0.7205037225891285,
+          "ci95": [
+            0.39776563261612435,
+            0.8963071634306573
+          ],
+          "n_models": 28
         }
       },
       "Linguistic acceptability": {
         "answer_words": {
-          "rho": 0.09881422924901187,
+          "rho": 0.0016420361247947454,
           "ci95": [
-            -0.3500191700634109,
-            0.5087998267345601
+            -0.4015527692586887,
+            0.4022143234141743
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "chrf": {
-          "rho": 0.7843026538678713,
+          "rho": 0.8253968253968254,
           "ci95": [
-            0.5564360916389627,
-            0.894071923507549
+            0.6409128440318437,
+            0.9168106913685053
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "log_parameters": {
-          "rho": 0.6327684625695862,
+          "rho": 0.7678620599781556,
           "ci95": [
-            0.18571628925798025,
-            0.8892725313867165
+            0.5049477900636885,
+            0.9041802966883755
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "swedish_answers": {
-          "rho": 0.09402100143286604,
+          "rho": 0.12169826784818431,
           "ci95": [
-            -0.29734540011168376,
-            0.501775829354561
+            -0.2339302989395084,
+            0.4392757802867389
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_natural": {
-          "rho": 0.4217955957086392,
+          "rho": 0.41215106732348106,
           "ci95": [
-            -0.032992975813787156,
-            0.758269308754449
+            0.039784470257346397,
+            0.6986598332629951
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_quality": {
-          "rho": 0.7594579333709771,
+          "rho": 0.7449370552818828,
           "ci95": [
-            0.5241299794637232,
-            0.8759266363766453
+            0.5002545782090959,
+            0.8669315612125356
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/naturalness_vs_reference": {
-          "rho": 0.3788819875776398,
+          "rho": 0.4603174603174603,
           "ci95": [
-            -0.0068993894993894965,
-            0.6872235282173035
+            0.11116920610821442,
+            0.7338580071008179
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/translation_vs_reference": {
-          "rho": 0.32467532467532473,
+          "rho": 0.4532019704433497,
           "ci95": [
-            -0.13105162063890488,
-            0.6828370639380921
+            0.03900654206626277,
+            0.7655868660777438
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_grammatical": {
-          "rho": 0.24223602484472054,
+          "rho": 0.22660098522167485,
           "ci95": [
-            -0.19615117701196705,
-            0.652383897392542
+            -0.15075259931474855,
+            0.5662028597644554
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_natural": {
-          "rho": 0.33032185206098247,
+          "rho": 0.4433497536945813,
           "ci95": [
-            -0.08705921226539783,
-            0.6966940911951808
+            0.09395777960523825,
+            0.7112463494550891
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_quality": {
-          "rho": 0.7097684923771881,
+          "rho": 0.7148330596606458,
           "ci95": [
-            0.4526282070364221,
-            0.8488025378003554
+            0.4413618802877008,
+            0.8588417921176332
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/naturalness_vs_reference": {
-          "rho": 0.7018633540372672,
+          "rho": 0.7345374931581828,
           "ci95": [
-            0.4147685614773381,
-            0.8621121861759311
+            0.48456043956043954,
+            0.8718782578539385
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_grammatical": {
-          "rho": 0.5640880858272164,
+          "rho": 0.5922276956759714,
           "ci95": [
-            0.19772694805194804,
-            0.7972863636304569
+            0.2425711878507678,
+            0.8143651234659275
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_vs_reference": {
-          "rho": 0.647656691134952,
+          "rho": 0.5725232621784346,
           "ci95": [
-            0.26307251933110676,
-            0.8465930869598884
+            0.17962542568275877,
+            0.8042369488334871
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_natural": {
-          "rho": 0.4116318464144552,
+          "rho": 0.4510125889436234,
           "ci95": [
-            0.014807995109691618,
-            0.7376537437261639
+            0.08843164325435218,
+            0.7260798305417389
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_quality": {
-          "rho": 0.699604743083004,
+          "rho": 0.6803503010399562,
           "ci95": [
-            0.45541157021588097,
-            0.8419469036939622
+            0.3990929081913139,
+            0.8446842344543135
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/naturalness_vs_reference": {
-          "rho": 0.145115753811406,
+          "rho": 0.13628899835796388,
           "ci95": [
-            -0.33753557199772344,
-            0.5356775097642299
+            -0.2965883533531845,
+            0.5004118053831361
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/translation_vs_reference": {
-          "rho": -0.11914172783738003,
+          "rho": -0.2928297755883963,
           "ci95": [
-            -0.5431883033916679,
-            0.351653348554033
+            -0.6522649208750002,
+            0.13510993397527554
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_grammatical": {
-          "rho": 0.28514963297572,
+          "rho": 0.36234263820470713,
           "ci95": [
-            -0.18177284793325751,
-            0.6400153174692791
+            0.0030140039095998754,
+            0.6684518267769769
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_natural": {
-          "rho": 0.24110671936758896,
+          "rho": 0.34920634920634924,
           "ci95": [
-            -0.19280758262878717,
-            0.6255867775045856
+            -0.04948426512548606,
+            0.6676868509923471
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_quality": {
-          "rho": 0.6860530773574253,
+          "rho": 0.6825396825396826,
           "ci95": [
-            0.4089030947455736,
-            0.8385821463685502
+            0.40181693574925836,
+            0.8388392531177895
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/naturalness_vs_reference": {
-          "rho": -0.08752117447769624,
+          "rho": -0.1691297208538588,
           "ci95": [
-            -0.5425026624275499,
-            0.3459505620131158
+            -0.5685687002652522,
+            0.2552347981327123
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_grammatical": {
-          "rho": 0.07735742518351214,
+          "rho": 0.22003284072249588,
           "ci95": [
-            -0.38000162522346825,
-            0.4861813903199127
+            -0.1754835056072952,
+            0.578257086131114
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_vs_reference": {
-          "rho": -0.2659514398644834,
+          "rho": -0.39025725232621783,
           "ci95": [
-            -0.638154552674829,
-            0.22377283105022808
+            -0.7167464558822173,
+            0.029690954793844978
           ],
-          "n_models": 22
+          "n_models": 28
+        },
+        "v4-v41/answer_grammatical": {
+          "rho": 0.2545155993431856,
+          "ci95": [
+            -0.12600025540411022,
+            0.5806643151758673
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_natural": {
+          "rho": 0.24849480021893816,
+          "ci95": [
+            -0.19376219975150288,
+            0.602327582811453
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_quality": {
+          "rho": 0.6458675424192666,
+          "ci95": [
+            0.36323065647762515,
+            0.8197306952459469
+          ],
+          "n_models": 28
+        },
+        "v4-v41/naturalness_vs_reference": {
+          "rho": 0.7235905856595511,
+          "ci95": [
+            0.4592460382401876,
+            0.8681372933155709
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_grammatical": {
+          "rho": 0.5763546798029557,
+          "ci95": [
+            0.23436220028341367,
+            0.8029298284128534
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_vs_reference": {
+          "rho": 0.6896551724137931,
+          "ci95": [
+            0.3630772299800513,
+            0.8687194065989238
+          ],
+          "n_models": 28
         }
       },
       "Summarization": {
         "answer_words": {
-          "rho": 0.16996047430830044,
+          "rho": 0.1724137931034483,
           "ci95": [
-            -0.3204583146105355,
-            0.5878927431443898
+            -0.2951121867535242,
+            0.5624793615850302
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "chrf": {
-          "rho": 0.6905702992659515,
+          "rho": 0.6590038314176244,
           "ci95": [
-            0.2642589613888851,
-            0.9181353041500852
+            0.2806868539790778,
+            0.8981059958356159
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "log_parameters": {
-          "rho": 0.49378538954090917,
+          "rho": 0.48590201656371695,
           "ci95": [
-            -0.023445235110984158,
-            0.8487442123452955
+            0.027745376923675374,
+            0.8046633779386905
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "swedish_answers": {
-          "rho": 0.1299199292526876,
+          "rho": 0.2500045864392565,
           "ci95": [
-            -0.320571225790562,
-            0.5491072337934607
+            -0.12068809831764124,
+            0.5788243808381257
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_natural": {
-          "rho": 0.4952004517221909,
+          "rho": 0.43787629994526545,
           "ci95": [
-            0.06996203387328308,
-            0.7796708847712618
+            0.11695568400770716,
+            0.6852624831693249
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_quality": {
-          "rho": 0.7967250141163186,
+          "rho": 0.7389162561576355,
           "ci95": [
-            0.4751939864992762,
-            0.9453932675833888
+            0.4369649049411281,
+            0.9046389745161605
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/naturalness_vs_reference": {
-          "rho": 0.2806324110671937,
+          "rho": 0.3322386425834702,
           "ci95": [
-            -0.19015641697387414,
-            0.6981948255332365
+            -0.0708492643071788,
+            0.6742403874081562
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/translation_vs_reference": {
-          "rho": 0.6024844720496896,
+          "rho": 0.6157635467980295,
           "ci95": [
-            0.2709097778361078,
-            0.7993158494868872
+            0.3237945803176449,
+            0.7987012874936104
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_grammatical": {
-          "rho": 0.3156408808582722,
+          "rho": 0.39244663382594414,
           "ci95": [
-            -0.07693842645381985,
-            0.6253416856492023
+            0.0641278824432424,
+            0.6546050662978126
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_natural": {
-          "rho": 0.40033879164313946,
+          "rho": 0.37164750957854403,
           "ci95": [
-            0.02332003156206344,
-            0.6985280718183747
+            0.0424679927323432,
+            0.6406847214536238
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_quality": {
-          "rho": 0.779785431959345,
+          "rho": 0.7235905856595511,
           "ci95": [
-            0.45668093696591416,
-            0.9271080986823936
+            0.4214635686482764,
+            0.887766276810805
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/naturalness_vs_reference": {
-          "rho": 0.5268210050818747,
+          "rho": 0.5336617405582923,
           "ci95": [
-            0.048175366977751995,
-            0.8271745309835132
+            0.12807086838402795,
+            0.8079317491379013
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_grammatical": {
-          "rho": 0.3529079616036138,
+          "rho": 0.3957307060755336,
           "ci95": [
-            -0.1723042187094849,
-            0.7790748817291845
+            -0.03958132139912849,
+            0.742943606428251
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_vs_reference": {
-          "rho": 0.4805194805194805,
+          "rho": 0.37931034482758613,
           "ci95": [
-            -0.007465735486969986,
-            0.8029973705395168
+            -0.04193281938325992,
+            0.7059752769776891
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_natural": {
-          "rho": 0.41050254093732363,
+          "rho": 0.37547892720306514,
           "ci95": [
-            0.012754140649072584,
-            0.7196538478482837
+            0.032103474494778766,
+            0.6526486881245434
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_quality": {
-          "rho": 0.743647656691135,
+          "rho": 0.7093596059113301,
           "ci95": [
-            0.37224317012112645,
-            0.9317797323098054
+            0.37033305305712994,
+            0.8958222040198836
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/naturalness_vs_reference": {
-          "rho": 0.04912478825522304,
+          "rho": 0.07881773399014778,
           "ci95": [
-            -0.459401144912869,
-            0.5417360054297891
+            -0.36047184104466284,
+            0.5112213736015654
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/translation_vs_reference": {
-          "rho": -0.32128740824393004,
+          "rho": -0.4187192118226601,
           "ci95": [
-            -0.7194034090909092,
-            0.1825753268902781
+            -0.7377124856808596,
+            -0.012290224519860343
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_grammatical": {
-          "rho": 0.4387351778656127,
+          "rho": 0.4039408866995074,
           "ci95": [
-            0.07300883906499174,
-            0.6910998734429903
+            0.08783933628164492,
+            0.6613843493872995
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_natural": {
-          "rho": 0.2682100508187465,
+          "rho": 0.2791461412151068,
           "ci95": [
-            -0.20462219692657943,
-            0.7055079908675795
+            -0.0978983921380235,
+            0.6112194364265899
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_quality": {
-          "rho": 0.7526821005081875,
+          "rho": 0.7285166940339354,
           "ci95": [
-            0.3979420415673266,
-            0.93157827495332
+            0.422923840504443,
+            0.8912725740794797
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/naturalness_vs_reference": {
-          "rho": -0.1236589497459063,
+          "rho": -0.1258894362342638,
           "ci95": [
-            -0.5803747188707492,
-            0.34785190970932905
+            -0.5230058371393813,
+            0.303108992510193
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_grammatical": {
-          "rho": 0.22642574816487862,
+          "rho": 0.31143951833607003,
           "ci95": [
-            -0.26034228301648854,
-            0.6626197204082138
+            -0.08425691655497367,
+            0.6561509125465502
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_vs_reference": {
-          "rho": -0.4714850367024281,
+          "rho": -0.5254515599343186,
           "ci95": [
-            -0.7923345407942666,
-            -0.034670217043125263
+            -0.7856770134637259,
+            -0.17245511251009177
           ],
-          "n_models": 22
+          "n_models": 28
+        },
+        "v4-v41/answer_grammatical": {
+          "rho": 0.4488232074438971,
+          "ci95": [
+            0.10686306562711977,
+            0.6987087718284675
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_natural": {
+          "rho": 0.20853858784893267,
+          "ci95": [
+            -0.16356155483056992,
+            0.5597693515776483
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_quality": {
+          "rho": 0.7339901477832512,
+          "ci95": [
+            0.4512416914813613,
+            0.8814601314974654
+          ],
+          "n_models": 28
+        },
+        "v4-v41/naturalness_vs_reference": {
+          "rho": 0.5369458128078817,
+          "ci95": [
+            0.1406426273013817,
+            0.8076722068021307
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_grammatical": {
+          "rho": 0.39792008757526,
+          "ci95": [
+            -0.012960670790285594,
+            0.7262831806969808
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_vs_reference": {
+          "rho": 0.4772851669403394,
+          "ci95": [
+            0.06650897036058488,
+            0.8019510053201808
+          ],
+          "n_models": 28
         }
       },
       "Reading comprehension": {
         "answer_words": {
-          "rho": -0.016374929418407683,
+          "rho": -0.11822660098522168,
           "ci95": [
-            -0.5074942253567957,
-            0.46385053544204374
+            -0.5297083186118635,
+            0.3126755111315787
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "chrf": {
-          "rho": 0.6386222473178995,
+          "rho": 0.6371100164203612,
           "ci95": [
-            0.23999810932027144,
-            0.8688748853905035
+            0.33314548352718004,
+            0.8428022850146276
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "log_parameters": {
-          "rho": 0.6570622517575256,
+          "rho": 0.6953189420123047,
           "ci95": [
-            0.3067396965792628,
-            0.8659268009952157
+            0.3898842437785789,
+            0.8596365385816448
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "swedish_answers": {
-          "rho": -0.1065571349572482,
+          "rho": -0.1665779458102975,
           "ci95": [
-            -0.529124168332197,
-            0.3676806306578024
+            -0.5229831937705547,
+            0.24557501981800334
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_natural": {
-          "rho": 0.2682100508187465,
+          "rho": 0.23426382047071703,
           "ci95": [
-            -0.1857414040841411,
-            0.6601270024772913
+            -0.12823688427781088,
+            0.5677580328276387
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_quality": {
-          "rho": 0.6950875211744778,
+          "rho": 0.5725232621784346,
           "ci95": [
-            0.3705214699215447,
-            0.8756435294829323
+            0.20985043316714383,
+            0.7972745449531163
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/naturalness_vs_reference": {
-          "rho": 0.25127046866177305,
+          "rho": 0.30651340996168586,
           "ci95": [
-            -0.2143783521263567,
-            0.6246143150238712
+            -0.07681206678737647,
+            0.6255189458553786
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/translation_vs_reference": {
-          "rho": 0.30434782608695654,
+          "rho": 0.3563218390804598,
           "ci95": [
-            -0.11795208214489446,
-            0.6019977285899101
+            -0.040167207347452716,
+            0.6381158544167582
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_grammatical": {
-          "rho": 0.011857707509881424,
+          "rho": -0.04707170224411604,
           "ci95": [
-            -0.41933897409635434,
-            0.4278514644520305
+            -0.4175853716176297,
+            0.3590878863214795
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_natural": {
-          "rho": 0.4285714285714286,
+          "rho": 0.42638204707170224,
           "ci95": [
-            0.03912037421218787,
-            0.700807807410463
+            0.1051425098303037,
+            0.6640244168029709
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_quality": {
-          "rho": 0.6984754376058724,
+          "rho": 0.5966064586754242,
           "ci95": [
-            0.36660182528123575,
-            0.8876465706033989
+            0.25250099965343337,
+            0.8099899896351519
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/naturalness_vs_reference": {
-          "rho": 0.6126482213438735,
+          "rho": 0.5894909688013136,
           "ci95": [
-            0.3059356577722619,
-            0.8025255391600454
+            0.3178645743989722,
+            0.7681977506166309
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_grammatical": {
-          "rho": 0.4195369847543761,
+          "rho": 0.441160372194855,
           "ci95": [
-            -0.03691294689821876,
-            0.7598867104013878
+            0.06960679011249789,
+            0.727700121520649
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_vs_reference": {
-          "rho": 0.7357425183512141,
+          "rho": 0.5982484948002189,
           "ci95": [
-            0.3714606262867812,
-            0.9329735389610389
+            0.22893579073615264,
+            0.8355387717444778
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_natural": {
-          "rho": 0.5110107284020329,
+          "rho": 0.4351395730706075,
           "ci95": [
-            0.13891977060285424,
-            0.7414688824541796
+            0.11813671488975652,
+            0.6778609230133331
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_quality": {
-          "rho": 0.6849237718802937,
+          "rho": 0.5894909688013136,
           "ci95": [
-            0.3427074090827843,
-            0.8758577450042888
+            0.24183365358221245,
+            0.8152395403436269
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/naturalness_vs_reference": {
-          "rho": 0.30660643704121965,
+          "rho": 0.26108374384236455,
           "ci95": [
-            -0.17111449398592773,
-            0.7094062508488777
+            -0.16283833884562043,
+            0.610048992793147
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/translation_vs_reference": {
-          "rho": 0.18125352907961606,
+          "rho": 0.0180623973727422,
           "ci95": [
-            -0.2540254050508023,
-            0.5758953951108583
+            -0.3903851444291609,
+            0.4086318529718308
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_grammatical": {
-          "rho": 0.16770186335403728,
+          "rho": 0.22495894909688013,
           "ci95": [
-            -0.24968012303035764,
-            0.5153808488227883
+            -0.1502295724077902,
+            0.5682885650084613
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_natural": {
-          "rho": 0.32241671372106157,
+          "rho": 0.32567049808429116,
           "ci95": [
-            -0.14828211744467903,
-            0.6914656260300341
+            -0.041071247625174945,
+            0.6353634502697914
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_quality": {
-          "rho": 0.6837944664031621,
+          "rho": 0.5528188286808976,
           "ci95": [
-            0.32720668661644825,
-            0.8863162152374869
+            0.1733969043138589,
+            0.8045586609900507
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/naturalness_vs_reference": {
-          "rho": 0.13721061547148505,
+          "rho": 0.09852216748768472,
           "ci95": [
-            -0.32235202796510604,
-            0.5628201458947085
+            -0.29544378514321806,
+            0.4656109273225398
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_grammatical": {
-          "rho": 0.016374929418407683,
+          "rho": 0.10125889436234263,
           "ci95": [
-            -0.43771881947180763,
-            0.43385141089852314
+            -0.2835497835497836,
+            0.4883376127197649
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_vs_reference": {
-          "rho": -0.07622811970638058,
+          "rho": -0.16584564860426929,
           "ci95": [
-            -0.4832522737702021,
-            0.3689589641094322
+            -0.5432612442929718,
+            0.24002655426545508
           ],
-          "n_models": 22
+          "n_models": 28
+        },
+        "v4-v41/answer_grammatical": {
+          "rho": 0.03831417624521073,
+          "ci95": [
+            -0.3663339799538281,
+            0.42494893852887916
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_natural": {
+          "rho": 0.2796934865900383,
+          "ci95": [
+            -0.07333150233452349,
+            0.5838652777125943
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_quality": {
+          "rho": 0.5309250136836344,
+          "ci95": [
+            0.1752669440386204,
+            0.7765700902622926
+          ],
+          "n_models": 28
+        },
+        "v4-v41/naturalness_vs_reference": {
+          "rho": 0.6091954022988505,
+          "ci95": [
+            0.3369632558043806,
+            0.7880479962427138
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_grammatical": {
+          "rho": 0.43787629994526545,
+          "ci95": [
+            0.06827739882841492,
+            0.7153926034634844
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_vs_reference": {
+          "rho": 0.6633825944170771,
+          "ci95": [
+            0.36997842523062424,
+            0.8420621722551569
+          ],
+          "n_models": 28
         }
       },
       "Knowledge": {
         "answer_words": {
-          "rho": -0.0220214568040655,
+          "rho": -0.09742747673782157,
           "ci95": [
-            -0.5063139931740614,
-            0.45104341463288494
+            -0.5003233048951564,
+            0.31503168598938786
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "chrf": {
-          "rho": 0.7651044607566347,
+          "rho": 0.8024083196496988,
           "ci95": [
-            0.48250760874318516,
-            0.8902276839211447
+            0.5934720606206962,
+            0.9036920259497978
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "log_parameters": {
-          "rho": 0.685875815678105,
+          "rho": 0.7618396124489151,
           "ci95": [
-            0.3029610732167191,
-            0.8880404130539522
+            0.5312560563589251,
+            0.8912434575786361
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "swedish_answers": {
-          "rho": -0.03475927931760502,
+          "rho": 0.04708236154307583,
           "ci95": [
-            -0.45579624211387854,
-            0.41783810458761295
+            -0.32158803970264843,
+            0.39843116324543304
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_natural": {
-          "rho": 0.21964991530208924,
+          "rho": 0.2785987958401751,
           "ci95": [
-            -0.2270354130117959,
-            0.6473599450510005
+            -0.12552442790472385,
+            0.6312090660796986
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/answer_quality": {
-          "rho": 0.7007340485601357,
+          "rho": 0.6803503010399562,
           "ci95": [
-            0.3691825491315865,
-            0.8717505439164835
+            0.38493566107170496,
+            0.8537363380918521
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/naturalness_vs_reference": {
-          "rho": 0.24449463579898364,
+          "rho": 0.39244663382594414,
           "ci95": [
-            -0.18956819993343213,
-            0.6453158447845146
+            0.010769321487538341,
+            0.73341303537618
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v3/translation_vs_reference": {
-          "rho": 0.2862789384528515,
+          "rho": 0.43021346469622335,
           "ci95": [
-            -0.16548699492736146,
-            0.647285369286065
+            0.008903477040633337,
+            0.7559309147170051
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_grammatical": {
-          "rho": 0.04573687182382835,
+          "rho": 0.1412151067323481,
           "ci95": [
-            -0.3781976502343296,
-            0.4826807466147383
+            -0.22899805549537178,
+            0.47991249493589194
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_natural": {
-          "rho": 0.33370976849237727,
+          "rho": 0.46360153256704983,
           "ci95": [
-            -0.07334819017357787,
-            0.67405874191237
+            0.1422567252264617,
+            0.7115424217462932
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/answer_quality": {
-          "rho": 0.6544325239977415,
+          "rho": 0.6666666666666666,
           "ci95": [
-            0.28427497451580025,
-            0.846606295998756
+            0.35332076188178696,
+            0.843019532761815
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/naturalness_vs_reference": {
-          "rho": 0.6216826651609261,
+          "rho": 0.6956759715380404,
           "ci95": [
-            0.27369988106641724,
-            0.8324810174639332
+            0.4460115288635381,
+            0.8503901749691584
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_grammatical": {
-          "rho": 0.44325239977413894,
+          "rho": 0.5325670498084292,
           "ci95": [
-            0.013034196844761776,
-            0.7635939041327032
+            0.14947537018965593,
+            0.8071447858262956
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-adequacy/translation_vs_reference": {
-          "rho": 0.6442687747035574,
+          "rho": 0.6059113300492611,
           "ci95": [
-            0.21748183238711696,
-            0.91030286468478
+            0.212783989611176,
+            0.8603373899906785
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_natural": {
-          "rho": 0.3980801806888764,
+          "rho": 0.4537493158182813,
           "ci95": [
-            -0.0011672320488986666,
-            0.7420192933482838
+            0.1183897363415948,
+            0.7227073386669496
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/answer_quality": {
-          "rho": 0.6363636363636365,
+          "rho": 0.6070060207991241,
           "ci95": [
-            0.27714609877804314,
-            0.8289957156178003
+            0.2804938454044409,
+            0.8118145158354237
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/naturalness_vs_reference": {
-          "rho": 0.2670807453416149,
+          "rho": 0.24740010946907498,
           "ci95": [
-            -0.2020546255870682,
-            0.6231962877473334
+            -0.16442100199059437,
+            0.5886176117611757
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-both/translation_vs_reference": {
-          "rho": 0.02992659514398645,
+          "rho": -0.20306513409961688,
           "ci95": [
-            -0.38648340817711874,
-            0.4480759073172065
+            -0.5688376968502749,
+            0.19604931812942233
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_grammatical": {
-          "rho": 0.16996047430830044,
+          "rho": 0.3043240284619595,
           "ci95": [
-            -0.2636408961408962,
-            0.5516326440145229
+            -0.06259473978140043,
+            0.6144776950116413
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_natural": {
-          "rho": 0.21287408243929987,
+          "rho": 0.3497536945812808,
           "ci95": [
-            -0.2425411538236991,
-            0.6362295694590498
+            -0.0259340365581395,
+            0.6733206455817655
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/answer_quality": {
-          "rho": 0.6318464144551101,
+          "rho": 0.6382047071702245,
           "ci95": [
-            0.2636940983619338,
-            0.8351413346190657
+            0.3351599468463152,
+            0.8243493545933822
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/naturalness_vs_reference": {
-          "rho": 0.05251270468661773,
+          "rho": -0.08045977011494251,
           "ci95": [
-            -0.3916788637314057,
-            0.4492773082122481
+            -0.48632217984041265,
+            0.3057380351111274
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_grammatical": {
-          "rho": -0.03670242800677584,
+          "rho": 0.15763546798029557,
           "ci95": [
-            -0.4575329558353112,
-            0.4233658457169923
+            -0.22587449975596918,
+            0.557425829804331
           ],
-          "n_models": 22
+          "n_models": 28
         },
         "v4-grammar/translation_vs_reference": {
-          "rho": -0.17560700169395824,
+          "rho": -0.33004926108374383,
           "ci95": [
-            -0.5616349020442931,
-            0.28902340820159167
+            -0.6421390567930674,
+            0.08777642311942131
           ],
-          "n_models": 22
+          "n_models": 28
+        },
+        "v4-v41/answer_grammatical": {
+          "rho": 0.21565407772304324,
+          "ci95": [
+            -0.16139271394459723,
+            0.5532961336748379
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_natural": {
+          "rho": 0.28078817733990147,
+          "ci95": [
+            -0.11771621514995687,
+            0.6161926251862134
+          ],
+          "n_models": 28
+        },
+        "v4-v41/answer_quality": {
+          "rho": 0.5867542419266557,
+          "ci95": [
+            0.2657400636729756,
+            0.7939697802197802
+          ],
+          "n_models": 28
+        },
+        "v4-v41/naturalness_vs_reference": {
+          "rho": 0.6967706622879036,
+          "ci95": [
+            0.4325479845997082,
+            0.8461644212262853
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_grammatical": {
+          "rho": 0.5232621784345922,
+          "ci95": [
+            0.15909239529244254,
+            0.7858373883590444
+          ],
+          "n_models": 28
+        },
+        "v4-v41/translation_vs_reference": {
+          "rho": 0.7006020799124247,
+          "ci95": [
+            0.3703290931106049,
+            0.9105638711508445
+          ],
+          "n_models": 28
         }
       }
     },
     "translation_item_level": {
       "v3/translation_vs_reference": {
-        "spearman_with_chrf": 0.2752853465585317,
-        "n_translations": 4400
+        "spearman_with_chrf": 0.2967312928505289,
+        "n_translations": 5600
       },
       "v4-adequacy/translation_vs_reference": {
-        "spearman_with_chrf": 0.41817616439565986,
-        "n_translations": 4400
+        "spearman_with_chrf": 0.38186387418940465,
+        "n_translations": 5600
       },
       "v4-both/translation_vs_reference": {
-        "spearman_with_chrf": -0.03471946658768375,
-        "n_translations": 4400
+        "spearman_with_chrf": -0.07843296168776216,
+        "n_translations": 5600
       },
       "v4-grammar/translation_vs_reference": {
-        "spearman_with_chrf": -0.16671590360381638,
-        "n_translations": 4400
+        "spearman_with_chrf": -0.19213603208064073,
+        "n_translations": 5600
+      },
+      "v4-v41/translation_vs_reference": {
+        "spearman_with_chrf": 0.3840298608141012,
+        "n_translations": 5600
       }
     },
     "partial_spearman_rank_given_size": {
       "answer_words": {
-        "rho": -0.06380575945793338,
+        "rho": 0.08812260536398467,
         "ci95": [
-          -0.49944866290898815,
-          0.3569291439768921
+          -0.3571669419212772,
+          0.36374696260681105
+        ],
+        "n_models": 28
+      },
+      "chrf": {
+        "rho": 0.4772851669403394,
+        "ci95": [
+          -0.016756418259558436,
+          0.7948854839348106
+        ],
+        "n_models": 28
+      },
+      "swedish_answers": {
+        "rho": -0.2638204707170224,
+        "ci95": [
+          -0.6090489480195632,
+          0.14482767801416724
+        ],
+        "n_models": 28
+      },
+      "v3/answer_natural": {
+        "rho": 0.48494800218938144,
+        "ci95": [
+          0.030436467805148533,
+          0.750013295340131
+        ],
+        "n_models": 28
+      },
+      "v3/answer_quality": {
+        "rho": 0.6568144499178982,
+        "ci95": [
+          0.28891847820412386,
+          0.8391649739225913
+        ],
+        "n_models": 28
+      },
+      "v3/naturalness_vs_reference": {
+        "rho": 0.07881773399014778,
+        "ci95": [
+          -0.3353690778293785,
+          0.5326463741098052
+        ],
+        "n_models": 28
+      },
+      "v3/translation_vs_reference": {
+        "rho": 0.19759168035030103,
+        "ci95": [
+          -0.2550467880851467,
+          0.6089489902853882
+        ],
+        "n_models": 28
+      },
+      "v4-adequacy/answer_grammatical": {
+        "rho": 0.031746031746031744,
+        "ci95": [
+          -0.37768877971285586,
+          0.44071754242455846
+        ],
+        "n_models": 28
+      },
+      "v4-adequacy/answer_natural": {
+        "rho": 0.42528735632183906,
+        "ci95": [
+          -0.06998074807480745,
+          0.710150499858894
+        ],
+        "n_models": 28
+      },
+      "v4-adequacy/answer_quality": {
+        "rho": 0.6841817186644772,
+        "ci95": [
+          0.28769324633967375,
+          0.8429470274340951
+        ],
+        "n_models": 28
+      },
+      "v4-adequacy/naturalness_vs_reference": {
+        "rho": 0.24137931034482757,
+        "ci95": [
+          -0.28200227901491703,
+          0.6559835940312909
+        ],
+        "n_models": 28
+      },
+      "v4-adequacy/translation_grammatical": {
+        "rho": 0.2430213464696223,
+        "ci95": [
+          -0.2849520576688047,
+          0.5993762128313447
+        ],
+        "n_models": 28
+      },
+      "v4-adequacy/translation_vs_reference": {
+        "rho": 0.2917350848385331,
+        "ci95": [
+          -0.1647603664398686,
+          0.7098111115326666
+        ],
+        "n_models": 28
+      },
+      "v4-both/answer_natural": {
+        "rho": 0.48166392993979196,
+        "ci95": [
+          0.043014248208606325,
+          0.7778801209788286
+        ],
+        "n_models": 28
+      },
+      "v4-both/answer_quality": {
+        "rho": 0.6491516146688561,
+        "ci95": [
+          0.25105888420297334,
+          0.7875054126828491
+        ],
+        "n_models": 28
+      },
+      "v4-both/naturalness_vs_reference": {
+        "rho": 0.2698412698412698,
+        "ci95": [
+          -0.1567171148498994,
+          0.6031489143764586
+        ],
+        "n_models": 28
+      },
+      "v4-both/translation_vs_reference": {
+        "rho": -0.09359605911330049,
+        "ci95": [
+          -0.5007237297803854,
+          0.2506992407061938
+        ],
+        "n_models": 28
+      },
+      "v4-grammar/answer_grammatical": {
+        "rho": 0.1718664477285167,
+        "ci95": [
+          -0.29302700422004574,
+          0.5592631486063201
+        ],
+        "n_models": 28
+      },
+      "v4-grammar/answer_natural": {
+        "rho": 0.37164750957854403,
+        "ci95": [
+          -0.10406155941702451,
+          0.6873529727156428
+        ],
+        "n_models": 28
+      },
+      "v4-grammar/answer_quality": {
+        "rho": 0.6245210727969349,
+        "ci95": [
+          0.21833948472305742,
+          0.8113121614062369
+        ],
+        "n_models": 28
+      },
+      "v4-grammar/naturalness_vs_reference": {
+        "rho": 0.02736726874657909,
+        "ci95": [
+          -0.3752083144128599,
+          0.44492081494426033
+        ],
+        "n_models": 28
+      },
+      "v4-grammar/translation_grammatical": {
+        "rho": 0.058018609742747675,
+        "ci95": [
+          -0.34588774586600063,
+          0.4922780983786749
+        ],
+        "n_models": 28
+      },
+      "v4-grammar/translation_vs_reference": {
+        "rho": -0.20306513409961688,
+        "ci95": [
+          -0.5493631815529944,
+          0.23513233371471148
+        ],
+        "n_models": 28
+      },
+      "v4-v41/answer_grammatical": {
+        "rho": 0.03721948549534756,
+        "ci95": [
+          -0.42551886597267796,
+          0.48036792467181155
+        ],
+        "n_models": 28
+      },
+      "v4-v41/answer_natural": {
+        "rho": 0.3448275862068966,
+        "ci95": [
+          -0.09579597474259229,
+          0.6614606410085496
+        ],
+        "n_models": 28
+      },
+      "v4-v41/answer_quality": {
+        "rho": 0.6316365626710454,
+        "ci95": [
+          0.25058457338742457,
+          0.8056567695897349
+        ],
+        "n_models": 28
+      },
+      "v4-v41/naturalness_vs_reference": {
+        "rho": 0.25944170771756975,
+        "ci95": [
+          -0.2558560885776233,
+          0.666872544828577
+        ],
+        "n_models": 28
+      },
+      "v4-v41/translation_grammatical": {
+        "rho": 0.24192665571975916,
+        "ci95": [
+          -0.28190831336658945,
+          0.5771886279266699
+        ],
+        "n_models": 28
+      },
+      "v4-v41/translation_vs_reference": {
+        "rho": 0.4192665571975917,
+        "ci95": [
+          -0.07725807141455715,
+          0.7791502352333328
+        ],
+        "n_models": 28
+      }
+    },
+    "spearman_rank_bf16_only": {
+      "answer_words": {
+        "rho": -0.024858761029519453,
+        "ci95": [
+          -0.5088769293143698,
+          0.4373988528091962
         ],
         "n_models": 22
       },
       "chrf": {
-        "rho": 0.5335968379446642,
+        "rho": 0.8197741421325621,
         "ci95": [
-          -0.010373248643796582,
-          0.8130405738722437
+          0.5495362681626975,
+          0.9264665775444606
+        ],
+        "n_models": 22
+      },
+      "log_parameters": {
+        "rho": 0.8151498021481062,
+        "ci95": [
+          0.5476367621245626,
+          0.9210156916426998
         ],
         "n_models": 22
       },
       "swedish_answers": {
-        "rho": -0.3156408808582722,
+        "rho": -0.04019531250782976,
         "ci95": [
-          -0.6740964211313344,
-          0.14964688347461805
+          -0.4625787918854533,
+          0.4035874012423893
         ],
         "n_models": 22
       },
       "v3/answer_natural": {
-        "rho": 0.36984754376058726,
+        "rho": 0.3248588089084929,
         "ci95": [
-          -0.16812184343434342,
-          0.7279853637398457
+          -0.1569083144990021,
+          0.6987565847440446
         ],
         "n_models": 22
       },
       "v3/answer_quality": {
-        "rho": 0.6386222473178995,
+        "rho": 0.7638419298161433,
         "ci95": [
-          0.12108134988237206,
-          0.8676723476472633
+          0.4380829190222172,
+          0.915498951550085
         ],
         "n_models": 22
       },
       "v3/naturalness_vs_reference": {
-        "rho": 0.0220214568040655,
+        "rho": 0.2881356392057937,
         "ci95": [
-          -0.4416130623774636,
-          0.5068185700973287
+          -0.17332645186264795,
+          0.710457872813402
         ],
         "n_models": 22
       },
       "v3/translation_vs_reference": {
-        "rho": 0.21400338791643145,
+        "rho": 0.33389835837377274,
         "ci95": [
-          -0.3583617747440273,
-          0.6164885130563496
+          -0.11297409323139639,
+          0.6316283162571008
         ],
         "n_models": 22
       },
       "v4-adequacy/answer_grammatical": {
-        "rho": 0.0005646527385657821,
+        "rho": 0.12146894593969736,
         "ci95": [
-          -0.4980160035165408,
-          0.4227737314744934
+          -0.34817968227796536,
+          0.5470698357235665
         ],
         "n_models": 22
       },
       "v4-adequacy/answer_natural": {
-        "rho": 0.39130434782608703,
+        "rho": 0.38192096490807165,
         "ci95": [
-          -0.15060190530148584,
-          0.7678517715058018
+          0.0016913504385516213,
+          0.6600528004761874
         ],
         "n_models": 22
       },
       "v4-adequacy/answer_quality": {
-        "rho": 0.6228119706380577,
+        "rho": 0.735593337737144,
         "ci95": [
-          0.10740971395974251,
-          0.8558084227590189
+          0.389967128229889,
+          0.8806139852188742
         ],
         "n_models": 22
       },
       "v4-adequacy/naturalness_vs_reference": {
-        "rho": 0.1575381140598532,
+        "rho": 0.6954803369849648,
         "ci95": [
-          -0.36555274912693897,
-          0.680876714683602
+          0.4310670166954019,
+          0.8416406436166122
         ],
         "n_models": 22
       },
       "v4-adequacy/translation_grammatical": {
-        "rho": 0.15415019762845852,
+        "rho": 0.4903955584914293,
         "ci95": [
-          -0.38066410612569707,
-          0.5870011612516542
+          0.038329648994183826,
+          0.809012787241407
         ],
         "n_models": 22
       },
       "v4-adequacy/translation_vs_reference": {
-        "rho": 0.3754940711462451,
+        "rho": 0.732203506687664,
         "ci95": [
-          -0.23402008094645074,
-          0.8304543864661548
+          0.3858414331976296,
+          0.9150887486234616
         ],
         "n_models": 22
       },
       "v4-both/answer_natural": {
-        "rho": 0.40824392998306047,
+        "rho": 0.45932210720453004,
         "ci95": [
-          -0.13525503357879998,
-          0.7947598404422059
+          0.05406794593400108,
+          0.7516074652685885
         ],
         "n_models": 22
       },
       "v4-both/answer_quality": {
-        "rho": 0.5889328063241107,
+        "rho": 0.7271187601134442,
         "ci95": [
-          0.11793280182232346,
-          0.8239069096235031
+          0.37696914059962455,
+          0.8912598820543317
         ],
         "n_models": 22
       },
       "v4-both/naturalness_vs_reference": {
-        "rho": 0.2896668548842462,
+        "rho": 0.25988704712679433,
         "ci95": [
-          -0.24863464035825159,
-          0.6718156335475813
+          -0.2532579399323985,
+          0.6717838848232613
         ],
         "n_models": 22
       },
       "v4-both/translation_vs_reference": {
-        "rho": -0.12817617165443254,
+        "rho": 0.0638418180985386,
         "ci95": [
-          -0.510566021007986,
-          0.34933856359229465
+          -0.3760308674706186,
+          0.49474659582897884
         ],
         "n_models": 22
       },
       "v4-grammar/answer_grammatical": {
-        "rho": 0.21061547148503673,
+        "rho": 0.23276839873095492,
         "ci95": [
-          -0.3632416587520366,
-          0.5789503622537573
+          -0.19228700489415454,
+          0.5765288000714428
         ],
         "n_models": 22
       },
       "v4-grammar/answer_natural": {
-        "rho": 0.2704686617730096,
+        "rho": 0.23615822978043488,
         "ci95": [
-          -0.23159573327615782,
-          0.7049410291680347
+          -0.2098007198478563,
+          0.6600458973973445
         ],
         "n_models": 22
       },
       "v4-grammar/answer_quality": {
-        "rho": 0.6002258610954264,
+        "rho": 0.7231639572223842,
         "ci95": [
-          0.09089867749661566,
-          0.8373320529019972
+          0.37403663637476176,
+          0.8910387313606203
         ],
         "n_models": 22
       },
       "v4-grammar/naturalness_vs_reference": {
-        "rho": 0.13382269904009036,
+        "rho": 0.11864408673179741,
         "ci95": [
-          -0.35618173100162936,
-          0.5691952509159001
+          -0.3451938545645971,
+          0.5200094091431992
         ],
         "n_models": 22
       },
       "v4-grammar/translation_grammatical": {
-        "rho": 0.010728402032749858,
+        "rho": 0.003954802891059914,
         "ci95": [
-          -0.4906548618818157,
-          0.4701802856777272
+          -0.42951570815684587,
+          0.4464585989540642
         ],
         "n_models": 22
       },
       "v4-grammar/translation_vs_reference": {
-        "rho": -0.24788255223037836,
+        "rho": -0.1700565243155763,
         "ci95": [
-          -0.608451228328134,
-          0.30833025990473334
+          -0.5568466358377523,
+          0.2840753318035393
+        ],
+        "n_models": 22
+      },
+      "v4-v41/answer_grammatical": {
+        "rho": 0.19209042613719582,
+        "ci95": [
+          -0.26735676829251104,
+          0.5645423838055966
+        ],
+        "n_models": 22
+      },
+      "v4-v41/answer_natural": {
+        "rho": 0.2050847784935355,
+        "ci95": [
+          -0.2279097488737542,
+          0.6020522701431598
+        ],
+        "n_models": 22
+      },
+      "v4-v41/answer_quality": {
+        "rho": 0.6819210127870452,
+        "ci95": [
+          0.3169884410735856,
+          0.8582854352702344
+        ],
+        "n_models": 22
+      },
+      "v4-v41/naturalness_vs_reference": {
+        "rho": 0.7112995485492045,
+        "ci95": [
+          0.4336095978242605,
+          0.8495916544084636
+        ],
+        "n_models": 22
+      },
+      "v4-v41/translation_grammatical": {
+        "rho": 0.4892656148082693,
+        "ci95": [
+          0.05536732962309454,
+          0.7866288366499202
+        ],
+        "n_models": 22
+      },
+      "v4-v41/translation_vs_reference": {
+        "rho": 0.7508475774598037,
+        "ci95": [
+          0.4197561645679226,
+          0.9251135073779796
         ],
         "n_models": 22
       }
+    },
+    "n_models_by_precision": {
+      "bf16": 22,
+      "4-bit NF4": 6
     }
   },
   "publish_data": {
@@ -17739,6 +20364,18 @@
         "license": "cc-by-4.0",
         "rows": {
           "train": 17989
+        }
+      },
+      "europarl_hard_source": {
+        "license": "cc-by-4.0",
+        "rows": {
+          "train": 1500
+        }
+      },
+      "registers_corrupted": {
+        "license": "cc-by-sa-4.0",
+        "rows": {
+          "train": 3779
         }
       },
       "europarl_eval": {
