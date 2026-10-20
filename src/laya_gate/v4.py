@@ -75,7 +75,12 @@ ARMS = {
     "adequacy": ("europarl", "dalaj", "swefaq", "dalaj_grammar", "adequacy"),
     "v41": ("europarl", "dalaj", "swefaq", "dalaj_grammar", "adequacy", "registers", "hard_source"),
 }
+V41 = ("europarl", "dalaj", "swefaq", "dalaj_grammar", "adequacy", "registers", "hard_source")
+ARMS["v42a"] = (*V41, "length_balance")
+ARMS["v42b"] = (*V41, "length_balance", "length_pairs")
 REGISTER_PER_SOURCE = 1000
+LENGTH_PROMPTS = 3000
+LENGTH_RATINGS = {"good": 4.5, "bad": 2.0}  # `quality` targets for the length-controlled answers
 HARD_SOURCE_PAIRS = 1500
 ADEQUACY_PER_TYPE = 3000
 EP_TRAIN = 12000  # Europarl pairs after filtering
@@ -462,6 +467,273 @@ def prepare_v41() -> dict[str, Any]:
     return stats
 
 
+LENGTH_SYSTEM = (
+    "You write Swedish answers for a dataset that teaches a reward model to judge answer quality "
+    "independently of length. For the user's prompt, write four answers in natural, fluent, "
+    "idiomatic Swedish:\n"
+    "- good_long: complete, correct and helpful, about 150-250 words.\n"
+    "- good_short: equally correct and helpful but concise, about 30-70 words.\n"
+    "- bad_long: as long and as fluent as good_long, but clearly worse: it contains a factual "
+    "error, or misreads or misses the core of the question. Not absurd, not obviously sloppy.\n"
+    "- bad_short: as concise and fluent as good_short, with the same kind of flaw.\n"
+    "Reply with JSON only: "
+    '{"good_long": "...", "good_short": "...", "bad_long": "...", "bad_short": "..."}'
+)
+LENGTH_KEYS = ("good_long", "good_short", "bad_long", "bad_short")
+
+
+def parse_length_answers(content: str | None) -> dict[str, str] | None:
+    import re
+
+    if not content:
+        return None
+    text = re.sub(r"<think>.*?</think>", "", content, flags=re.S).split("</think>")[-1]
+    text = re.sub(r"```(?:json)?", "", text)
+    start, end = text.find("{"), text.rfind("}")
+    if start < 0 or end <= start:
+        return None
+    try:
+        obj = json.loads(text[start : end + 1])
+    except json.JSONDecodeError:
+        return None
+    if not all(isinstance(obj.get(k), str) and obj[k].strip() for k in LENGTH_KEYS):
+        return None
+    out = {k: " ".join(obj[k].split()) for k in LENGTH_KEYS}
+    if not (
+        len(out["good_short"]) < len(out["bad_long"])
+        and len(out["bad_short"]) < len(out["good_long"])
+    ):
+        return None  # the length contrast must hold both ways
+    return out
+
+
+def length_prompts(n: int = LENGTH_PROMPTS, seed: int = SEED) -> list[dict[str, str]]:
+    from .fluent import FLUENT_DIR
+
+    rows = [
+        r for r in read_jsonl(FLUENT_DIR / "train.jsonl") if 5 <= len(r["prompt"].split()) <= 150
+    ]
+    rows = sorted({r["id"]: r for r in rows}.values(), key=lambda r: r["id"])
+    return [
+        {"id": r["id"], "prompt": r["prompt"]}
+        for r in random.Random(seed).sample(rows, min(n, len(rows)))
+    ]
+
+
+async def _generate_length_answers(prompts, concurrency: int) -> list[dict[str, Any]]:
+    import hashlib
+
+    from .fluent import NOTHINK
+    from .judge import discover_model, is_retryable, make_client, quiet_http_logs
+
+    quiet_http_logs()
+    client = make_client()
+    model = await discover_model(client)
+    path = V4_DIR / "length_gen.jsonl"
+    cache = {r["key"]: r for r in read_jsonl(path)} if path.exists() else {}
+    sem, lock = asyncio.Semaphore(concurrency), asyncio.Lock()
+
+    async def one(p):
+        key = hashlib.sha256(json.dumps([model, LENGTH_SYSTEM, p["prompt"]]).encode()).hexdigest()
+        if key in cache and cache[key].get("answers"):
+            return cache[key]
+        async with sem:
+            for attempt in range(4):
+                try:
+                    resp = await asyncio.wait_for(
+                        client.chat.completions.create(
+                            model=model,
+                            temperature=0.7,
+                            max_tokens=4096,
+                            messages=[
+                                {"role": "system", "content": LENGTH_SYSTEM},
+                                {"role": "user", "content": p["prompt"]},
+                            ],
+                            **NOTHINK,
+                        ),
+                        timeout=600,
+                    )
+                    break
+                except Exception as exc:  # noqa: BLE001 - only the class name is kept
+                    if attempt < 3 and is_retryable(exc):
+                        await asyncio.sleep(2.0 * 2**attempt)
+                        continue
+                    return {"key": key, "id": p["id"], "answers": None, "error": type(exc).__name__}
+        row = {
+            "key": key,
+            "id": p["id"],
+            "prompt": p["prompt"],
+            "answers": parse_length_answers(resp.choices[0].message.content),
+        }
+        async with lock:
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(row, ensure_ascii=False) + "\n")
+        return row
+
+    return await asyncio.gather(*(one(p) for p in prompts))
+
+
+async def _judge_length_pairs(gen, concurrency: int) -> dict[tuple[str, str], tuple]:
+    """Kimi-k3 (standard judge prompt, both orders) on good-vs-bad pairs of opposite length."""
+    from .judge import Judge, discover_model, make_client, quiet_http_logs
+
+    quiet_http_logs()
+    client = make_client()
+    judge = Judge(
+        client,
+        await discover_model(client),
+        cache_path=V4_DIR / "length_judge_cache.jsonl",
+        concurrency=concurrency,
+    )
+    jobs, index = [], []
+    for g in gen:
+        for good, bad in (("good_short", "bad_long"), ("good_long", "bad_short")):
+            a, b = g["answers"][good], g["answers"][bad]
+            jobs += [(g["id"], "AB", g["prompt"], a, b), (g["id"], "BA", g["prompt"], b, a)]
+            index.append((g["id"], good))
+    res = await judge.run(jobs, progress_every=500)
+    return {k: (res[2 * i]["verdict"], res[2 * i + 1]["verdict"]) for i, k in enumerate(index)}
+
+
+def prepare_length() -> dict[str, Any]:
+    """Length-controlled preference pairs (good short vs bad long, good long vs bad short),
+    kept when Kimi-k3 prefers the good answer in both orders."""
+    if not all(os.environ.get(v) for v in ("BASE_URL", "API_KEY")):
+        raise SystemExit("length pairs need BASE_URL and API_KEY (Kimi-k3)")
+    gen = asyncio.run(_generate_length_answers(length_prompts(), 64))
+    gen = [g for g in gen if g.get("answers")]
+    verdicts = asyncio.run(_judge_length_pairs(gen, 64))
+    rng = random.Random(SEED + 42)
+    pref, single, kept = [], [], Counter()
+    for g in gen:
+        for good, bad in (("good_short", "bad_long"), ("good_long", "bad_short")):
+            if verdicts.get((g["id"], good)) != ("A", "B"):
+                kept["judge_disagreed"] += 1
+                continue
+            kept[good] += 1
+            a = g["answers"]
+            pref.append(as_pair(f"{g['id']}-{good}", g["prompt"], a[good], a[bad], rng))
+            for key, rating in ((good, LENGTH_RATINGS["good"]), (bad, LENGTH_RATINGS["bad"])):
+                target = v3.rating_target(rating)
+                single.append(
+                    {
+                        "source": "length_pairs",
+                        "qid": v3.QUALITY_QID,
+                        "id": f"{g['id']}-{key}",
+                        "prompt": g["prompt"],
+                        "response": a[key],
+                        "target": target,
+                        "label": int(np.argmax(target)),
+                        "rating": rating,
+                    }
+                )
+    write_jsonl(V4_DIR / "length_preference.jsonl", pref)
+    write_jsonl(V4_DIR / "length_quality.jsonl", single)
+    stats = {
+        "prompts": len(gen),
+        "pairs": len(pref),
+        "single": len(single),
+        "kept": dict(kept),
+        "preferred_longer": float(
+            np.mean(
+                [
+                    len(r["candidate_a"] if r["label"] == 0 else r["candidate_b"])
+                    > len(r["candidate_b"] if r["label"] == 0 else r["candidate_a"])
+                    for r in pref
+                ]
+            )
+        ),
+    }
+    v4 = load_metrics().get("v4") or {}
+    v4.setdefault("data", {})["length_pairs"] = stats
+    update_metrics("v4", v4)
+    return stats
+
+
+def length_test_prompts(n: int = 300, seed: int = SEED + 300) -> list[dict[str, str]]:
+    """Prompts for the held-out length-controlled test: fluent train prompts not used for the
+    length-pair training data."""
+    from .fluent import FLUENT_DIR
+
+    used = {p["id"] for p in length_prompts()}
+    rows = [
+        r
+        for r in read_jsonl(FLUENT_DIR / "train.jsonl")
+        if 5 <= len(r["prompt"].split()) <= 150 and r["id"] not in used
+    ]
+    rows = sorted({r["id"]: r for r in rows}.values(), key=lambda r: r["id"])
+    return [{"id": r["id"], "prompt": r["prompt"]} for r in random.Random(seed).sample(rows, n)]
+
+
+def prepare_length_test() -> dict[str, Any]:
+    """300 new prompts, four answers each, the two length-crossed pairs kept when Kimi-k3 agrees
+    in both orders: a held-out test of whether a gate judges quality independently of length."""
+    gen = asyncio.run(_generate_length_answers(length_test_prompts(), 64))
+    gen = [g for g in gen if g.get("answers")]
+    verdicts = asyncio.run(_judge_length_pairs(gen, 64))
+    pairs = []
+    for g in gen:
+        for good, bad in (("good_short", "bad_long"), ("good_long", "bad_short")):
+            if verdicts.get((g["id"], good)) == ("A", "B"):
+                a = g["answers"]
+                pairs.append(
+                    {
+                        "id": f"{g['id']}-{good}",
+                        "prompt": g["prompt"],
+                        "ref": a[good],
+                        "other": a[bad],
+                        "kind": good,
+                    }
+                )
+    write_jsonl(X.EXT_DIR / "length_test.jsonl", pairs)
+    stats = {
+        "prompts": len(gen),
+        "pairs": len(pairs),
+        "by_kind": dict(Counter(p["kind"] for p in pairs)),
+    }
+    data = load_metrics().get("external_data") or {}
+    data["length_test"] = stats
+    update_metrics("external_data", data)
+    return stats
+
+
+def base_length_stats() -> dict[str, Any]:
+    """How often the chosen answer is the longer one in the base preference sources."""
+    rows = v2.load_rows("train")
+    out = {}
+    for src, rs in rows.items():
+        flags = [chosen_is_longer(r) for r in rs]
+        out[src] = {
+            "chosen_longer": float(np.mean([f is True for f in flags])),
+            "n": len(rs),
+        }
+    v4 = load_metrics().get("v4") or {}
+    v4.setdefault("data", {})["base_length_bias"] = out
+    update_metrics("v4", v4)
+    return out
+
+
+def chosen_is_longer(row: dict[str, Any]) -> bool | None:
+    """Whether the chosen answer (label 0 = candidate_a) has more characters; None on a tie."""
+    ch = row["candidate_a"] if row["label"] == 0 else row["candidate_b"]
+    rj = row["candidate_b"] if row["label"] == 0 else row["candidate_a"]
+    return None if len(ch) == len(rj) else len(ch) > len(rj)
+
+
+def balance_rows(rows: list[dict[str, Any]], rng: random.Random) -> tuple[list[dict], dict]:
+    """Drop pairs where the chosen answer is longer until it is longer in exactly half."""
+    longer = [r for r in rows if chosen_is_longer(r) is True]
+    shorter = [r for r in rows if chosen_is_longer(r) is False]
+    keep_longer = rng.sample(longer, min(len(longer), len(shorter)))
+    kept = keep_longer + shorter
+    return kept, {
+        "before": len(rows),
+        "chosen_longer_before": len(longer),
+        "chosen_shorter": len(shorter),
+        "after": len(kept),
+    }
+
+
 def prepare_adequacy() -> dict[str, Any]:
     pool = read_jsonl(V4_DIR / "europarl_pool.jsonl")
     used = {r["id"] for r in read_jsonl(V4_DIR / "europarl_preference.jsonl")}
@@ -480,6 +752,16 @@ def prepare_adequacy() -> dict[str, Any]:
 def extra_units(tok, sources, internal, room, max_len, head_max_len) -> list[dict[str, Any]]:
     units = []
     for source in sources:
+        if source == "length_balance":
+            continue  # applied to the base pairs in train()
+        if source == "length_pairs":
+            rows = read_jsonl(V4_DIR / "length_preference.jsonl")
+            units += v2.build_units(
+                tok, {source: rows}, {QID: internal[QID]}, room, max_len, head_max_len
+            )
+            rows = read_jsonl(V4_DIR / "length_quality.jsonl")
+            units += v3.build_single_units(tok, rows, internal, room, max_len, head_max_len)
+            continue
         if source == "registers":
             rows = read_jsonl(V4_DIR / "registers_naturalness.jsonl")
             units += v2.build_units(
@@ -544,19 +826,40 @@ def train(arm: str, seed: int) -> None:
         print(prepare_adequacy())
     if "registers" in ARMS[arm] and not (V4_DIR / "registers_single.jsonl").exists():
         print(prepare_v41())
+    if "length_pairs" in ARMS[arm] and not (V4_DIR / "length_preference.jsonl").exists():
+        print(prepare_length())
     internal = {qid: to_internal(qid, q) for qid, q in questions.items()}
     pair_internal = {q: internal[q] for q in QUESTIONS_V2}
     room = state_room_for(tok, questions, hp.max_len, hp.head_max_len)
     ratings = v3.load_ratings()
     t = time.perf_counter()
     data = {}
+    balance_stats = {}
     for split in ("train", "val_calib"):
         rows = v2.load_rows(split)
-        data[split] = v2.build_units(
-            tok, rows, pair_internal, room, hp.max_len, hp.head_max_len
-        ) + v3.build_single_units(
+        if split == "train" and "length_balance" in ARMS[arm]:
+            # `preference` sees a length-balanced subset; `naturalness` keeps every pair
+            rng = random.Random(seed + 7)
+            pref_rows = {}
+            for src, rs in rows.items():
+                pref_rows[src], balance_stats[src] = balance_rows(rs, rng)
+            units = v2.build_units(
+                tok, pref_rows, {QID: internal[QID]}, room, hp.max_len, hp.head_max_len
+            ) + v2.build_units(
+                tok,
+                rows,
+                {NATURALNESS_QID: internal[NATURALNESS_QID]},
+                room,
+                hp.max_len,
+                hp.head_max_len,
+            )
+        else:
+            units = v2.build_units(tok, rows, pair_internal, room, hp.max_len, hp.head_max_len)
+        data[split] = units + v3.build_single_units(
             tok, v3.single_rows(rows, ratings), internal, room, hp.max_len, hp.head_max_len
         )
+    if balance_stats:
+        print("length balance", balance_stats, flush=True)
     data["train"] += extra_units(tok, ARMS[arm], internal, room, hp.max_len, hp.head_max_len)
     print({k: len(v) for k, v in data.items()}, f"encoded in {time.perf_counter() - t:.0f}s")
     section = f"_v4_training_{tag(arm, seed)}"
@@ -673,6 +976,18 @@ def test_suite() -> list[dict[str, Any]]:
     fp, fr, fo = [p["prompt"] for p in f], [p["ref"] for p in f], [p["other"] for p in f]
     add("swefaq/preference", QID, fp, fr, fo, "relevance")
     add("swefaq/quality", "quality", fp, fr, fo, "relevance")
+    lt_path = X.EXT_DIR / "length_test.jsonl"
+    if lt_path.exists():
+        lt = read_jsonl(lt_path)
+        for kind, label in (("good_short", "short_correct"), ("good_long", "long_correct")):
+            sel = [p for p in lt if p["kind"] == kind]
+            pr, rf, ot = (
+                [p["prompt"] for p in sel],
+                [p["ref"] for p in sel],
+                [p["other"] for p in sel],
+            )
+            add(f"length_test/{label}/preference", QID, pr, rf, ot, "length")
+            add(f"length_test/{label}/quality", "quality", pr, rf, ot, "length")
     for name in ("blimppi", "multiblimp"):
         if name in sets:
             mp = sets[name]
@@ -929,6 +1244,8 @@ def sanity(args) -> None:
         "grammar",
         "adequacy",
         "v41",
+        "v42a",
+        "v42b",
     ):
         path = ROOT / "checkpoints" / f"v4-{t}"
         if (path / "model.safetensors").exists():
@@ -1057,7 +1374,17 @@ def main(argv=None) -> None:
     )
     parser.add_argument(
         "command",
-        choices=["prepare", "run", "reference", "compare", "sanity", "baselines", "rescore"],
+        choices=[
+            "prepare",
+            "prepare-length",
+            "prepare-length-test",
+            "run",
+            "reference",
+            "compare",
+            "sanity",
+            "baselines",
+            "rescore",
+        ],
     )
     parser.add_argument("--arm", choices=sorted(ARMS), default="control")
     parser.add_argument("--seed", type=int, default=SEED)
@@ -1082,6 +1409,11 @@ def main(argv=None) -> None:
         run(args)
     elif args.command == "sanity":
         sanity(args)
+    elif args.command == "prepare-length":
+        print(json.dumps(base_length_stats(), indent=2))
+        print(json.dumps(prepare_length(), indent=2))
+    elif args.command == "prepare-length-test":
+        print(json.dumps(prepare_length_test(), indent=2))
     elif args.command == "baselines":
         baselines(args)
     elif args.command == "rescore":

@@ -502,14 +502,14 @@
   },
   "tests": {
     "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
-    "total": 166,
-    "passed": 166,
+    "total": 168,
+    "passed": 168,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "skipped_tests": {},
     "all_passed": true,
-    "coverage_percent": 45.8,
+    "coverage_percent": 45.0,
     "coverage_per_module": {
       "__init__.py": 100.0,
       "arena_eval.py": 36.7,
@@ -529,13 +529,13 @@
       "probe.py": 46.0,
       "publish.py": 57.7,
       "publish_data.py": 0.0,
-      "readme.py": 71.0,
+      "readme.py": 70.1,
       "testing.py": 0.0,
       "train.py": 37.3,
       "utils.py": 100.0,
       "v2.py": 29.4,
       "v3.py": 18.0,
-      "v4.py": 31.5
+      "v4.py": 29.6
     }
   },
   "publish": {
@@ -5333,6 +5333,14 @@
           "SG -> PL": 201
         }
       }
+    },
+    "length_test": {
+      "prompts": 289,
+      "pairs": 539,
+      "by_kind": {
+        "good_short": 266,
+        "good_long": 273
+      }
     }
   },
   "context_length": {
@@ -7406,6 +7414,27 @@
       },
       "hard_source": {
         "pairs": 1500
+      },
+      "length_pairs": {
+        "prompts": 2901,
+        "pairs": 5417,
+        "single": 10834,
+        "kept": {
+          "good_short": 2672,
+          "good_long": 2745,
+          "judge_disagreed": 385
+        },
+        "preferred_longer": 0.5067380468894221
+      },
+      "base_length_bias": {
+        "original": {
+          "chosen_longer": 0.7056470588235294,
+          "n": 12750
+        },
+        "fluent": {
+          "chosen_longer": 0.6219131135974196,
+          "n": 9921
+        }
       }
     },
     "arms": {
@@ -7514,6 +7543,38 @@
               0.6839506172839506
             ],
             "n": 3240
+          },
+          "length_test/short_correct/preference": {
+            "mean": 0.2781954887218045,
+            "ci95": [
+              0.22556390977443608,
+              0.3308270676691729
+            ],
+            "n": 266
+          },
+          "length_test/short_correct/quality": {
+            "mean": 0.2593984962406015,
+            "ci95": [
+              0.20676691729323307,
+              0.3157894736842105
+            ],
+            "n": 266
+          },
+          "length_test/long_correct/preference": {
+            "mean": 0.8717948717948718,
+            "ci95": [
+              0.8315018315018315,
+              0.9084249084249084
+            ],
+            "n": 273
+          },
+          "length_test/long_correct/quality": {
+            "mean": 0.8827838827838828,
+            "ci95": [
+              0.8424908424908425,
+              0.9194139194139194
+            ],
+            "n": 273
           },
           "blimppi/naturalness": {
             "mean": 0.4067796610169492,
@@ -8315,6 +8376,38 @@
               0.6950617283950618
             ],
             "n": 3240
+          },
+          "length_test/short_correct/preference": {
+            "mean": 0.2857142857142857,
+            "ci95": [
+              0.23308270676691728,
+              0.34210526315789475
+            ],
+            "n": 266
+          },
+          "length_test/short_correct/quality": {
+            "mean": 0.2744360902255639,
+            "ci95": [
+              0.22180451127819548,
+              0.32706766917293234
+            ],
+            "n": 266
+          },
+          "length_test/long_correct/preference": {
+            "mean": 0.8534798534798534,
+            "ci95": [
+              0.8095238095238095,
+              0.8937728937728938
+            ],
+            "n": 273
+          },
+          "length_test/long_correct/quality": {
+            "mean": 0.8608058608058609,
+            "ci95": [
+              0.8168498168498168,
+              0.9010989010989011
+            ],
+            "n": 273
           },
           "blimppi/naturalness": {
             "mean": 0.13559322033898305,
@@ -14003,6 +14096,38 @@
             ],
             "n": 3240
           },
+          "length_test/short_correct/preference": {
+            "mean": 0.2857142857142857,
+            "ci95": [
+              0.23298872180451127,
+              0.3383458646616541
+            ],
+            "n": 266
+          },
+          "length_test/short_correct/quality": {
+            "mean": 0.23684210526315788,
+            "ci95": [
+              0.18421052631578946,
+              0.2857142857142857
+            ],
+            "n": 266
+          },
+          "length_test/long_correct/preference": {
+            "mean": 0.8424908424908425,
+            "ci95": [
+              0.8021978021978022,
+              0.8827838827838828
+            ],
+            "n": 273
+          },
+          "length_test/long_correct/quality": {
+            "mean": 0.8717948717948718,
+            "ci95": [
+              0.8315018315018315,
+              0.9084249084249084
+            ],
+            "n": 273
+          },
           "blimppi/naturalness": {
             "mean": 0.8983050847457628,
             "ci95": [
@@ -14276,6 +14401,1902 @@
             "n": 2048
           }
         }
+      },
+      "v42a": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            },
+            "grammatical": {
+              "type": "choice",
+              "instructions": "Is the text grammatically correct Swedish (spelling, inflection, word choice, word order, punctuation)?",
+              "criteria": {
+                "correct": "grammatically correct Swedish",
+                "incorrect": "contains a grammatical, spelling or word-order error"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": false,
+            "eval_batch": 32,
+            "seed": 20261014,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "none"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 215716,
+          "train_units_by_source_question": {
+            "original/preference": 7490,
+            "fluent/preference": 7376,
+            "original/naturalness": 12750,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842,
+            "europarl/preference": 12000,
+            "europarl/naturalness": 12000,
+            "dalaj/naturalness": 16365,
+            "swefaq/preference": 3074,
+            "dalaj_grammar/grammatical": 32730,
+            "adequacy/preference": 14989,
+            "adequacy/naturalness": 3000,
+            "adequacy/natural_swedish": 3000,
+            "adequacy/grammatical": 3000,
+            "registers/naturalness": 3779,
+            "registers/grammatical": 7558,
+            "hard_source/preference": 1500
+          },
+          "optimizer_updates": 13483,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.47448014703956964,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.108213991832151,
+                  "acc": 0.9548571428571428,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.15500463143456475,
+                  "acc": 0.9414132379248659,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.039541875176992265,
+                  "acc": 0.9856887298747764,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.05677078556871454,
+                  "acc": 0.9847942754919499,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.3703002008242267,
+                  "acc": 0.4467275494672755,
+                  "n": 1750,
+                  "mae": 0.8774389650222313
+                },
+                "fluent/preference": {
+                  "loss": 0.5997085427165231,
+                  "acc": 0.744,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.736815335563118,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.4380507661594701
+              },
+              "epoch_seconds": 7495.291472779994
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 7495.86665477202,
+          "per_epoch_seconds": [
+            7495.291472779994
+          ],
+          "peak_gpu_memory_allocated_gib": 10.725080966949463,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.5546510099758695,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.28481839242618356,
+            "nll_post": 0.26525037596251927,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.5594741573024357,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.06021599989479439,
+            "nll_post": 0.05306993443543911,
+            "within_laya_clamp": true
+          },
+          "quality": {
+            "temperature": 1.1530280686531986,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.3706571306089053,
+            "nll_post": 1.3672278849467896,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.4056783536794404,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.13460898990502324,
+            "nll_post": 0.1257737341192194,
+            "within_laya_clamp": true
+          },
+          "grammatical": {
+            "temperature": 1.4663341445999887,
+            "fit_on": "DaLAJ-GED dev (corrected and learner sentences)",
+            "n": 4192,
+            "nll_pre": 0.606898214247967,
+            "nll_post": 0.594766632886402,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_v42a_eval",
+          "temperatures": {
+            "preference": 1.5546510099758695,
+            "naturalness": 0.5594741573024357,
+            "quality": 1.1530280686531986,
+            "natural_swedish": 1.4056783536794404,
+            "grammatical": 1.4663341445999887
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9847942754919499,
+              "ci95": [
+                0.9794275491949911,
+                0.9897137745974955
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9847942754919499,
+              "ci95": [
+                0.9767441860465116,
+                0.9910554561717353
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.983005366726297,
+            "accuracy_chosen_in_b": 0.9865831842576028,
+            "positional_consistency": 0.9856887298747764,
+            "ece_both_orders": 0.01707294858411424,
+            "mean_confidence": 0.9678499541057216,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9762969588550984,
+              "accuracy_on_covered": 0.9935868071461291
+            },
+            "ece_order_averaged": 0.020808962551726505,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9758497316636852,
+              "accuracy_on_covered": 0.995417048579285,
+              "accuracy_on_routed": 0.5555555555555556
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9861359570661896,
+              "ci95": [
+                0.9812052772808587,
+                0.990608228980322
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9847942754919499,
+              "ci95": [
+                0.9767441860465116,
+                0.9910554561717353
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9856887298747764,
+            "accuracy_chosen_in_b": 0.9865831842576028,
+            "positional_consistency": 0.9901610017889088,
+            "ece_both_orders": 0.015699849002684195,
+            "mean_confidence": 0.9704778695591485,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9534883720930233,
+              "accuracy_on_covered": 0.9943714821763602
+            },
+            "ece_order_averaged": 0.01615598092009645,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9552772808586762,
+              "accuracy_on_covered": 0.9943820224719101,
+              "accuracy_on_routed": 0.78
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.7505707762557078,
+              "ci95": [
+                0.7300228310502284,
+                0.7705479452054794
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7659817351598174,
+              "ci95": [
+                0.7397260273972602,
+                0.795662100456621
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.7534246575342466,
+            "accuracy_chosen_in_b": 0.747716894977169,
+            "positional_consistency": 0.8984018264840182,
+            "ece_both_orders": 0.03442912435641055,
+            "mean_confidence": 0.7695283624783233,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6763698630136986,
+              "accuracy_on_covered": 0.8481012658227848
+            },
+            "ece_order_averaged": 0.02697247997738749,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6598173515981736,
+              "accuracy_on_covered": 0.8546712802768166,
+              "accuracy_on_routed": 0.5939597315436241
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.06353023525693706,
+            "fraction_within_0.2": 0.9041095890410958
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.7709030100334449,
+              "ci95": [
+                0.7374581939799331,
+                0.8043478260869565
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.7859531772575251,
+              "ci95": [
+                0.7391304347826086,
+                0.8327759197324415
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.782608695652174,
+            "accuracy_chosen_in_b": 0.7591973244147158,
+            "positional_consistency": 0.8762541806020067,
+            "ece_both_orders": 0.031515250046968285,
+            "mean_confidence": 0.7664123750757679,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6538461538461539,
+              "accuracy_on_covered": 0.8746803069053708
+            },
+            "ece_order_averaged": 0.03978053447802598,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6387959866220736,
+              "accuracy_on_covered": 0.8743455497382199,
+              "accuracy_on_routed": 0.6296296296296297
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.3612040133779264,
+                "accuracy": 0.6296296296296297
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.451505016722408,
+                "accuracy": 0.8296296296296296
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.18729096989966554,
+                "accuracy": 0.9821428571428571
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.06903529524726916,
+            "fraction_within_0.2": 0.8795986622073578
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.7709030100334449,
+                "expected_latency_ms": 9.781284490600228,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.08193979933110368,
+                "cascade_accuracy": 0.802675585284281,
+                "expected_latency_ms": 790.7668518100186,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.15719063545150502,
+                "cascade_accuracy": 0.822742474916388,
+                "expected_latency_ms": 1507.9984952666273,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.2391304347826087,
+                "cascade_accuracy": 0.8511705685618729,
+                "expected_latency_ms": 2288.9840625860456,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.34615384615384615,
+                "cascade_accuracy": 0.8712374581939799,
+                "expected_latency_ms": 3309.046844391,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.4531772575250836,
+                "cascade_accuracy": 0.8812709030100334,
+                "expected_latency_ms": 4329.109626195955,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.540133779264214,
+                "cascade_accuracy": 0.8762541806020067,
+                "expected_latency_ms": 5157.91063641248,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.6421404682274248,
+                "cascade_accuracy": 0.8862876254180602,
+                "expected_latency_ms": 6130.157975320328,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.7959866220735786,
+                "cascade_accuracy": 0.8862876254180602,
+                "expected_latency_ms": 7596.4982241649495,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.9230769230769231,
+                "cascade_accuracy": 0.8762541806020067,
+                "expected_latency_ms": 8807.822777558333,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.35,
+              "routed_fraction": 0.6421404682274248,
+              "cascade_accuracy": 0.8862876254180602,
+              "expected_latency_ms": 6130.157975320328,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 9.781284490600228,
+            "p95": 11.029670518473722,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.5546510099758695,
+            "naturalness": 0.5594741573024357,
+            "quality": 1.1530280686531986,
+            "natural_swedish": 1.4056783536794404,
+            "grammatical": 1.4663341445999887
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.8025114155251142,
+              "ci95": [
+                0.7773972602739726,
+                0.8299086757990868
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.11446551912261066,
+            "mean_score_chosen": 3.7785328844702213,
+            "mean_score_rejected": 3.105459574892764,
+            "spearman_vs_rating": 0.5793862783782896,
+            "pearson_vs_rating": 0.5878672614569667,
+            "mae_vs_rating": 0.8487280807540365
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.802675585284281,
+              "ci95": [
+                0.7558528428093646,
+                0.8461538461538461
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.11039784303205141,
+            "mean_score_chosen": 3.7806789604128435,
+            "mean_score_rejected": 3.113578560481365,
+            "spearman_vs_rating": 0.5362863394285283
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.9923291336113236,
+            "accuracy": {
+              "accuracy": 0.932468694096601,
+              "ci95": [
+                0.9221824686940966,
+                0.9418716457960643
+              ],
+              "n": 2236
+            },
+            "ece": 0.019800843020319352,
+            "natural_flagged_translationese": 0.007155635062611807,
+            "translationese_passed_as_natural": 0.12790697674418605,
+            "within_pair_natural_scores_higher": 0.9856887298747764
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.041666666666666664,
+            "mean_p_natural": 0.9331076989077595
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.020066889632107024,
+            "mean_p_natural": 0.9533942644079095
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 5.968415003735572,
+            "p95": 9.854630849440571,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9847942754919499,
+            "ci95": [
+              0.9767441860465116,
+              0.9910554561717353
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.7659817351598174,
+            "ci95": [
+              0.7397260273972602,
+              0.795662100456621
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.782608695652174,
+            "ci95": [
+              0.7357859531772575,
+              0.8261705685618724
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.5066666666666667,
+            "ci95": [
+              0.4666666666666667,
+              0.5466666666666666
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.4666666666666667,
+            "ci95": [
+              0.42833333333333334,
+              0.5066666666666667
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.5233333333333333,
+            "ci95": [
+              0.4816666666666667,
+              0.5616666666666666
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.6606334841628959,
+            "ci95": [
+              0.6400201106083458,
+              0.681246857717446
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.606586224233283,
+            "ci95": [
+              0.5847096530920061,
+              0.6274509803921569
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.7400703871292107,
+            "ci95": [
+              0.7204625439919558,
+              0.7576671694318753
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.8914256722475901,
+            "ci95": [
+              0.8777270421106037,
+              0.9046169457128361
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.8186199898528665,
+            "ci95": [
+              0.8013635210553018,
+              0.8353691019786911
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.9006172839506172,
+            "ci95": [
+              0.8898148148148148,
+              0.9114197530864198
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.6885802469135802,
+            "ci95": [
+              0.6725308641975308,
+              0.7049382716049383
+            ],
+            "n": 3240
+          },
+          "length_test/short_correct/preference": {
+            "mean": 0.2932330827067669,
+            "ci95": [
+              0.23684210526315788,
+              0.34962406015037595
+            ],
+            "n": 266
+          },
+          "length_test/short_correct/quality": {
+            "mean": 0.21804511278195488,
+            "ci95": [
+              0.16917293233082706,
+              0.2669172932330827
+            ],
+            "n": 266
+          },
+          "length_test/long_correct/preference": {
+            "mean": 0.8315018315018315,
+            "ci95": [
+              0.7875457875457875,
+              0.8754578754578755
+            ],
+            "n": 273
+          },
+          "length_test/long_correct/quality": {
+            "mean": 0.8901098901098901,
+            "ci95": [
+              0.8534798534798534,
+              0.9230769230769231
+            ],
+            "n": 273
+          },
+          "blimppi/naturalness": {
+            "mean": 0.8983050847457628,
+            "ci95": [
+              0.8135593220338984,
+              0.9661016949152542
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "mean": 0.7457627118644068,
+            "ci95": [
+              0.6271186440677966,
+              0.847457627118644
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "mean": 0.9651741293532339,
+            "ci95": [
+              0.9353233830845771,
+              0.9850746268656716
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "mean": 0.8905472636815921,
+            "ci95": [
+              0.845771144278607,
+              0.9303482587064676
+            ],
+            "n": 201
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.9585308056872038,
+            "ci95": [
+              0.9443127962085308,
+              0.9715639810426541
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.9206161137440758,
+            "ci95": [
+              0.9016587677725119,
+              0.9383886255924171
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.7318376068376068,
+            "ci95": [
+              0.7040331196581197,
+              0.7606837606837606
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6955128205128205,
+            "ci95": [
+              0.6645299145299145,
+              0.7275641025641025
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.5993340732519423,
+            "ci95": [
+              0.5671476137624861,
+              0.6304106548279689
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.5227524972253053,
+            "ci95": [
+              0.4905382907880133,
+              0.5549389567147613
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.6951710261569416,
+            "ci95": [
+              0.6670020120724346,
+              0.7233400402414487
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.7012072434607646,
+            "ci95": [
+              0.6730382293762576,
+              0.729401408450704
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.7618090452261307,
+            "ci95": [
+              0.7356532663316583,
+              0.7869346733668342
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.7778894472361809,
+            "ci95": [
+              0.7517587939698492,
+              0.8040201005025126
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.8055555555555556,
+            "ci95": [
+              0.7817460317460317,
+              0.8303571428571429
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.7242063492063492,
+            "ci95": [
+              0.6954365079365079,
+              0.7510168650793649
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.8356435643564356,
+            "ci95": [
+              0.8128712871287128,
+              0.8584158415841584
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.7792079207920792,
+            "ci95": [
+              0.7544554455445545,
+              0.804950495049505
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.2146118721461187,
+            "ci95": [
+              0.1598173515981735,
+              0.2694063926940639
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.63330078125,
+            "ci95": [
+              0.61279296875,
+              0.6538208007812499
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.6591796875,
+            "ci95": [
+              0.638671875,
+              0.6801879882812499
+            ],
+            "n": 2048
+          },
+          "dalaj/grammatical": {
+            "mean": 0.8247082699137493,
+            "ci95": [
+              0.8082064941653982,
+              0.8419583967529173
+            ],
+            "n": 1971
+          },
+          "gerlangmod/grammatical": {
+            "mean": 0.9016587677725119,
+            "ci95": [
+              0.8803317535545023,
+              0.9218009478672986
+            ],
+            "n": 844
+          },
+          "blimppi/grammatical": {
+            "mean": 0.711864406779661,
+            "ci95": [
+              0.5932203389830508,
+              0.8305084745762712
+            ],
+            "n": 59
+          },
+          "multiblimp/grammatical": {
+            "mean": 0.9477611940298507,
+            "ci95": [
+              0.9154228855721394,
+              0.9776119402985075
+            ],
+            "n": 201
+          },
+          "scala/grammatical_accuracy@0.5": {
+            "mean": 0.70751953125,
+            "ci95": [
+              0.68798828125,
+              0.7265747070312499
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "flores_reference_flagged_incorrect": {
+            "mean": 0.3718267794922847,
+            "ci95": [
+              0.35090841214534596,
+              0.3932304629168741
+            ],
+            "n": 2009
+          },
+          "wmt24pp_reference_flagged_incorrect": {
+            "mean": 0.5726495726495726,
+            "ci95": [
+              0.5395299145299145,
+              0.6036591880341878
+            ],
+            "n": 936
+          },
+          "europarl_human_flagged_incorrect": {
+            "mean": 0.27537688442211056,
+            "ci95": [
+              0.24723618090452262,
+              0.30452261306532663
+            ],
+            "n": 995
+          },
+          "fluent_responses_flagged_incorrect": {
+            "mean": 0.3447488584474886,
+            "ci95": [
+              0.3230593607305936,
+              0.3670234018264839
+            ],
+            "n": 1752
+          },
+          "fluent_flagged_translationese": {
+            "mean": 0.0410958904109589,
+            "ci95": [
+              0.032534246575342464,
+              0.050799086757990865
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.29889987412898583,
+            "mcc@val_threshold": 0.322218087636988,
+            "val_threshold": 0.36710285495936334,
+            "auc": 0.7056999206542969,
+            "flagged_incorrect": 0.72607421875,
+            "n": 2048
+          },
+          "scala_grammatical": {
+            "mcc@0.5": 0.4283179669139479,
+            "mcc@val_threshold": 0.4547497126985705,
+            "val_threshold": 0.33404093326414147,
+            "auc": 0.8008747100830078,
+            "by_corruption": {
+              "None": 0.583984375,
+              "delete": 0.7703252032520326,
+              "flip_neighbours": 0.8872180451127819
+            },
+            "n": 2048
+          }
+        }
+      },
+      "v42b": {
+        "training": {
+          "init": "convaiinnovations/laya (subfolder=multilingual)",
+          "questions": {
+            "preference": {
+              "type": "choice",
+              "instructions": "Which candidate response better answers the prompt?",
+              "criteria": {
+                "candidate_a": "response A is superior",
+                "candidate_b": "response B is superior"
+              }
+            },
+            "naturalness": {
+              "type": "choice",
+              "instructions": "Which candidate response is written in more natural, idiomatic Swedish?",
+              "criteria": {
+                "candidate_a": "response A reads more naturally",
+                "candidate_b": "response B reads more naturally"
+              }
+            },
+            "quality": {
+              "type": "score",
+              "instructions": "How well does the response answer the prompt (helpfulness, correctness, completeness)?",
+              "criteria": [
+                "very poor: unhelpful, wrong or off-topic",
+                "poor: major errors or omissions",
+                "acceptable: partly helpful",
+                "good: helpful with minor issues",
+                "excellent: fully helpful and correct"
+              ]
+            },
+            "natural_swedish": {
+              "type": "choice",
+              "instructions": "Is the response written in natural, idiomatic Swedish?",
+              "criteria": {
+                "natural": "natural, idiomatic Swedish",
+                "translationese": "reads like a literal or poor translation"
+              }
+            },
+            "grammatical": {
+              "type": "choice",
+              "instructions": "Is the text grammatically correct Swedish (spelling, inflection, word choice, word order, punctuation)?",
+              "criteria": {
+                "correct": "grammatically correct Swedish",
+                "incorrect": "contains a grammatical, spelling or word-order error"
+              }
+            }
+          },
+          "hyperparameters": {
+            "epochs": 1,
+            "micro_batch": 8,
+            "grad_accum": 2,
+            "lr": 2e-05,
+            "warmup_frac": 0.1,
+            "weight_decay": 0.01,
+            "grad_clip": 1.0,
+            "precision": "bfloat16",
+            "gradient_checkpointing": false,
+            "eval_batch": 32,
+            "seed": 20261014,
+            "max_len": 1024,
+            "head_max_len": 256,
+            "loss": "soft cross-entropy over the two choice options",
+            "oom_fallback": "none"
+          },
+          "order_resampling": "each pair encoded in both orders; one order drawn per item per epoch",
+          "train_units": 231967,
+          "train_units_by_source_question": {
+            "original/preference": 7490,
+            "fluent/preference": 7376,
+            "original/naturalness": 12750,
+            "fluent/naturalness": 9921,
+            "original/natural_swedish": 25500,
+            "fluent/quality": 19842,
+            "fluent/natural_swedish": 19842,
+            "europarl/preference": 12000,
+            "europarl/naturalness": 12000,
+            "dalaj/naturalness": 16365,
+            "swefaq/preference": 3074,
+            "dalaj_grammar/grammatical": 32730,
+            "adequacy/preference": 14989,
+            "adequacy/naturalness": 3000,
+            "adequacy/natural_swedish": 3000,
+            "adequacy/grammatical": 3000,
+            "registers/naturalness": 3779,
+            "registers/grammatical": 7558,
+            "hard_source/preference": 1500,
+            "length_pairs/preference": 5417,
+            "length_pairs/quality": 10834
+          },
+          "optimizer_updates": 14498,
+          "history": [
+            {
+              "epoch": 1,
+              "train_loss": 0.5098813239397887,
+              "val_calib": {
+                "fluent/natural_swedish": {
+                  "loss": 0.10189174595421632,
+                  "acc": 0.956,
+                  "n": 1750
+                },
+                "original/natural_swedish": {
+                  "loss": 0.15466130932618297,
+                  "acc": 0.9391771019677997,
+                  "n": 2236
+                },
+                "original/preference": {
+                  "loss": 0.032393887205381514,
+                  "acc": 0.9919499105545617,
+                  "n": 1118
+                },
+                "original/naturalness": {
+                  "loss": 0.0572164727151005,
+                  "acc": 0.9928443649373881,
+                  "n": 1118
+                },
+                "fluent/quality": {
+                  "loss": 1.3978437933368342,
+                  "acc": 0.4269406392694064,
+                  "n": 1750,
+                  "mae": 0.8907814024171177
+                },
+                "fluent/preference": {
+                  "loss": 0.5798834866559731,
+                  "acc": 0.7371428571428571,
+                  "n": 875
+                },
+                "fluent/naturalness": {
+                  "loss": 0.74579415038401,
+                  "acc": null,
+                  "n": 875
+                },
+                "mean_loss": 0.43852640651109975
+              },
+              "epoch_seconds": 7942.013447432022
+            }
+          ],
+          "best_epoch": 1,
+          "selection": "lowest mean val_calib loss over (source, question) groups",
+          "total_seconds": 7942.568412461027,
+          "per_epoch_seconds": [
+            7942.013447432022
+          ],
+          "peak_gpu_memory_allocated_gib": 10.725080966949463,
+          "hardware": "NVIDIA GeForce RTX 4080 Laptop GPU"
+        },
+        "calibration": {
+          "preference": {
+            "temperature": 1.4665062668081426,
+            "fit_on": "val_calib original+fluent, both orders",
+            "n": 3986,
+            "nll_pre": 0.26728128473813634,
+            "nll_post": 0.25463313595766773,
+            "within_laya_clamp": true
+          },
+          "naturalness": {
+            "temperature": 0.5120941179653816,
+            "fit_on": "val_calib original, both orders",
+            "n": 2236,
+            "nll_pre": 0.057763253424516006,
+            "nll_post": 0.04815991720136286,
+            "within_laya_clamp": true
+          },
+          "quality": {
+            "temperature": 1.2900955111194385,
+            "fit_on": "val_calib fluent responses, soft rating targets (fluent)",
+            "n": 1750,
+            "nll_pre": 1.398094490490332,
+            "nll_post": 1.3873708695127684,
+            "within_laya_clamp": true
+          },
+          "natural_swedish": {
+            "temperature": 1.3653592719696397,
+            "fit_on": "val_calib responses (fluent, original)",
+            "n": 3986,
+            "nll_pre": 0.13144908971612795,
+            "nll_post": 0.12393515583769579,
+            "within_laya_clamp": true
+          },
+          "grammatical": {
+            "temperature": 1.6535097779860883,
+            "fit_on": "DaLAJ-GED dev (corrected and learner sentences)",
+            "n": 4192,
+            "nll_pre": 0.6201601333669885,
+            "nll_post": 0.6012356219295724,
+            "within_laya_clamp": true
+          }
+        },
+        "standard_eval": {
+          "checkpoint": "_v4_v42b_eval",
+          "temperatures": {
+            "preference": 1.4665062668081426,
+            "naturalness": 0.5120941179653816,
+            "quality": 1.2900955111194385,
+            "natural_swedish": 1.3653592719696397,
+            "grammatical": 1.6535097779860883
+          },
+          "original/preference": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.983005366726297,
+              "ci95": [
+                0.9776386404293381,
+                0.9883720930232558
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9874776386404294,
+              "ci95": [
+                0.9803220035778175,
+                0.9937388193202147
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9838998211091234,
+            "accuracy_chosen_in_b": 0.9821109123434705,
+            "positional_consistency": 0.9874776386404294,
+            "ece_both_orders": 0.012136423689448086,
+            "mean_confidence": 0.9726821747566313,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9731663685152058,
+              "accuracy_on_covered": 0.9917279411764706
+            },
+            "ece_order_averaged": 0.016734779729195917,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9731663685152058,
+              "accuracy_on_covered": 0.9926470588235294,
+              "accuracy_on_routed": 0.8
+            }
+          },
+          "original/naturalness": {
+            "n_pairs": 1118,
+            "accuracy_both_orders": {
+              "accuracy": 0.9870304114490162,
+              "ci95": [
+                0.9821109123434705,
+                0.9915026833631485
+              ],
+              "n": 2236
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.9883720930232558,
+              "ci95": [
+                0.981216457960644,
+                0.9946332737030411
+              ],
+              "n": 1118
+            },
+            "accuracy_chosen_in_a": 0.9892665474060823,
+            "accuracy_chosen_in_b": 0.9847942754919499,
+            "positional_consistency": 0.9901610017889088,
+            "ece_both_orders": 0.014726254254736625,
+            "mean_confidence": 0.9732812956609607,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.9651162790697675,
+              "accuracy_on_covered": 0.9925857275254866
+            },
+            "ece_order_averaged": 0.016051534288153865,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.9669051878354203,
+              "accuracy_on_covered": 0.9944495837187789,
+              "accuracy_on_routed": 0.8108108108108109
+            }
+          },
+          "fluent/preference": {
+            "n_pairs": 876,
+            "accuracy_both_orders": {
+              "accuracy": 0.747716894977169,
+              "ci95": [
+                0.7271689497716894,
+                0.7682648401826484
+              ],
+              "n": 1752
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.752283105022831,
+              "ci95": [
+                0.723744292237443,
+                0.7808219178082192
+              ],
+              "n": 876
+            },
+            "accuracy_chosen_in_a": 0.7431506849315068,
+            "accuracy_chosen_in_b": 0.752283105022831,
+            "positional_consistency": 0.860730593607306,
+            "ece_both_orders": 0.02025618246155677,
+            "mean_confidence": 0.7554389449219365,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.6181506849315068,
+              "accuracy_on_covered": 0.8421052631578947
+            },
+            "ece_order_averaged": 0.030742322315577008,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.6095890410958904,
+              "accuracy_on_covered": 0.8539325842696629,
+              "accuracy_on_routed": 0.5935672514619883
+            }
+          },
+          "fluent/naturalness": {
+            "mean_abs_dev_from_0.5": 0.07716680971998481,
+            "fraction_within_0.2": 0.882420091324201
+          },
+          "probe/preference": {
+            "n_pairs": 299,
+            "accuracy_both_orders": {
+              "accuracy": 0.794314381270903,
+              "ci95": [
+                0.7625418060200669,
+                0.8277591973244147
+              ],
+              "n": 598
+            },
+            "accuracy_order_averaged_prob": {
+              "accuracy": 0.8093645484949833,
+              "ci95": [
+                0.7625418060200669,
+                0.8528428093645485
+              ],
+              "n": 299
+            },
+            "accuracy_chosen_in_a": 0.7959866220735786,
+            "accuracy_chosen_in_b": 0.7926421404682275,
+            "positional_consistency": 0.882943143812709,
+            "ece_both_orders": 0.040378604990744325,
+            "mean_confidence": 0.7539357762801586,
+            "default_margin": {
+              "margin": 0.2,
+              "coverage": 0.596989966555184,
+              "accuracy_on_covered": 0.8823529411764706
+            },
+            "ece_order_averaged": 0.06516819900219847,
+            "default_margin_order_averaged": {
+              "margin": 0.2,
+              "coverage": 0.5886287625418061,
+              "accuracy_on_covered": 0.8977272727272727,
+              "accuracy_on_routed": 0.6829268292682927
+            },
+            "by_confidence": [
+              {
+                "confidence": [
+                  0.5,
+                  0.7
+                ],
+                "fraction": 0.411371237458194,
+                "accuracy": 0.6829268292682927
+              },
+              {
+                "confidence": [
+                  0.7,
+                  0.9
+                ],
+                "fraction": 0.38461538461538464,
+                "accuracy": 0.8695652173913043
+              },
+              {
+                "confidence": [
+                  0.9,
+                  1.0
+                ],
+                "fraction": 0.2040133779264214,
+                "accuracy": 0.9508196721311475
+              }
+            ]
+          },
+          "probe/naturalness": {
+            "mean_abs_dev_from_0.5": 0.08150930119793834,
+            "fraction_within_0.2": 0.8896321070234113
+          },
+          "probe/cascade": {
+            "table": [
+              {
+                "threshold": 0.0,
+                "routed_fraction": 0.0,
+                "cascade_accuracy": 0.794314381270903,
+                "expected_latency_ms": 9.79022347019054,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.05,
+                "routed_fraction": 0.07692307692307693,
+                "cascade_accuracy": 0.8076923076923077,
+                "expected_latency_ms": 742.9603478925017,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.1,
+                "routed_fraction": 0.1939799331103679,
+                "cascade_accuracy": 0.8327759197324415,
+                "expected_latency_ms": 1858.6540154916706,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.15,
+                "routed_fraction": 0.3177257525083612,
+                "cascade_accuracy": 0.8595317725752508,
+                "expected_latency_ms": 3038.1016069536495,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.2,
+                "routed_fraction": 0.40301003344481606,
+                "cascade_accuracy": 0.8712374581939799,
+                "expected_latency_ms": 3850.9641362044727,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.25,
+                "routed_fraction": 0.49498327759197325,
+                "cascade_accuracy": 0.8745819397993311,
+                "expected_latency_ms": 4727.580589318105,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.3,
+                "routed_fraction": 0.5886287625418061,
+                "cascade_accuracy": 0.8812709030100334,
+                "expected_latency_ms": 5620.135523397441,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.35,
+                "routed_fraction": 0.6705685618729097,
+                "cascade_accuracy": 0.8812709030100334,
+                "expected_latency_ms": 6401.121090716859,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.4,
+                "routed_fraction": 0.782608695652174,
+                "cascade_accuracy": 0.8795986622073578,
+                "expected_latency_ms": 7468.999315418921,
+                "routed_without_verdict": 0
+              },
+              {
+                "threshold": 0.45,
+                "routed_fraction": 0.9063545150501672,
+                "cascade_accuracy": 0.8779264214046822,
+                "expected_latency_ms": 8648.4469068809,
+                "routed_without_verdict": 0
+              }
+            ],
+            "recommended": {
+              "threshold": 0.3,
+              "routed_fraction": 0.5886287625418061,
+              "cascade_accuracy": 0.8812709030100334,
+              "expected_latency_ms": 5620.135523397441,
+              "routed_without_verdict": 0,
+              "rule": "lowest routed fraction within 0.5% of the best cascade accuracy in the sweep"
+            },
+            "judge_accuracy": 0.8729096989966555
+          },
+          "latency_gpu_forward_ms": {
+            "p50": 9.79022347019054,
+            "p95": 11.051091682747938,
+            "n": 200
+          }
+        },
+        "pointwise_eval": {
+          "temperatures": {
+            "preference": 1.4665062668081426,
+            "naturalness": 0.5120941179653816,
+            "quality": 1.2900955111194385,
+            "natural_swedish": 1.3653592719696397,
+            "grammatical": 1.6535097779860883
+          },
+          "fluent/quality": {
+            "n_pairs": 876,
+            "accuracy_expected_score": {
+              "accuracy": 0.773972602739726,
+              "ci95": [
+                0.7465753424657534,
+                0.8025114155251142
+              ],
+              "n": 876
+            },
+            "ties": 1,
+            "ece_p_chosen_beats_rejected": 0.1192135889234523,
+            "mean_score_chosen": 3.719984584880652,
+            "mean_score_rejected": 3.1575492140955936,
+            "spearman_vs_rating": 0.5502614571805792,
+            "pearson_vs_rating": 0.5629094867971718,
+            "mae_vs_rating": 0.8810063141500301
+          },
+          "probe/quality": {
+            "n_pairs": 299,
+            "accuracy_expected_score": {
+              "accuracy": 0.802675585284281,
+              "ci95": [
+                0.759113712374582,
+                0.8461538461538461
+              ],
+              "n": 299
+            },
+            "ties": 0,
+            "ece_p_chosen_beats_rejected": 0.13489566436125514,
+            "mean_score_chosen": 3.744936535029998,
+            "mean_score_rejected": 3.145097680415573,
+            "spearman_vs_rating": 0.5346214038924791
+          },
+          "original/natural_swedish": {
+            "n_responses": 2236,
+            "auc": 0.9926643539927227,
+            "accuracy": {
+              "accuracy": 0.9355992844364938,
+              "ci95": [
+                0.9257602862254025,
+                0.945438282647585
+              ],
+              "n": 2236
+            },
+            "ece": 0.014342080084122306,
+            "natural_flagged_translationese": 0.008050089445438283,
+            "translationese_passed_as_natural": 0.12075134168157424,
+            "within_pair_natural_scores_higher": 0.9901610017889088
+          },
+          "fluent/natural_swedish": {
+            "n_responses": 1752,
+            "flagged_translationese": 0.04052511415525114,
+            "mean_p_natural": 0.9340376136449093
+          },
+          "probe/natural_swedish": {
+            "n_responses": 598,
+            "flagged_translationese": 0.021739130434782608,
+            "mean_p_natural": 0.9551435900207684
+          },
+          "latency_gpu_forward_ms_single_response": {
+            "p50": 6.008666998241097,
+            "p95": 9.846337433555153,
+            "n": 200
+          }
+        },
+        "tests": {
+          "original/preference": {
+            "mean": 0.9874776386404294,
+            "ci95": [
+              0.9803220035778175,
+              0.9937388193202147
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "mean": 0.752283105022831,
+            "ci95": [
+              0.723744292237443,
+              0.7808219178082192
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "mean": 0.8093645484949833,
+            "ci95": [
+              0.7625418060200669,
+              0.8528428093645485
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "mean": 0.5133333333333333,
+            "ci95": [
+              0.475,
+              0.55
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "mean": 0.5058333333333334,
+            "ci95": [
+              0.465,
+              0.545
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "mean": 0.53,
+            "ci95": [
+              0.49166666666666664,
+              0.5666666666666667
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "mean": 0.6299648064353947,
+            "ci95": [
+              0.6093514328808446,
+              0.6515837104072398
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "mean": 0.6053293112116641,
+            "ci95": [
+              0.5839617898441428,
+              0.6282051282051282
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "mean": 0.7280040221216691,
+            "ci95": [
+              0.7073906485671192,
+              0.7476118652589241
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "mean": 0.9036022323693557,
+            "ci95": [
+              0.8904109589041096,
+              0.9162861491628614
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "mean": 0.7968036529680366,
+            "ci95": [
+              0.7790461694571283,
+              0.8148148148148148
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "mean": 0.8709876543209877,
+            "ci95": [
+              0.8589506172839506,
+              0.8830246913580246
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "mean": 0.6478395061728395,
+            "ci95": [
+              0.6308641975308642,
+              0.6638888888888889
+            ],
+            "n": 3240
+          },
+          "length_test/short_correct/preference": {
+            "mean": 0.7744360902255639,
+            "ci95": [
+              0.7218045112781954,
+              0.8233082706766918
+            ],
+            "n": 266
+          },
+          "length_test/short_correct/quality": {
+            "mean": 0.8120300751879699,
+            "ci95": [
+              0.7668233082706767,
+              0.8571428571428571
+            ],
+            "n": 266
+          },
+          "length_test/long_correct/preference": {
+            "mean": 0.8534798534798534,
+            "ci95": [
+              0.8131868131868132,
+              0.8937728937728938
+            ],
+            "n": 273
+          },
+          "length_test/long_correct/quality": {
+            "mean": 0.8681318681318682,
+            "ci95": [
+              0.8241758241758241,
+              0.9047619047619048
+            ],
+            "n": 273
+          },
+          "blimppi/naturalness": {
+            "mean": 0.8983050847457628,
+            "ci95": [
+              0.8135593220338984,
+              0.9661016949152542
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "mean": 0.7457627118644068,
+            "ci95": [
+              0.6271186440677966,
+              0.847457627118644
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "mean": 0.9701492537313433,
+            "ci95": [
+              0.945273631840796,
+              0.9900497512437811
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "mean": 0.9054726368159204,
+            "ci95": [
+              0.8606965174129353,
+              0.945273631840796
+            ],
+            "n": 201
+          },
+          "gerlangmod/naturalness": {
+            "mean": 0.9561611374407583,
+            "ci95": [
+              0.9419431279620853,
+              0.9691943127962085
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "mean": 0.8969194312796208,
+            "ci95": [
+              0.8755924170616114,
+              0.9158767772511849
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "mean": 0.7489316239316239,
+            "ci95": [
+              0.7232638888888889,
+              0.7767094017094017
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "mean": 0.6933760683760684,
+            "ci95": [
+              0.6655982905982906,
+              0.7243589743589743
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "mean": 0.6137624861265261,
+            "ci95": [
+              0.5826859045504994,
+              0.6459489456159823
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "mean": 0.5471698113207547,
+            "ci95": [
+              0.5138734739178691,
+              0.5804661487236404
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "mean": 0.7082494969818913,
+            "ci95": [
+              0.6790744466800804,
+              0.7354124748490946
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "mean": 0.7002012072434608,
+            "ci95": [
+              0.6710261569416499,
+              0.7293762575452716
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "mean": 0.7597989949748744,
+            "ci95": [
+              0.7336683417085427,
+              0.7849246231155779
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "mean": 0.7829145728643216,
+            "ci95": [
+              0.7557788944723618,
+              0.8080402010050252
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "mean": 0.810515873015873,
+            "ci95": [
+              0.7857142857142857,
+              0.8343253968253969
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "mean": 0.6954365079365079,
+            "ci95": [
+              0.6666666666666666,
+              0.7232390873015871
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "mean": 0.8316831683168316,
+            "ci95": [
+              0.808910891089109,
+              0.8554455445544554
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "mean": 0.7425742574257426,
+            "ci95": [
+              0.7168316831683168,
+              0.7702970297029703
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "mean": 0.1598173515981735,
+            "ci95": [
+              0.1141552511415525,
+              0.2100456621004566
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "mean": 0.6796875,
+            "ci95": [
+              0.65966796875,
+              0.69921875
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "mean": 0.67236328125,
+            "ci95": [
+              0.65185546875,
+              0.6923828125
+            ],
+            "n": 2048
+          },
+          "dalaj/grammatical": {
+            "mean": 0.8229325215626585,
+            "ci95": [
+              0.8061834094368341,
+              0.8396752917300863
+            ],
+            "n": 1971
+          },
+          "gerlangmod/grammatical": {
+            "mean": 0.9158767772511849,
+            "ci95": [
+              0.8969194312796208,
+              0.9348341232227488
+            ],
+            "n": 844
+          },
+          "blimppi/grammatical": {
+            "mean": 0.7627118644067796,
+            "ci95": [
+              0.6610169491525424,
+              0.864406779661017
+            ],
+            "n": 59
+          },
+          "multiblimp/grammatical": {
+            "mean": 0.9502487562189055,
+            "ci95": [
+              0.9203980099502488,
+              0.9800995024875622
+            ],
+            "n": 201
+          },
+          "scala/grammatical_accuracy@0.5": {
+            "mean": 0.72119140625,
+            "ci95": [
+              0.7021484375,
+              0.7412109375
+            ],
+            "n": 2048
+          }
+        },
+        "guards": {
+          "flores_reference_flagged_incorrect": {
+            "mean": 0.35390741662518665,
+            "ci95": [
+              0.3330014932802389,
+              0.3748133399701344
+            ],
+            "n": 2009
+          },
+          "wmt24pp_reference_flagged_incorrect": {
+            "mean": 0.532051282051282,
+            "ci95": [
+              0.49893162393162394,
+              0.5641025641025641
+            ],
+            "n": 936
+          },
+          "europarl_human_flagged_incorrect": {
+            "mean": 0.24321608040201004,
+            "ci95": [
+              0.21608040201005024,
+              0.27035175879396983
+            ],
+            "n": 995
+          },
+          "fluent_responses_flagged_incorrect": {
+            "mean": 0.3915525114155251,
+            "ci95": [
+              0.3687214611872146,
+              0.4143835616438356
+            ],
+            "n": 1752
+          },
+          "fluent_flagged_translationese": {
+            "mean": 0.0410958904109589,
+            "ci95": [
+              0.032534246575342464,
+              0.050799086757990865
+            ],
+            "n": 1752
+          }
+        },
+        "classifiers": {
+          "scala": {
+            "mcc@0.5": 0.3673335269241711,
+            "mcc@val_threshold": 0.36532676546485154,
+            "val_threshold": 0.4106697678604416,
+            "auc": 0.7150735855102539,
+            "flagged_incorrect": 0.396484375,
+            "n": 2048
+          },
+          "scala_grammatical": {
+            "mcc@0.5": 0.4509807444932262,
+            "mcc@val_threshold": 0.4751761671690613,
+            "val_threshold": 0.4622734546004748,
+            "auc": 0.8038763999938965,
+            "by_corruption": {
+              "None": 0.6240234375,
+              "delete": 0.7479674796747967,
+              "flip_neighbours": 0.8834586466165414
+            },
+            "n": 2048
+          }
+        }
       }
     },
     "design": {
@@ -14314,6 +16335,27 @@
           "adequacy",
           "registers",
           "hard_source"
+        ],
+        "v42a": [
+          "europarl",
+          "dalaj",
+          "swefaq",
+          "dalaj_grammar",
+          "adequacy",
+          "registers",
+          "hard_source",
+          "length_balance"
+        ],
+        "v42b": [
+          "europarl",
+          "dalaj",
+          "swefaq",
+          "dalaj_grammar",
+          "adequacy",
+          "registers",
+          "hard_source",
+          "length_balance",
+          "length_pairs"
         ]
       },
       "recipe": "v3 data and questions, 1 epoch, from the base checkpoint",
@@ -16421,6 +18463,570 @@
             ],
             "n": 1752
           }
+        },
+        "v42a": {
+          "original/preference": {
+            "diff": -0.004472271914132379,
+            "ci95": [
+              -0.01073345259391771,
+              0.0017889087656529517
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": -0.01141552511415525,
+            "ci95": [
+              -0.0365296803652968,
+              0.012557077625570776
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": 0.0,
+            "ci95": [
+              -0.043478260869565216,
+              0.043478260869565216
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.07166666666666667,
+            "ci95": [
+              0.018291666666666668,
+              0.12833333333333333
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": -0.028333333333333332,
+            "ci95": [
+              -0.07666666666666666,
+              0.021666666666666667
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": 0.15833333333333333,
+            "ci95": [
+              0.105,
+              0.21166666666666667
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.10558069381598793,
+            "ci95": [
+              0.07893413775766717,
+              0.13273001508295626
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": 0.003770739064856712,
+            "ci95": [
+              -0.021625188536953242,
+              0.029418049270990412
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": 0.2684766214177979,
+            "ci95": [
+              0.2398190045248869,
+              0.2961412770236299
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": 0.2871638762049721,
+            "ci95": [
+              0.26229071537290716,
+              0.3120243531202435
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": 0.15093860984271942,
+            "ci95": [
+              0.1278538812785388,
+              0.1750380517503805
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": 0.29259259259259257,
+            "ci95": [
+              0.275,
+              0.3105015432098765
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": 0.009876543209876543,
+            "ci95": [
+              -0.0030864197530864196,
+              0.02284722222222218
+            ],
+            "n": 3240
+          },
+          "blimppi/naturalness": {
+            "diff": 0.7627118644067796,
+            "ci95": [
+              0.6271186440677966,
+              0.8813559322033898
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "diff": 0.2711864406779661,
+            "ci95": [
+              0.11864406779661017,
+              0.423728813559322
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "diff": 0.16417910447761194,
+            "ci95": [
+              0.1044776119402985,
+              0.22388059701492538
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "diff": 0.16417910447761194,
+            "ci95": [
+              0.09950248756218906,
+              0.22885572139303484
+            ],
+            "n": 201
+          },
+          "gerlangmod/naturalness": {
+            "diff": 0.10781990521327015,
+            "ci95": [
+              0.08293838862559241,
+              0.1338862559241706
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": 0.06753554502369669,
+            "ci95": [
+              0.040254739336492894,
+              0.09597156398104266
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.21581196581196582,
+            "ci95": [
+              0.1762553418803419,
+              0.2553418803418803
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": 0.050213675213675216,
+            "ci95": [
+              0.01282051282051282,
+              0.0876068376068376
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.19866814650388456,
+            "ci95": [
+              0.15538290788013318,
+              0.24195338512763595
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": 0.03662597114317425,
+            "ci95": [
+              -0.004439511653718091,
+              0.07771920088790217
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.31891348088531185,
+            "ci95": [
+              0.2796780684104628,
+              0.3591549295774648
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.21227364185110664,
+            "ci95": [
+              0.17303822937625754,
+              0.25251509054325955
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": 0.4030150753768844,
+            "ci95": [
+              0.3658291457286432,
+              0.4402010050251256
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.2914572864321608,
+            "ci95": [
+              0.2522613065326633,
+              0.3306532663316583
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.4494047619047619,
+            "ci95": [
+              0.4107142857142857,
+              0.49107142857142855
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": 0.23214285714285715,
+            "ci95": [
+              0.19146825396825398,
+              0.2698412698412698
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.499009900990099,
+            "ci95": [
+              0.4623762376237624,
+              0.5366336633663367
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": 0.3188118811881188,
+            "ci95": [
+              0.2811881188118812,
+              0.3574257425742574
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": 0.045662100456621,
+            "ci95": [
+              0.0045662100456621,
+              0.0867579908675799
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": 0.1044921875,
+            "ci95": [
+              0.0693359375,
+              0.1396484375
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": 0.08984375,
+            "ci95": [
+              0.06590576171875,
+              0.1142578125
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": -0.003995433789954338,
+            "ci95": [
+              -0.014269406392694063,
+              0.006278538812785388
+            ],
+            "n": 1752
+          }
+        },
+        "v42b": {
+          "original/preference": {
+            "diff": -0.0017889087656529517,
+            "ci95": [
+              -0.008944543828264758,
+              0.004472271914132379
+            ],
+            "n": 1118
+          },
+          "fluent/preference": {
+            "diff": -0.02511415525114155,
+            "ci95": [
+              -0.05251141552511415,
+              0.0
+            ],
+            "n": 876
+          },
+          "probe/preference": {
+            "diff": 0.026755852842809364,
+            "ci95": [
+              -0.016722408026755852,
+              0.07023411371237458
+            ],
+            "n": 299
+          },
+          "liu/naturalness": {
+            "diff": 0.07833333333333334,
+            "ci95": [
+              0.02666666666666667,
+              0.13166666666666665
+            ],
+            "n": 600
+          },
+          "liu/natural_swedish": {
+            "diff": 0.010833333333333334,
+            "ci95": [
+              -0.04,
+              0.060833333333333336
+            ],
+            "n": 600
+          },
+          "liu/preference+source": {
+            "diff": 0.165,
+            "ci95": [
+              0.11,
+              0.22
+            ],
+            "n": 600
+          },
+          "flores/naturalness": {
+            "diff": 0.07491201608848667,
+            "ci95": [
+              0.049258421317244845,
+              0.10105580693815988
+            ],
+            "n": 1989
+          },
+          "flores/natural_swedish": {
+            "diff": 0.002513826043237808,
+            "ci95": [
+              -0.021870286576168928,
+              0.025892408245349424
+            ],
+            "n": 1989
+          },
+          "flores/preference+source": {
+            "diff": 0.2564102564102564,
+            "ci95": [
+              0.2277526395173454,
+              0.2855832076420311
+            ],
+            "n": 1989
+          },
+          "dalaj/naturalness": {
+            "diff": 0.2993404363267377,
+            "ci95": [
+              0.274974632166413,
+              0.32318619989852865
+            ],
+            "n": 1971
+          },
+          "dalaj/natural_swedish": {
+            "diff": 0.1291222729578894,
+            "ci95": [
+              0.10553018772196854,
+              0.15246702181633684
+            ],
+            "n": 1971
+          },
+          "swefaq/preference": {
+            "diff": 0.26296296296296295,
+            "ci95": [
+              0.24475308641975307,
+              0.2817901234567901
+            ],
+            "n": 3240
+          },
+          "swefaq/quality": {
+            "diff": -0.030864197530864196,
+            "ci95": [
+              -0.04722222222222222,
+              -0.016049382716049384
+            ],
+            "n": 3240
+          },
+          "blimppi/naturalness": {
+            "diff": 0.7627118644067796,
+            "ci95": [
+              0.6440677966101694,
+              0.8813559322033898
+            ],
+            "n": 59
+          },
+          "blimppi/natural_swedish": {
+            "diff": 0.2711864406779661,
+            "ci95": [
+              0.11864406779661017,
+              0.423728813559322
+            ],
+            "n": 59
+          },
+          "multiblimp/naturalness": {
+            "diff": 0.1691542288557214,
+            "ci95": [
+              0.11442786069651742,
+              0.22885572139303484
+            ],
+            "n": 201
+          },
+          "multiblimp/natural_swedish": {
+            "diff": 0.1791044776119403,
+            "ci95": [
+              0.11442786069651742,
+              0.24378109452736318
+            ],
+            "n": 201
+          },
+          "gerlangmod/naturalness": {
+            "diff": 0.10545023696682465,
+            "ci95": [
+              0.08056872037914692,
+              0.13270142180094788
+            ],
+            "n": 844
+          },
+          "gerlangmod/natural_swedish": {
+            "diff": 0.04383886255924171,
+            "ci95": [
+              0.014218009478672985,
+              0.07109004739336493
+            ],
+            "n": 844
+          },
+          "wmt24pp/opus/preference+source": {
+            "diff": 0.2329059829059829,
+            "ci95": [
+              0.19337606837606838,
+              0.27136752136752135
+            ],
+            "n": 936
+          },
+          "wmt24pp/opus/naturalness": {
+            "diff": 0.04807692307692308,
+            "ci95": [
+              0.011752136752136752,
+              0.08440170940170941
+            ],
+            "n": 936
+          },
+          "wmt24pp/kimi/preference+source": {
+            "diff": 0.21309655937846836,
+            "ci95": [
+              0.17089345172031076,
+              0.25527192008879024
+            ],
+            "n": 901
+          },
+          "wmt24pp/kimi/naturalness": {
+            "diff": 0.06104328523862375,
+            "ci95": [
+              0.018867924528301886,
+              0.10213651498335168
+            ],
+            "n": 901
+          },
+          "europarl_en/opus/preference+source": {
+            "diff": 0.3319919517102616,
+            "ci95": [
+              0.2937625754527163,
+              0.37122736418511065
+            ],
+            "n": 994
+          },
+          "europarl_en/opus/naturalness": {
+            "diff": 0.2112676056338028,
+            "ci95": [
+              0.1720321931589537,
+              0.2545271629778672
+            ],
+            "n": 994
+          },
+          "europarl_en/kimi/preference+source": {
+            "diff": 0.40100502512562813,
+            "ci95": [
+              0.3637939698492462,
+              0.4371859296482412
+            ],
+            "n": 995
+          },
+          "europarl_en/kimi/naturalness": {
+            "diff": 0.2964824120603015,
+            "ci95": [
+              0.2592964824120603,
+              0.33369346733668326
+            ],
+            "n": 995
+          },
+          "europarl_sv/opus/preference+source": {
+            "diff": 0.45436507936507936,
+            "ci95": [
+              0.4146825396825397,
+              0.49503968253968256
+            ],
+            "n": 1008
+          },
+          "europarl_sv/opus/naturalness": {
+            "diff": 0.20337301587301587,
+            "ci95": [
+              0.1636656746031746,
+              0.24404761904761904
+            ],
+            "n": 1008
+          },
+          "europarl_sv/kimi/preference+source": {
+            "diff": 0.49504950495049505,
+            "ci95": [
+              0.4594059405940594,
+              0.5326980198019801
+            ],
+            "n": 1010
+          },
+          "europarl_sv/kimi/naturalness": {
+            "diff": 0.28217821782178215,
+            "ci95": [
+              0.24653465346534653,
+              0.3207920792079208
+            ],
+            "n": 1010
+          },
+          "swefaq/quality_top1": {
+            "diff": -0.0091324200913242,
+            "ci95": [
+              -0.0593607305936073,
+              0.045662100456621
+            ],
+            "n": 219
+          },
+          "scala/accuracy@0.5": {
+            "diff": 0.15087890625,
+            "ci95": [
+              0.12694091796875,
+              0.17579345703124993
+            ],
+            "n": 2048
+          },
+          "scala/accuracy@val": {
+            "diff": 0.10302734375,
+            "ci95": [
+              0.078125,
+              0.12794189453124993
+            ],
+            "n": 2048
+          },
+          "guard:fluent_flagged_translationese": {
+            "diff": -0.003995433789954338,
+            "ci95": [
+              -0.012571347031963468,
+              0.0045662100456621
+            ],
+            "n": 1752
+          }
         }
       }
     },
@@ -17123,6 +19729,202 @@
             ],
             "n": 200
           }
+        },
+        "v42a": {
+          "wrong_source/preference+source": {
+            "mean": 0.895,
+            "ci95": [
+              0.85,
+              0.935
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.48,
+            "ci95": [
+              0.41,
+              0.55
+            ],
+            "n": 200
+          },
+          "wrong_source/grammatical": {
+            "mean": 0.485,
+            "ci95": [
+              0.415,
+              0.555
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.985,
+            "ci95": [
+              0.965,
+              1.0
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.975,
+            "ci95": [
+              0.95,
+              0.995
+            ],
+            "n": 200
+          },
+          "garbage_mt/grammatical": {
+            "mean": 0.95,
+            "ci95": [
+              0.92,
+              0.98
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/grammatical": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/grammatical": {
+            "mean": 0.95,
+            "ci95": [
+              0.92,
+              0.98
+            ],
+            "n": 200
+          }
+        },
+        "v42b": {
+          "wrong_source/preference+source": {
+            "mean": 0.875,
+            "ci95": [
+              0.83,
+              0.915
+            ],
+            "n": 200
+          },
+          "wrong_source/naturalness": {
+            "mean": 0.475,
+            "ci95": [
+              0.41,
+              0.545
+            ],
+            "n": 200
+          },
+          "wrong_source/grammatical": {
+            "mean": 0.53,
+            "ci95": [
+              0.46,
+              0.595
+            ],
+            "n": 200
+          },
+          "garbage_mt/preference+source": {
+            "mean": 0.985,
+            "ci95": [
+              0.965,
+              1.0
+            ],
+            "n": 200
+          },
+          "garbage_mt/naturalness": {
+            "mean": 0.98,
+            "ci95": [
+              0.96,
+              0.995
+            ],
+            "n": 200
+          },
+          "garbage_mt/grammatical": {
+            "mean": 0.96,
+            "ci95": [
+              0.93,
+              0.985
+            ],
+            "n": 200
+          },
+          "untranslated/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/naturalness": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "untranslated/grammatical": {
+            "mean": 0.99,
+            "ci95": [
+              0.975,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/preference+source": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/naturalness": {
+            "mean": 1.0,
+            "ci95": [
+              1.0,
+              1.0
+            ],
+            "n": 200
+          },
+          "first_half_only/grammatical": {
+            "mean": 0.97,
+            "ci95": [
+              0.945,
+              0.99
+            ],
+            "n": 200
+          }
         }
       }
     },
@@ -17333,6 +20135,18 @@
           "v4-v41/answer_natural": 0.8676510515825936,
           "v4-v41/answer_grammatical": 0.46341923693092696,
           "v4-v41/translation_grammatical": 0.5386938926076887,
+          "v4-v42a/translation_vs_reference": 0.1066925350236955,
+          "v4-v42a/naturalness_vs_reference": 0.2263117019568415,
+          "v4-v42a/answer_quality": 3.2101001270357234,
+          "v4-v42a/answer_natural": 0.8514229040044329,
+          "v4-v42a/answer_grammatical": 0.4460228026406442,
+          "v4-v42a/translation_grammatical": 0.5299578710507135,
+          "v4-v42b/translation_vs_reference": 0.05329700226015419,
+          "v4-v42b/naturalness_vs_reference": 0.19750386262952568,
+          "v4-v42b/answer_quality": 3.143164424507437,
+          "v4-v42b/answer_natural": 0.831616822612948,
+          "v4-v42b/answer_grammatical": 0.45750930306833404,
+          "v4-v42b/translation_grammatical": 0.5373177533543945,
           "log_parameters": 8.128770741795426
         },
         "precision": "bf16"
@@ -17381,6 +20195,18 @@
           "v4-v41/answer_natural": 0.878355435390093,
           "v4-v41/answer_grammatical": 0.4695421495674299,
           "v4-v41/translation_grammatical": 0.283165017158842,
+          "v4-v42a/translation_vs_reference": 0.08268550078552969,
+          "v4-v42a/naturalness_vs_reference": 0.09181969649957206,
+          "v4-v42a/answer_quality": 3.213300976037534,
+          "v4-v42a/answer_natural": 0.865090950025293,
+          "v4-v42a/answer_grammatical": 0.43694041554813995,
+          "v4-v42a/translation_grammatical": 0.26315829862376583,
+          "v4-v42b/translation_vs_reference": 0.07573684676384311,
+          "v4-v42b/naturalness_vs_reference": 0.19347058574958984,
+          "v4-v42b/answer_quality": 3.1609632246138735,
+          "v4-v42b/answer_natural": 0.8552348909862348,
+          "v4-v42b/answer_grammatical": 0.4719804676085964,
+          "v4-v42b/translation_grammatical": 0.30826590117978453,
           "log_parameters": 8.558493913634223
         },
         "precision": "bf16"
@@ -17429,6 +20255,18 @@
           "v4-v41/answer_natural": 0.5412171693712934,
           "v4-v41/answer_grammatical": 0.36600920329216413,
           "v4-v41/translation_grammatical": 0.27423817726900634,
+          "v4-v42a/translation_vs_reference": 0.13365141381742884,
+          "v4-v42a/naturalness_vs_reference": 0.028550570199807765,
+          "v4-v42a/answer_quality": 3.3561633038205105,
+          "v4-v42a/answer_natural": 0.5260027858170607,
+          "v4-v42a/answer_grammatical": 0.3663893355640775,
+          "v4-v42a/translation_grammatical": 0.24904220143655129,
+          "v4-v42b/translation_vs_reference": 0.13607313138071495,
+          "v4-v42b/naturalness_vs_reference": 0.04135777002927524,
+          "v4-v42b/answer_quality": 3.229209856677345,
+          "v4-v42b/answer_natural": 0.5391751617799131,
+          "v4-v42b/answer_grammatical": 0.36976011209078047,
+          "v4-v42b/translation_grammatical": 0.26117135815409415,
           "log_parameters": 9.068312274265288
         },
         "precision": "bf16"
@@ -17477,6 +20315,18 @@
           "v4-v41/answer_natural": 0.5276831490236051,
           "v4-v41/answer_grammatical": 0.36720263254769897,
           "v4-v41/translation_grammatical": 0.28209925450131584,
+          "v4-v42a/translation_vs_reference": 0.05625513071047112,
+          "v4-v42a/naturalness_vs_reference": 0.032726004852223406,
+          "v4-v42a/answer_quality": 3.1017286555643198,
+          "v4-v42a/answer_natural": 0.49923299960366313,
+          "v4-v42a/answer_grammatical": 0.3576059830513957,
+          "v4-v42a/translation_grammatical": 0.26537466826313505,
+          "v4-v42b/translation_vs_reference": 0.048260061166797194,
+          "v4-v42b/naturalness_vs_reference": 0.041729974162161676,
+          "v4-v42b/answer_quality": 3.05516339230487,
+          "v4-v42b/answer_natural": 0.529885182318993,
+          "v4-v42b/answer_grammatical": 0.33797837357832067,
+          "v4-v42b/translation_grammatical": 0.26951614575165345,
           "log_parameters": 8.549596598428597
         },
         "precision": "bf16"
@@ -17525,6 +20375,18 @@
           "v4-v41/answer_natural": 0.5724095571559812,
           "v4-v41/answer_grammatical": 0.39538445096729014,
           "v4-v41/translation_grammatical": 0.24230688056320093,
+          "v4-v42a/translation_vs_reference": 0.16089846888110365,
+          "v4-v42a/naturalness_vs_reference": 0.028179672293154007,
+          "v4-v42a/answer_quality": 3.2918295191896645,
+          "v4-v42a/answer_natural": 0.535246508315242,
+          "v4-v42a/answer_grammatical": 0.3591682161294655,
+          "v4-v42a/translation_grammatical": 0.2062362790905906,
+          "v4-v42b/translation_vs_reference": 0.1847770108273344,
+          "v4-v42b/naturalness_vs_reference": 0.05133765390818461,
+          "v4-v42b/answer_quality": 3.228166415562072,
+          "v4-v42b/answer_natural": 0.5511133397519082,
+          "v4-v42b/answer_grammatical": 0.3698937236535355,
+          "v4-v42b/translation_grammatical": 0.24052812045983127,
           "log_parameters": 8.870690225160688
         },
         "precision": "bf16"
@@ -17573,6 +20435,18 @@
           "v4-v41/answer_natural": 0.9091739103393935,
           "v4-v41/answer_grammatical": 0.4876247539993249,
           "v4-v41/translation_grammatical": 0.43448646854420175,
+          "v4-v42a/translation_vs_reference": 0.33838450717158763,
+          "v4-v42a/naturalness_vs_reference": 0.2170915653761569,
+          "v4-v42a/answer_quality": 3.5734606719764948,
+          "v4-v42a/answer_natural": 0.8928559580610994,
+          "v4-v42a/answer_grammatical": 0.4789182838391457,
+          "v4-v42a/translation_grammatical": 0.4039902231583545,
+          "v4-v42b/translation_vs_reference": 0.3728062433519071,
+          "v4-v42b/naturalness_vs_reference": 0.21637349384691387,
+          "v4-v42b/answer_quality": 3.5289601826112347,
+          "v4-v42b/answer_natural": 0.8734370718740826,
+          "v4-v42b/answer_grammatical": 0.47352990355378316,
+          "v4-v42b/translation_grammatical": 0.43505687558197276,
           "log_parameters": 8.99995046675829
         },
         "precision": "bf16"
@@ -17621,6 +20495,18 @@
           "v4-v41/answer_natural": 0.8775355359425002,
           "v4-v41/answer_grammatical": 0.5027730218119878,
           "v4-v41/translation_grammatical": 0.2624256606952088,
+          "v4-v42a/translation_vs_reference": 0.1793096395483421,
+          "v4-v42a/naturalness_vs_reference": 0.09007788922889245,
+          "v4-v42a/answer_quality": 3.355469249222032,
+          "v4-v42a/answer_natural": 0.8646985116743703,
+          "v4-v42a/answer_grammatical": 0.4661520039240241,
+          "v4-v42a/translation_grammatical": 0.22039088573503135,
+          "v4-v42b/translation_vs_reference": 0.20724828332543782,
+          "v4-v42b/naturalness_vs_reference": 0.09950209205442735,
+          "v4-v42b/answer_quality": 3.2851425282532745,
+          "v4-v42b/answer_natural": 0.8511301276679716,
+          "v4-v42b/answer_grammatical": 0.4749365099332116,
+          "v4-v42b/translation_grammatical": 0.25041300790947063,
           "log_parameters": 8.428293859280046
         },
         "precision": "bf16"
@@ -17669,6 +20555,18 @@
           "v4-v41/answer_natural": 0.880945412153309,
           "v4-v41/answer_grammatical": 0.50125633633208,
           "v4-v41/translation_grammatical": 0.5182271684969255,
+          "v4-v42a/translation_vs_reference": 0.4375624625255782,
+          "v4-v42a/naturalness_vs_reference": 0.3804467891661063,
+          "v4-v42a/answer_quality": 3.5054142717104155,
+          "v4-v42a/answer_natural": 0.8646517277142008,
+          "v4-v42a/answer_grammatical": 0.4543722130860186,
+          "v4-v42a/translation_grammatical": 0.47721908234919785,
+          "v4-v42b/translation_vs_reference": 0.45636938067268884,
+          "v4-v42b/naturalness_vs_reference": 0.39869641230672204,
+          "v4-v42b/answer_quality": 3.4956207614139028,
+          "v4-v42b/answer_natural": 0.8523458832135126,
+          "v4-v42b/answer_grammatical": 0.45722867388517796,
+          "v4-v42b/translation_grammatical": 0.5136247930105533,
           "log_parameters": 9.588861181402027
         },
         "precision": "bf16"
@@ -17717,6 +20615,18 @@
           "v4-v41/answer_natural": 0.854702011814496,
           "v4-v41/answer_grammatical": 0.5018665292438422,
           "v4-v41/translation_grammatical": 0.41439030597011806,
+          "v4-v42a/translation_vs_reference": 0.3865664423235174,
+          "v4-v42a/naturalness_vs_reference": 0.24769318849159747,
+          "v4-v42a/answer_quality": 3.8605577708904297,
+          "v4-v42a/answer_natural": 0.8827133360256014,
+          "v4-v42a/answer_grammatical": 0.4574005108985684,
+          "v4-v42a/translation_grammatical": 0.37723352947719574,
+          "v4-v42b/translation_vs_reference": 0.42423985529547414,
+          "v4-v42b/naturalness_vs_reference": 0.2726932465831032,
+          "v4-v42b/answer_quality": 3.796730370219001,
+          "v4-v42b/answer_natural": 0.8752873350066828,
+          "v4-v42b/answer_grammatical": 0.4564634843790155,
+          "v4-v42b/translation_grammatical": 0.3994676610503092,
           "log_parameters": 8.941231183532466
         },
         "precision": "bf16"
@@ -17765,6 +20675,18 @@
           "v4-v41/answer_natural": 0.9153181238463444,
           "v4-v41/answer_grammatical": 0.5245805731122315,
           "v4-v41/translation_grammatical": 0.47880615909930346,
+          "v4-v42a/translation_vs_reference": 0.3672298148817218,
+          "v4-v42a/naturalness_vs_reference": 0.28185361087783717,
+          "v4-v42a/answer_quality": 3.8739462900471477,
+          "v4-v42a/answer_natural": 0.9158718901383176,
+          "v4-v42a/answer_grammatical": 0.46612748206799437,
+          "v4-v42a/translation_grammatical": 0.4284061332606057,
+          "v4-v42b/translation_vs_reference": 0.3971294896153806,
+          "v4-v42b/naturalness_vs_reference": 0.3081951146517702,
+          "v4-v42b/answer_quality": 3.867677376625857,
+          "v4-v42b/answer_natural": 0.9257613397058069,
+          "v4-v42b/answer_grammatical": 0.463914775701969,
+          "v4-v42b/translation_grammatical": 0.448637282065595,
           "log_parameters": 9.356803300305534
         },
         "precision": "bf16"
@@ -17813,6 +20735,18 @@
           "v4-v41/answer_natural": 0.9172869295711377,
           "v4-v41/answer_grammatical": 0.5041879590114514,
           "v4-v41/translation_grammatical": 0.5148815805845461,
+          "v4-v42a/translation_vs_reference": 0.39931453612166196,
+          "v4-v42a/naturalness_vs_reference": 0.3451356332922943,
+          "v4-v42a/answer_quality": 3.915025390788102,
+          "v4-v42a/answer_natural": 0.9196685745769524,
+          "v4-v42a/answer_grammatical": 0.44862580209020136,
+          "v4-v42a/translation_grammatical": 0.4762570361551053,
+          "v4-v42b/translation_vs_reference": 0.4217213918624475,
+          "v4-v42b/naturalness_vs_reference": 0.39239868813119244,
+          "v4-v42b/answer_quality": 3.9147523658274355,
+          "v4-v42b/answer_natural": 0.9479721507370441,
+          "v4-v42b/answer_grammatical": 0.45461327844606486,
+          "v4-v42b/translation_grammatical": 0.49482744433996856,
           "log_parameters": 9.668372985332686
         },
         "precision": "4-bit NF4"
@@ -17861,6 +20795,18 @@
           "v4-v41/answer_natural": 0.875187006276591,
           "v4-v41/answer_grammatical": 0.5178431391755676,
           "v4-v41/translation_grammatical": 0.5752029641762997,
+          "v4-v42a/translation_vs_reference": 0.3725170690941237,
+          "v4-v42a/naturalness_vs_reference": 0.3875016926345073,
+          "v4-v42a/answer_quality": 3.86856066500954,
+          "v4-v42a/answer_natural": 0.8872654597517169,
+          "v4-v42a/answer_grammatical": 0.4740801948195127,
+          "v4-v42a/translation_grammatical": 0.527930692684001,
+          "v4-v42b/translation_vs_reference": 0.39001849447090037,
+          "v4-v42b/naturalness_vs_reference": 0.42929774372546303,
+          "v4-v42b/answer_quality": 3.75474361954948,
+          "v4-v42b/answer_natural": 0.8842742240577671,
+          "v4-v42b/answer_grammatical": 0.4878316305585519,
+          "v4-v42b/translation_grammatical": 0.5576219211671094,
           "log_parameters": 9.417362381394005
         },
         "precision": "bf16"
@@ -17909,6 +20855,18 @@
           "v4-v41/answer_natural": 0.9290530210871004,
           "v4-v41/answer_grammatical": 0.5359535946101837,
           "v4-v41/translation_grammatical": 0.5789346627069359,
+          "v4-v42a/translation_vs_reference": 0.3742883795114883,
+          "v4-v42a/naturalness_vs_reference": 0.41095502264677747,
+          "v4-v42a/answer_quality": 3.875632457255129,
+          "v4-v42a/answer_natural": 0.9475853305550445,
+          "v4-v42a/answer_grammatical": 0.4998030701444922,
+          "v4-v42a/translation_grammatical": 0.5362003755311565,
+          "v4-v42b/translation_vs_reference": 0.3834944541562663,
+          "v4-v42b/naturalness_vs_reference": 0.433454010206037,
+          "v4-v42b/answer_quality": 3.8247529144393986,
+          "v4-v42b/answer_natural": 0.9460135717102888,
+          "v4-v42b/answer_grammatical": 0.4982524297561736,
+          "v4-v42b/translation_grammatical": 0.5601536949158752,
           "log_parameters": 9.965752147740625
         },
         "precision": "4-bit NF4"
@@ -17957,6 +20915,18 @@
           "v4-v41/answer_natural": 0.8630851693524134,
           "v4-v41/answer_grammatical": 0.4696879558718321,
           "v4-v41/translation_grammatical": 0.5123394266211327,
+          "v4-v42a/translation_vs_reference": 0.38733789244868716,
+          "v4-v42a/naturalness_vs_reference": 0.38411186026290456,
+          "v4-v42a/answer_quality": 3.4352352241029513,
+          "v4-v42a/answer_natural": 0.8856733825481471,
+          "v4-v42a/answer_grammatical": 0.4406768091407507,
+          "v4-v42a/translation_grammatical": 0.47201498390520547,
+          "v4-v42b/translation_vs_reference": 0.4053418826706101,
+          "v4-v42b/naturalness_vs_reference": 0.411856686295141,
+          "v4-v42b/answer_quality": 3.362705734080019,
+          "v4-v42b/answer_natural": 0.8575861758182409,
+          "v4-v42b/answer_grammatical": 0.4610982075162085,
+          "v4-v42b/translation_grammatical": 0.48711270759321423,
           "log_parameters": 9.904733218703376
         },
         "precision": "4-bit NF4"
@@ -18005,6 +20975,18 @@
           "v4-v41/answer_natural": 0.7458876364147835,
           "v4-v41/answer_grammatical": 0.45758122770450854,
           "v4-v41/translation_grammatical": 0.35353112396403363,
+          "v4-v42a/translation_vs_reference": 0.36912718148473034,
+          "v4-v42a/naturalness_vs_reference": 0.1921900865914368,
+          "v4-v42a/answer_quality": 3.5855364690823097,
+          "v4-v42a/answer_natural": 0.7499539322033933,
+          "v4-v42a/answer_grammatical": 0.39198996335425507,
+          "v4-v42a/translation_grammatical": 0.3175219464657094,
+          "v4-v42b/translation_vs_reference": 0.3962157074544676,
+          "v4-v42b/naturalness_vs_reference": 0.21353716832362032,
+          "v4-v42b/answer_quality": 3.681052463088701,
+          "v4-v42b/answer_natural": 0.7737513493726975,
+          "v4-v42b/answer_grammatical": 0.39306989876109155,
+          "v4-v42b/translation_grammatical": 0.35227012056491547,
           "log_parameters": 9.863204521716991
         },
         "precision": "4-bit NF4"
@@ -18053,6 +21035,18 @@
           "v4-v41/answer_natural": 0.8523683053476548,
           "v4-v41/answer_grammatical": 0.5381652784638661,
           "v4-v41/translation_grammatical": 0.49204218907681285,
+          "v4-v42a/translation_vs_reference": 0.3622610671709263,
+          "v4-v42a/naturalness_vs_reference": 0.3307501591674901,
+          "v4-v42a/answer_quality": 3.6166864195931168,
+          "v4-v42a/answer_natural": 0.8714241105007211,
+          "v4-v42a/answer_grammatical": 0.5254478406398533,
+          "v4-v42a/translation_grammatical": 0.4553965201554036,
+          "v4-v42b/translation_vs_reference": 0.3793885846816585,
+          "v4-v42b/naturalness_vs_reference": 0.3838895492321185,
+          "v4-v42b/answer_quality": 3.553195125849838,
+          "v4-v42b/answer_natural": 0.8661388030958385,
+          "v4-v42b/answer_grammatical": 0.5155705820907042,
+          "v4-v42b/translation_grammatical": 0.4821514767989572,
           "log_parameters": 9.557116312113957
         },
         "precision": "bf16"
@@ -18101,6 +21095,18 @@
           "v4-v41/answer_natural": 0.8518046571458625,
           "v4-v41/answer_grammatical": 0.5365081343942633,
           "v4-v41/translation_grammatical": 0.5384799277106723,
+          "v4-v42a/translation_vs_reference": 0.39052581912889694,
+          "v4-v42a/naturalness_vs_reference": 0.3799141462442417,
+          "v4-v42a/answer_quality": 3.551520795548979,
+          "v4-v42a/answer_natural": 0.8682074987952675,
+          "v4-v42a/answer_grammatical": 0.5115044575545855,
+          "v4-v42a/translation_grammatical": 0.4986191623504256,
+          "v4-v42b/translation_vs_reference": 0.407819160767626,
+          "v4-v42b/naturalness_vs_reference": 0.4158145015305506,
+          "v4-v42b/answer_quality": 3.541597995111711,
+          "v4-v42b/answer_natural": 0.8838781173135302,
+          "v4-v42b/answer_grammatical": 0.5137056352675407,
+          "v4-v42b/translation_grammatical": 0.517114272571536,
           "log_parameters": 9.904729674384436
         },
         "precision": "4-bit NF4"
@@ -18149,6 +21155,18 @@
           "v4-v41/answer_natural": 0.8327746074489528,
           "v4-v41/answer_grammatical": 0.5142698661925007,
           "v4-v41/translation_grammatical": 0.46381383551802924,
+          "v4-v42a/translation_vs_reference": 0.3191604386535203,
+          "v4-v42a/naturalness_vs_reference": 0.23732592825331117,
+          "v4-v42a/answer_quality": 3.737614188524128,
+          "v4-v42a/answer_natural": 0.8742898478615753,
+          "v4-v42a/answer_grammatical": 0.4800559162298167,
+          "v4-v42a/translation_grammatical": 0.430474222547901,
+          "v4-v42b/translation_vs_reference": 0.34585141809555126,
+          "v4-v42b/naturalness_vs_reference": 0.2712449635228762,
+          "v4-v42b/answer_quality": 3.6488623673363536,
+          "v4-v42b/answer_natural": 0.8686563036165738,
+          "v4-v42b/answer_grammatical": 0.47723913000591195,
+          "v4-v42b/translation_grammatical": 0.4643364197304908,
           "log_parameters": 8.99995046675829
         },
         "precision": "bf16"
@@ -18197,6 +21215,18 @@
           "v4-v41/answer_natural": 0.8745903838011688,
           "v4-v41/answer_grammatical": 0.5038892568902098,
           "v4-v41/translation_grammatical": 0.10295068785167333,
+          "v4-v42a/translation_vs_reference": 0.05863860259309317,
+          "v4-v42a/naturalness_vs_reference": 0.02719077764455907,
+          "v4-v42a/answer_quality": 3.4594672606518713,
+          "v4-v42a/answer_natural": 0.8749437961509942,
+          "v4-v42a/answer_grammatical": 0.45116263936104917,
+          "v4-v42a/translation_grammatical": 0.08617402052577233,
+          "v4-v42b/translation_vs_reference": 0.05430189133023541,
+          "v4-v42b/naturalness_vs_reference": 0.028993730546580734,
+          "v4-v42b/answer_quality": 3.398489660885862,
+          "v4-v42b/answer_natural": 0.8582909758782924,
+          "v4-v42b/answer_grammatical": 0.47663326633266856,
+          "v4-v42b/translation_grammatical": 0.11092279438876458,
           "log_parameters": 8.428293859280046
         },
         "precision": "bf16"
@@ -18245,6 +21275,18 @@
           "v4-v41/answer_natural": 0.8932131057328975,
           "v4-v41/answer_grammatical": 0.5246587144380562,
           "v4-v41/translation_grammatical": 0.5469071397099219,
+          "v4-v42a/translation_vs_reference": 0.3907936267021293,
+          "v4-v42a/naturalness_vs_reference": 0.4004783948551561,
+          "v4-v42a/answer_quality": 3.785114900010253,
+          "v4-v42a/answer_natural": 0.8810567554336225,
+          "v4-v42a/answer_grammatical": 0.4997913797065862,
+          "v4-v42a/translation_grammatical": 0.4997146240843525,
+          "v4-v42b/translation_vs_reference": 0.3909861342254944,
+          "v4-v42b/naturalness_vs_reference": 0.4266572583631424,
+          "v4-v42b/answer_quality": 3.76805015722457,
+          "v4-v42b/answer_natural": 0.8973201762772394,
+          "v4-v42b/answer_grammatical": 0.4697073791164415,
+          "v4-v42b/translation_grammatical": 0.5266655241397329,
           "log_parameters": 9.63347648207543
         },
         "precision": "bf16"
@@ -18293,6 +21335,18 @@
           "v4-v41/answer_natural": 0.8062920494375689,
           "v4-v41/answer_grammatical": 0.4306169121105679,
           "v4-v41/translation_grammatical": 0.4093836660507841,
+          "v4-v42a/translation_vs_reference": 0.34818195172372995,
+          "v4-v42a/naturalness_vs_reference": 0.262990293340218,
+          "v4-v42a/answer_quality": 3.522963480727301,
+          "v4-v42a/answer_natural": 0.8117897422811289,
+          "v4-v42a/answer_grammatical": 0.37264874412964066,
+          "v4-v42a/translation_grammatical": 0.382225938687034,
+          "v4-v42b/translation_vs_reference": 0.37960789013491614,
+          "v4-v42b/naturalness_vs_reference": 0.3095077302979222,
+          "v4-v42b/answer_quality": 3.4756861161084065,
+          "v4-v42b/answer_natural": 0.7819072044185311,
+          "v4-v42b/answer_grammatical": 0.4035487924320983,
+          "v4-v42b/translation_grammatical": 0.40547073805664546,
           "log_parameters": 9.503980709436851
         },
         "precision": "bf16"
@@ -18341,6 +21395,18 @@
           "v4-v41/answer_natural": 0.8628512483790807,
           "v4-v41/answer_grammatical": 0.4595268436784675,
           "v4-v41/translation_grammatical": 0.4391271879960372,
+          "v4-v42a/translation_vs_reference": 0.39117923983094344,
+          "v4-v42a/naturalness_vs_reference": 0.31271771618543936,
+          "v4-v42a/answer_quality": 3.6577022256710854,
+          "v4-v42a/answer_natural": 0.8845593076421798,
+          "v4-v42a/answer_grammatical": 0.404678542512079,
+          "v4-v42a/translation_grammatical": 0.39844879316515647,
+          "v4-v42b/translation_vs_reference": 0.43110594855464024,
+          "v4-v42b/naturalness_vs_reference": 0.3597221166687363,
+          "v4-v42b/answer_quality": 3.5959472214464303,
+          "v4-v42b/answer_natural": 0.8652712103767918,
+          "v4-v42b/answer_grammatical": 0.4213206924081352,
+          "v4-v42b/translation_grammatical": 0.42058620301350463,
           "log_parameters": 9.53184107999797
         },
         "precision": "bf16"
@@ -18389,6 +21455,18 @@
           "v4-v41/answer_natural": 0.8330412533641289,
           "v4-v41/answer_grammatical": 0.5318477807717072,
           "v4-v41/translation_grammatical": 0.4639215523522754,
+          "v4-v42a/translation_vs_reference": 0.37710579361207053,
+          "v4-v42a/naturalness_vs_reference": 0.286019250003695,
+          "v4-v42a/answer_quality": 3.5620112623720606,
+          "v4-v42a/answer_natural": 0.8458777681832623,
+          "v4-v42a/answer_grammatical": 0.4802330844612863,
+          "v4-v42a/translation_grammatical": 0.4229196744426713,
+          "v4-v42b/translation_vs_reference": 0.413532282937331,
+          "v4-v42b/naturalness_vs_reference": 0.32719058335671947,
+          "v4-v42b/answer_quality": 3.468187840602468,
+          "v4-v42b/answer_natural": 0.8266425471404731,
+          "v4-v42b/answer_grammatical": 0.4893128503758409,
+          "v4-v42b/translation_grammatical": 0.46179569756223493,
           "log_parameters": 9.091953251409473
         },
         "precision": "bf16"
@@ -18437,6 +21515,18 @@
           "v4-v41/answer_natural": 0.8405072127562248,
           "v4-v41/answer_grammatical": 0.46699963373478903,
           "v4-v41/translation_grammatical": 0.46635517806577625,
+          "v4-v42a/translation_vs_reference": 0.45378011900809556,
+          "v4-v42a/naturalness_vs_reference": 0.37436943040299075,
+          "v4-v42a/answer_quality": 3.591766996536194,
+          "v4-v42a/answer_natural": 0.8583686397365313,
+          "v4-v42a/answer_grammatical": 0.426363439062124,
+          "v4-v42a/translation_grammatical": 0.43070854967242156,
+          "v4-v42b/translation_vs_reference": 0.48456255929346836,
+          "v4-v42b/naturalness_vs_reference": 0.412150577499157,
+          "v4-v42b/answer_quality": 3.5885381011873245,
+          "v4-v42b/answer_natural": 0.8306386037907726,
+          "v4-v42b/answer_grammatical": 0.42167136304103797,
+          "v4-v42b/translation_grammatical": 0.4557298006227729,
           "log_parameters": 9.604492608200253
         },
         "precision": "bf16"
@@ -18485,6 +21575,18 @@
           "v4-v41/answer_natural": 0.8383731449484931,
           "v4-v41/answer_grammatical": 0.464150930575899,
           "v4-v41/translation_grammatical": 0.5053722156103505,
+          "v4-v42a/translation_vs_reference": 0.3853440365502119,
+          "v4-v42a/naturalness_vs_reference": 0.3383265790972237,
+          "v4-v42a/answer_quality": 3.588366698475814,
+          "v4-v42a/answer_natural": 0.8471620610804429,
+          "v4-v42a/answer_grammatical": 0.42579182634929047,
+          "v4-v42a/translation_grammatical": 0.4569434899580024,
+          "v4-v42b/translation_vs_reference": 0.3959963620264722,
+          "v4-v42b/naturalness_vs_reference": 0.36399371802309055,
+          "v4-v42b/answer_quality": 3.5253165751865607,
+          "v4-v42b/answer_natural": 0.8467841337252456,
+          "v4-v42b/answer_grammatical": 0.43308529238483173,
+          "v4-v42b/translation_grammatical": 0.47543694058714026,
           "log_parameters": 10.048006384676778
         },
         "precision": "4-bit NF4"
@@ -18533,6 +21635,18 @@
           "v4-v41/answer_natural": 0.7703315617946331,
           "v4-v41/answer_grammatical": 0.4964475945843351,
           "v4-v41/translation_grammatical": 0.38287616703515776,
+          "v4-v42a/translation_vs_reference": 0.2839935977525459,
+          "v4-v42a/naturalness_vs_reference": 0.1470300219792623,
+          "v4-v42a/answer_quality": 3.3267135333239692,
+          "v4-v42a/answer_natural": 0.8212080322901297,
+          "v4-v42a/answer_grammatical": 0.464892916198107,
+          "v4-v42a/translation_grammatical": 0.3768574659073515,
+          "v4-v42b/translation_vs_reference": 0.367807169241791,
+          "v4-v42b/naturalness_vs_reference": 0.2694942186727463,
+          "v4-v42b/answer_quality": 3.503269698356579,
+          "v4-v42b/answer_natural": 0.7858404230615037,
+          "v4-v42b/answer_grammatical": 0.46544063562870347,
+          "v4-v42b/translation_grammatical": 0.39255096977496734,
           "log_parameters": 9.625493277409419
         },
         "precision": "bf16"
@@ -18581,6 +21695,18 @@
           "v4-v41/answer_natural": 0.897862157004896,
           "v4-v41/answer_grammatical": 0.5822032114439356,
           "v4-v41/translation_grammatical": 0.5794615411909187,
+          "v4-v42a/translation_vs_reference": 0.358677503062413,
+          "v4-v42a/naturalness_vs_reference": 0.3248056395682541,
+          "v4-v42a/answer_quality": 3.827378040640655,
+          "v4-v42a/answer_natural": 0.9290928232491182,
+          "v4-v42a/answer_grammatical": 0.5616494858682066,
+          "v4-v42a/translation_grammatical": 0.577003074356378,
+          "v4-v42b/translation_vs_reference": 0.2959114818461189,
+          "v4-v42b/naturalness_vs_reference": 0.2665216945338979,
+          "v4-v42b/answer_quality": 3.716003998855716,
+          "v4-v42b/answer_natural": 0.9043738884430212,
+          "v4-v42b/answer_grammatical": 0.5394287318683917,
+          "v4-v42b/translation_grammatical": 0.5270577270773111,
           "log_parameters": 9.416894803644313
         },
         "precision": "bf16"
@@ -18629,6 +21755,18 @@
           "v4-v41/answer_natural": 0.7280967172252697,
           "v4-v41/answer_grammatical": 0.48739604350552534,
           "v4-v41/translation_grammatical": 0.35322117326987623,
+          "v4-v42a/translation_vs_reference": 0.34062657258588275,
+          "v4-v42a/naturalness_vs_reference": 0.1683352707440276,
+          "v4-v42a/answer_quality": 3.4821998812079547,
+          "v4-v42a/answer_natural": 0.723671337088262,
+          "v4-v42a/answer_grammatical": 0.43461771320121345,
+          "v4-v42a/translation_grammatical": 0.32779574892630114,
+          "v4-v42b/translation_vs_reference": 0.38128638309027657,
+          "v4-v42b/naturalness_vs_reference": 0.22012767846440098,
+          "v4-v42b/answer_quality": 3.401144531218249,
+          "v4-v42b/answer_natural": 0.7033463311708844,
+          "v4-v42b/answer_grammatical": 0.43735164631929424,
+          "v4-v42b/translation_grammatical": 0.35979431822119534,
           "log_parameters": 9.384599827039093
         },
         "precision": "bf16"
@@ -18875,6 +22013,102 @@
             0.8963071634306573
           ],
           "n_models": 28
+        },
+        "v4-v42a/answer_grammatical": {
+          "rho": 0.08978921770867558,
+          "ci95": [
+            -0.3287206430952641,
+            0.46397497408475413
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_natural": {
+          "rho": 0.3868053799462152,
+          "ci95": [
+            0.028901138055380946,
+            0.6660250052936854
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_quality": {
+          "rho": 0.6835477945687894,
+          "ci95": [
+            0.36872118650359653,
+            0.8613589507500674
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/naturalness_vs_reference": {
+          "rho": 0.7664933219033282,
+          "ci95": [
+            0.5832686013231917,
+            0.8547105494911345
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_grammatical": {
+          "rho": 0.5102655542956442,
+          "ci95": [
+            0.09486988747751673,
+            0.7893478773942054
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_vs_reference": {
+          "rho": 0.8237065734311123,
+          "ci95": [
+            0.6189727941574164,
+            0.9269628127577674
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_grammatical": {
+          "rho": -0.0651519323617829,
+          "ci95": [
+            -0.4846399802057017,
+            0.325687857235019
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_natural": {
+          "rho": 0.42759377457607095,
+          "ci95": [
+            0.08766933377883826,
+            0.7004806805792458
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_quality": {
+          "rho": 0.6862852707184443,
+          "ci95": [
+            0.3615536121332883,
+            0.8666482134741325
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/naturalness_vs_reference": {
+          "rho": 0.809745445067873,
+          "ci95": [
+            0.6376238986784142,
+            0.8804317048946004
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_grammatical": {
+          "rho": 0.4941144450126812,
+          "ci95": [
+            0.07572760110426464,
+            0.7725379127971418
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_vs_reference": {
+          "rho": 0.7601971267591222,
+          "ci95": [
+            0.47145332121673433,
+            0.9165213251676717
+          ],
+          "n_models": 28
         }
       },
       "Linguistic acceptability": {
@@ -19115,6 +22349,102 @@
           "ci95": [
             0.3630772299800513,
             0.8687194065989238
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_grammatical": {
+          "rho": 0.15161466885604818,
+          "ci95": [
+            -0.25794094598636536,
+            0.5207524761609575
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_natural": {
+          "rho": 0.36179529282977557,
+          "ci95": [
+            -0.007707700618755135,
+            0.6690087563409495
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_quality": {
+          "rho": 0.6929392446633825,
+          "ci95": [
+            0.4094907102981907,
+            0.8469216481411249
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/naturalness_vs_reference": {
+          "rho": 0.7624521072796935,
+          "ci95": [
+            0.5524328395829614,
+            0.8790615359451883
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_grammatical": {
+          "rho": 0.5539135194307608,
+          "ci95": [
+            0.19788897398957303,
+            0.7917512671344037
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_vs_reference": {
+          "rho": 0.7619047619047619,
+          "ci95": [
+            0.5120991277500497,
+            0.8959403010359818
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_grammatical": {
+          "rho": 0.0021893814997263274,
+          "ci95": [
+            -0.3816124378052347,
+            0.37508928579523965
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_natural": {
+          "rho": 0.45265462506841814,
+          "ci95": [
+            0.09460816065113932,
+            0.7223608954369449
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_quality": {
+          "rho": 0.6677613574165299,
+          "ci95": [
+            0.38932610935036516,
+            0.8280171086127391
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/naturalness_vs_reference": {
+          "rho": 0.779967159277504,
+          "ci95": [
+            0.5690852743277528,
+            0.8924216320325296
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_grammatical": {
+          "rho": 0.5462506841817186,
+          "ci95": [
+            0.184400985178856,
+            0.7823069165840906
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_vs_reference": {
+          "rho": 0.6644772851669404,
+          "ci95": [
+            0.3597324143126953,
+            0.8374286019811681
           ],
           "n_models": 28
         }
@@ -19359,6 +22689,102 @@
             0.8019510053201808
           ],
           "n_models": 28
+        },
+        "v4-v42a/answer_grammatical": {
+          "rho": 0.3103448275862069,
+          "ci95": [
+            -0.039581876742998554,
+            0.6054356604659311
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_natural": {
+          "rho": 0.40777230432402845,
+          "ci95": [
+            0.08159134065542474,
+            0.691220409845719
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_quality": {
+          "rho": 0.7148330596606458,
+          "ci95": [
+            0.3893038520203902,
+            0.8861730466050617
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/naturalness_vs_reference": {
+          "rho": 0.5254515599343186,
+          "ci95": [
+            0.113774298408977,
+            0.8130699381131685
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_grammatical": {
+          "rho": 0.36288998357963875,
+          "ci95": [
+            -0.06413346483426176,
+            0.7171944794436704
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_vs_reference": {
+          "rho": 0.4740010946907498,
+          "ci95": [
+            0.07062874145539383,
+            0.7874450549450545
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_grammatical": {
+          "rho": 0.26655719759168034,
+          "ci95": [
+            -0.10272463328247505,
+            0.5601387302956614
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_natural": {
+          "rho": 0.5079365079365079,
+          "ci95": [
+            0.2325327116422713,
+            0.7151226003176617
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_quality": {
+          "rho": 0.665024630541872,
+          "ci95": [
+            0.33954250295159394,
+            0.8547880376517296
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/naturalness_vs_reference": {
+          "rho": 0.5779967159277504,
+          "ci95": [
+            0.17534406024170107,
+            0.8501204837432514
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_grammatical": {
+          "rho": 0.36398467432950193,
+          "ci95": [
+            -0.06755804293388444,
+            0.7125597132127007
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_vs_reference": {
+          "rho": 0.42309797482211275,
+          "ci95": [
+            0.0071087428236985516,
+            0.7354983371975596
+          ],
+          "n_models": 28
         }
       },
       "Reading comprehension": {
@@ -19599,6 +23025,102 @@
           "ci95": [
             0.36997842523062424,
             0.8420621722551569
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_grammatical": {
+          "rho": -0.0005473453749315818,
+          "ci95": [
+            -0.40351887431361705,
+            0.40700896140727005
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_natural": {
+          "rho": 0.3820470717022441,
+          "ci95": [
+            0.04283553355335533,
+            0.6717615870554677
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_quality": {
+          "rho": 0.5446086480569239,
+          "ci95": [
+            0.17928401931102197,
+            0.791385014624088
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/naturalness_vs_reference": {
+          "rho": 0.6507936507936508,
+          "ci95": [
+            0.3831587987820115,
+            0.813394081507239
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_grammatical": {
+          "rho": 0.4132457580733443,
+          "ci95": [
+            0.022540020825027894,
+            0.7109664681792734
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_vs_reference": {
+          "rho": 0.7060755336617406,
+          "ci95": [
+            0.43208786410267297,
+            0.8786426896888727
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_grammatical": {
+          "rho": -0.11603721948549535,
+          "ci95": [
+            -0.4975207974593252,
+            0.3045751300224225
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_natural": {
+          "rho": 0.30487137383689106,
+          "ci95": [
+            -0.02978224917309813,
+            0.5980752379191788
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_quality": {
+          "rho": 0.5495347564313082,
+          "ci95": [
+            0.16566406448883408,
+            0.8016077854685442
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/naturalness_vs_reference": {
+          "rho": 0.6447728516694033,
+          "ci95": [
+            0.3532491370191096,
+            0.8187689995159937
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_grammatical": {
+          "rho": 0.3820470717022441,
+          "ci95": [
+            -0.011836563573674928,
+            0.696472290897125
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_vs_reference": {
+          "rho": 0.6934865900383141,
+          "ci95": [
+            0.35712027801774915,
+            0.8849394273127753
           ],
           "n_models": 28
         }
@@ -19843,6 +23365,102 @@
             0.9105638711508445
           ],
           "n_models": 28
+        },
+        "v4-v42a/answer_grammatical": {
+          "rho": 0.11494252873563218,
+          "ci95": [
+            -0.26511067217382756,
+            0.4742731434653129
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_natural": {
+          "rho": 0.36015325670498083,
+          "ci95": [
+            0.002437288353796172,
+            0.646753465697144
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/answer_quality": {
+          "rho": 0.6250684181718663,
+          "ci95": [
+            0.2907730138429733,
+            0.8351708288949382
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/naturalness_vs_reference": {
+          "rho": 0.7471264367816092,
+          "ci95": [
+            0.5587441001659109,
+            0.8536433792039758
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_grammatical": {
+          "rho": 0.5090311986863711,
+          "ci95": [
+            0.12116890314700313,
+            0.7903383502966354
+          ],
+          "n_models": 28
+        },
+        "v4-v42a/translation_vs_reference": {
+          "rho": 0.7985769020251778,
+          "ci95": [
+            0.572385580116327,
+            0.9197449202419397
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_grammatical": {
+          "rho": -0.0481663929939792,
+          "ci95": [
+            -0.4383963871558548,
+            0.35018850621484027
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_natural": {
+          "rho": 0.4340448823207444,
+          "ci95": [
+            0.0657794214742249,
+            0.7148402487436464
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/answer_quality": {
+          "rho": 0.6195949644225507,
+          "ci95": [
+            0.3013297935071132,
+            0.8161387600838469
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/naturalness_vs_reference": {
+          "rho": 0.7920087575259989,
+          "ci95": [
+            0.6183277039546583,
+            0.8818072441790434
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_grammatical": {
+          "rho": 0.4937055281882868,
+          "ci95": [
+            0.11245076174685391,
+            0.7733817619233917
+          ],
+          "n_models": 28
+        },
+        "v4-v42b/translation_vs_reference": {
+          "rho": 0.7318007662835249,
+          "ci95": [
+            0.4273544020524145,
+            0.8984755619733429
+          ],
+          "n_models": 28
         }
       }
     },
@@ -19865,6 +23483,14 @@
       },
       "v4-v41/translation_vs_reference": {
         "spearman_with_chrf": 0.3840298608141012,
+        "n_translations": 5600
+      },
+      "v4-v42a/translation_vs_reference": {
+        "spearman_with_chrf": 0.36422062407768907,
+        "n_translations": 5600
+      },
+      "v4-v42b/translation_vs_reference": {
+        "spearman_with_chrf": 0.39727956097319855,
         "n_translations": 5600
       }
     },
@@ -20098,6 +23724,102 @@
         "ci95": [
           -0.07725807141455715,
           0.7791502352333328
+        ],
+        "n_models": 28
+      },
+      "v4-v42a/answer_grammatical": {
+        "rho": -0.029009304871373837,
+        "ci95": [
+          -0.4637283298340859,
+          0.3820605961806607
+        ],
+        "n_models": 28
+      },
+      "v4-v42a/answer_natural": {
+        "rho": 0.4176245210727969,
+        "ci95": [
+          -0.03159312994534061,
+          0.7326388190562126
+        ],
+        "n_models": 28
+      },
+      "v4-v42a/answer_quality": {
+        "rho": 0.6316365626710454,
+        "ci95": [
+          0.25852201289867316,
+          0.8216981394113053
+        ],
+        "n_models": 28
+      },
+      "v4-v42a/naturalness_vs_reference": {
+        "rho": 0.2983032293377121,
+        "ci95": [
+          -0.21418751718449275,
+          0.6835773317591496
+        ],
+        "n_models": 28
+      },
+      "v4-v42a/translation_grammatical": {
+        "rho": 0.24794745484400657,
+        "ci95": [
+          -0.2815449538899348,
+          0.5785521973841691
+        ],
+        "n_models": 28
+      },
+      "v4-v42a/translation_vs_reference": {
+        "rho": 0.535303776683087,
+        "ci95": [
+          0.0778961645410991,
+          0.8273790787508454
+        ],
+        "n_models": 28
+      },
+      "v4-v42b/answer_grammatical": {
+        "rho": -0.17515051997810618,
+        "ci95": [
+          -0.5468213138265786,
+          0.2790376235471036
+        ],
+        "n_models": 28
+      },
+      "v4-v42b/answer_natural": {
+        "rho": 0.42090859332238645,
+        "ci95": [
+          -0.030502885408079144,
+          0.7375068794716563
+        ],
+        "n_models": 28
+      },
+      "v4-v42b/answer_quality": {
+        "rho": 0.5358511220580187,
+        "ci95": [
+          0.1567667264316658,
+          0.7639377740154607
+        ],
+        "n_models": 28
+      },
+      "v4-v42b/naturalness_vs_reference": {
+        "rho": 0.4460864805692392,
+        "ci95": [
+          -0.07013330423179258,
+          0.7576969320066335
+        ],
+        "n_models": 28
+      },
+      "v4-v42b/translation_grammatical": {
+        "rho": 0.17296113847837985,
+        "ci95": [
+          -0.32823066948966756,
+          0.5491438914250218
+        ],
+        "n_models": 28
+      },
+      "v4-v42b/translation_vs_reference": {
+        "rho": 0.4740010946907498,
+        "ci95": [
+          0.08239978384751426,
+          0.8323343501326259
         ],
         "n_models": 28
       }
@@ -20340,6 +24062,102 @@
         "ci95": [
           0.4197561645679226,
           0.9251135073779796
+        ],
+        "n_models": 22
+      },
+      "v4-v42a/answer_grammatical": {
+        "rho": 0.1429378759197369,
+        "ci95": [
+          -0.33725823460277454,
+          0.5499168204767668
+        ],
+        "n_models": 22
+      },
+      "v4-v42a/answer_natural": {
+        "rho": 0.3593220912448722,
+        "ci95": [
+          -0.04785810779314929,
+          0.6636497231330425
+        ],
+        "n_models": 22
+      },
+      "v4-v42a/answer_quality": {
+        "rho": 0.7112995485492045,
+        "ci95": [
+          0.3681991485518525,
+          0.8842448744796828
+        ],
+        "n_models": 22
+      },
+      "v4-v42a/naturalness_vs_reference": {
+        "rho": 0.7446328872024237,
+        "ci95": [
+          0.5060525790897816,
+          0.862438537517691
+        ],
+        "n_models": 22
+      },
+      "v4-v42a/translation_grammatical": {
+        "rho": 0.4474576985313503,
+        "ci95": [
+          -0.01890111232922251,
+          0.7814802836894118
+        ],
+        "n_models": 22
+      },
+      "v4-v42a/translation_vs_reference": {
+        "rho": 0.8542374244689414,
+        "ci95": [
+          0.635144638272672,
+          0.948660903652347
+        ],
+        "n_models": 22
+      },
+      "v4-v42b/answer_grammatical": {
+        "rho": -0.09830510043491786,
+        "ci95": [
+          -0.552157074912068,
+          0.3429745722672032
+        ],
+        "n_models": 22
+      },
+      "v4-v42b/answer_natural": {
+        "rho": 0.3757062746506918,
+        "ci95": [
+          -0.021795507257825347,
+          0.6817270416559642
+        ],
+        "n_models": 22
+      },
+      "v4-v42b/answer_quality": {
+        "rho": 0.7553673521924436,
+        "ci95": [
+          0.4199885079099151,
+          0.9008263098175
+        ],
+        "n_models": 22
+      },
+      "v4-v42b/naturalness_vs_reference": {
+        "rho": 0.8192091702909822,
+        "ci95": [
+          0.6300760000698441,
+          0.9013954911339546
+        ],
+        "n_models": 22
+      },
+      "v4-v42b/translation_grammatical": {
+        "rho": 0.4186441346107709,
+        "ci95": [
+          -0.06857519801395519,
+          0.7532978312725708
+        ],
+        "n_models": 22
+      },
+      "v4-v42b/translation_vs_reference": {
+        "rho": 0.8564973118352613,
+        "ci95": [
+          0.6300897190625508,
+          0.9646537323583985
         ],
         "n_models": 22
       }
@@ -20680,6 +24498,138 @@
         "both_bad": {
           "n": 32,
           "mean_abs_dev_from_0.5": 0.27469431398159827,
+          "fraction_within_0.2": 0.34375
+        }
+      },
+      "v4.2a": {
+        "preference": {
+          "accuracy": 0.6229508196721312,
+          "ci95": [
+            0.5327868852459017,
+            0.7131147540983607
+          ],
+          "n": 122,
+          "confident_coverage": 0.680327868852459,
+          "confident_accuracy": 0.6867469879518072,
+          "positional_consistency": 0.819672131147541
+        },
+        "quality": {
+          "accuracy": 0.6311475409836066,
+          "ci95": [
+            0.5409836065573771,
+            0.7131147540983607
+          ],
+          "n": 122
+        },
+        "fraction_truncated": 0.4016393442622951,
+        "length": {
+          "gate_picks_longer": 0.680327868852459,
+          "preference_accuracy_human_picked_longer": 0.7402597402597403,
+          "preference_accuracy_human_picked_shorter": 0.4222222222222222,
+          "quality_accuracy_human_picked_longer": 0.7792207792207793,
+          "quality_accuracy_human_picked_shorter": 0.37777777777777777,
+          "n_human_picked_shorter": 45
+        },
+        "by_source": {
+          "arena-100k": {
+            "accuracy": 0.6551724137931034,
+            "ci95": [
+              0.4827586206896552,
+              0.7939655172413747
+            ],
+            "n": 29
+          },
+          "arena-140k": {
+            "accuracy": 0.6440677966101694,
+            "ci95": [
+              0.5254237288135594,
+              0.7627118644067796
+            ],
+            "n": 59
+          },
+          "arena-55k": {
+            "accuracy": 0.5588235294117647,
+            "ci95": [
+              0.4117647058823529,
+              0.7352941176470589
+            ],
+            "n": 34
+          }
+        },
+        "ties": {
+          "n": 38,
+          "mean_abs_dev_from_0.5": 0.23980256001775074,
+          "fraction_within_0.2": 0.4473684210526316
+        },
+        "both_bad": {
+          "n": 32,
+          "mean_abs_dev_from_0.5": 0.3118338589838708,
+          "fraction_within_0.2": 0.25
+        }
+      },
+      "v4.2b": {
+        "preference": {
+          "accuracy": 0.6065573770491803,
+          "ci95": [
+            0.5163934426229508,
+            0.6887295081967202
+          ],
+          "n": 122,
+          "confident_coverage": 0.5901639344262295,
+          "confident_accuracy": 0.6805555555555556,
+          "positional_consistency": 0.8278688524590164
+        },
+        "quality": {
+          "accuracy": 0.6311475409836066,
+          "ci95": [
+            0.5491803278688525,
+            0.7131147540983607
+          ],
+          "n": 122
+        },
+        "fraction_truncated": 0.4016393442622951,
+        "length": {
+          "gate_picks_longer": 0.6475409836065574,
+          "preference_accuracy_human_picked_longer": 0.7012987012987013,
+          "preference_accuracy_human_picked_shorter": 0.4444444444444444,
+          "quality_accuracy_human_picked_longer": 0.7792207792207793,
+          "quality_accuracy_human_picked_shorter": 0.37777777777777777,
+          "n_human_picked_shorter": 45
+        },
+        "by_source": {
+          "arena-100k": {
+            "accuracy": 0.5862068965517241,
+            "ci95": [
+              0.41379310344827586,
+              0.7586206896551724
+            ],
+            "n": 29
+          },
+          "arena-140k": {
+            "accuracy": 0.6440677966101694,
+            "ci95": [
+              0.5254237288135594,
+              0.7627118644067796
+            ],
+            "n": 59
+          },
+          "arena-55k": {
+            "accuracy": 0.5588235294117647,
+            "ci95": [
+              0.4117647058823529,
+              0.7058823529411765
+            ],
+            "n": 34
+          }
+        },
+        "ties": {
+          "n": 38,
+          "mean_abs_dev_from_0.5": 0.2233410545549546,
+          "fraction_within_0.2": 0.5
+        },
+        "both_bad": {
+          "n": 32,
+          "mean_abs_dev_from_0.5": 0.27351045301574134,
           "fraction_within_0.2": 0.34375
         }
       }

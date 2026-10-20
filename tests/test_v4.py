@@ -88,9 +88,26 @@ def test_paired_diff():
 
 
 def test_arms_and_sources_are_consistent():
-    assert set(v4.ARMS) == {"control", "europarl", "native", "both", "grammar", "adequacy", "v41"}
+    assert set(v4.ARMS) == {
+        "control",
+        "europarl",
+        "native",
+        "both",
+        "grammar",
+        "adequacy",
+        "v41",
+        "v42a",
+        "v42b",
+    }
     for sources in v4.ARMS.values():
-        extra = ("dalaj_grammar", "adequacy", "registers", "hard_source")
+        extra = (
+            "dalaj_grammar",
+            "adequacy",
+            "registers",
+            "hard_source",
+            "length_balance",
+            "length_pairs",
+        )
         assert all(s in v4.SOURCE_FILES or s in extra for s in sources)
     assert set(v4.ARMS["both"]) == set(v4.ARMS["europarl"]) | set(v4.ARMS["native"])
 
@@ -179,3 +196,31 @@ def test_registers_data_pairs_correct_with_corrupted():
             ["detta", "är", "en", "ganska", "lång", "och", "helt", "korrekt", "svensk", "mening"]
         )
     assert {s["label"] for s in d["single"]} == {0, 1}
+
+
+def test_parse_length_answers_requires_all_keys_and_crossed_lengths():
+    long_a, short_a = "lång " * 40, "kort svar."
+    good = {
+        "good_long": long_a,
+        "good_short": short_a,
+        "bad_long": long_a + "x",
+        "bad_short": "fel.",
+    }
+    import json as _json
+
+    text = "<think>plan</think>```json\n" + _json.dumps(good) + "\n```"
+    assert v4.parse_length_answers(text)["good_short"] == "kort svar."
+    assert v4.parse_length_answers('{"good_long": "a"}') is None
+    swapped = {**good, "good_short": long_a + "y"}  # short answer longer than bad_long
+    assert v4.parse_length_answers(_json.dumps(swapped)) is None
+    assert v4.parse_length_answers(None) is None
+
+
+def test_balance_rows_makes_chosen_longer_half():
+    longer = {"candidate_a": "en lång text", "candidate_b": "kort", "label": 0}
+    shorter = {"candidate_a": "kort", "candidate_b": "en lång text", "label": 0}
+    tie = {"candidate_a": "abc", "candidate_b": "xyz", "label": 1}
+    kept, st = v4.balance_rows([longer] * 7 + [shorter] * 3 + [tie], random.Random(0))
+    assert st == {"before": 11, "chosen_longer_before": 7, "chosen_shorter": 3, "after": 6}
+    assert sum(v4.chosen_is_longer(r) for r in kept) == 3
+    assert v4.chosen_is_longer(tie) is None

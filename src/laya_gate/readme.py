@@ -1608,6 +1608,54 @@ def arena_section(m: dict) -> str:
         name: (r.get("ties") or {}).get("fraction_within_0.2") for name, r in S["models"].items()
     }
     picks = {name: get(r, "length.gate_picks_longer") for name, r in S["models"].items()}
+    W = get(m, "v4.arms", {})
+
+    def lt(arm, kind, q):
+        return get(W, f"{arm}.tests.length_test/{kind}/{q}.mean")
+
+    LD = get(m, "v4.data.length_pairs", {})
+    LT = get(m, "external_data.length_test", {})
+    length_rows = "\n".join(
+        f"| {label} | {pct(lt(arm, 'short_correct', 'preference'))} | "
+        f"{pct(lt(arm, 'short_correct', 'quality'))} | {pct(lt(arm, 'long_correct', 'preference'))} | "
+        f"{pct((get(S, 'models') or {}).get(name, {}).get('preference', {}).get('accuracy'))} | "
+        f"{pct(((get(S, 'models') or {}).get(name, {}).get('length') or {}).get('preference_accuracy_human_picked_shorter'))} |"
+        for arm, name, label in (
+            ("v3", "v3", "v3"),
+            ("v41", "v4.1", "v4.1 (published)"),
+            ("v42a", "v4.2a", "v4.2a: length-balanced base pairs"),
+            ("v42b", "v4.2b", "v4.2b: + length-controlled pairs"),
+        )
+        if get(W, f"{arm}.tests")
+    )
+    length_part = (
+        f"""
+
+**Can training remove the length bias? (v4.2, not released.)** Both base preference sources
+favour length: the chosen answer is the longer one in
+{pct(get(m, "v4.data.base_length_bias.original.chosen_longer"))} of the original DPO pairs and
+{pct(get(m, "v4.data.base_length_bias.fluent.chosen_longer"))} of the fluent pairs. Two arms on top of v4.1 (`python -m laya_gate.v4 run --arm v42a|v42b`):
+**v4.2a** drops "longer wins" pairs from the base `preference` data until it is 50/50; **v4.2b**
+also adds {get(LD, "pairs", 0):,} length-controlled pairs: for {get(LD, "prompts", NM)} training
+prompts Kimi-k3 wrote a correct and a flawed answer (factual error or missing the point), each
+short and long, and the pairs pit *short correct vs long flawed* and *long correct vs short
+flawed*, kept when Kimi-k3 picks the correct one in both orders (with `quality` targets 4.5 vs 2).
+A held-out test built the same way from {get(LT, "prompts", NM)} other prompts
+({get(LT, "pairs", NM)} pairs) and arena_sv measure it:
+
+| Model | Length test: correct is shorter, `preference` | … `quality` | Length test: correct is longer | arena_sv `preference` | arena_sv, human picked shorter |
+|---|---|---|---|---|---|
+{length_rows}
+
+The gates before v4.2b pick a long flawed answer over a short correct one about three times in
+four. v4.2b learns to judge these pairs independently of length, but the gain barely carries over
+to the human votes, and it costs elsewhere (SweFAQ `quality` and grammar over-flagging get
+worse; the EuroEval pilot correlation drops). Balancing the base data alone (v4.2a) does not
+touch the bias. Synthetic "correct vs flawed" pairs do not teach what people prefer in Swedish
+answers; that needs human preference data."""
+        if get(W, "v42b.tests")
+        else ""
+    )
     return f"""The only human-judged test of *answer quality* in Swedish we could find without new annotation:
 [Chatbot Arena](https://lmarena.ai) votes, where users write a prompt, read two anonymous answers and
 vote for the better one (`python -m laya_gate.arena_eval`). Sources:
@@ -1634,7 +1682,7 @@ v3's, within the noise. Ties are not kept near 0.5 either (share within 0.2 of 0
 What this means: the gate is a useful fast check for Swedish *form* (grammar, translationese,
 translation adequacy, relevance on FAQ pages), not yet for which of two fluent answers people
 prefer. Improving that needs human preference data on Swedish answers, which is scarce: this set is
-small and must stay a test set."""
+small and must stay a test set.{length_part}"""
 
 
 def mt_section(m: dict) -> str:

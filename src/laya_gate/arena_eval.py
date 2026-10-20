@@ -201,7 +201,7 @@ def gate_checkpoints() -> dict[str, Any]:
     from .v3 import V3_DIR
 
     out = {"v3": V3_DIR}
-    for name, arm in (("v4", "adequacy"), ("v4.1", "v41")):
+    for name, arm in (("v4", "adequacy"), ("v4.1", "v41"), ("v4.2a", "v42a"), ("v4.2b", "v42b")):
         path = ROOT / "checkpoints" / f"v4-{arm}"
         if (path / "model.safetensors").exists():
             out[name] = path

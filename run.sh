@@ -58,7 +58,11 @@ if [[ -f cache/fluent/train.jsonl ]]; then
     step "5o/8 v4 ablation: adequacy" v4 run --arm adequacy   # v4: builds the adequacy negatives
     step "5o/8 minimal pairs"       external_eval prepare-minimal-pairs   # BLiMPPI-sv, MultiBLiMP-sv
     step "5o/8 v4.1"                v4 run --arm v41          # v4.1: registers + hard wrong sources
-    step "5o/8 v4 rescore"          v4 rescore --tags v3 control adequacy v41
+    step "5o/8 v4.2 length (not released)" v4 prepare-length       # Kimi-k3 length-controlled pairs
+    step "5o/8 v4.2 length (not released)" v4 prepare-length-test  # held-out length test
+    step "5o/8 v4.2 length (not released)" v4 run --arm v42a
+    step "5o/8 v4.2 length (not released)" v4 run --arm v42b
+    step "5o/8 v4 rescore"          v4 rescore --tags v3 control adequacy v41 v42a v42b
     step "5o/8 n-gram baseline"     ngram build
     step "5o/8 v4 baselines"        v4 baselines
     step "5o/8 v4 ablation"         v4 compare
