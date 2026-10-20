@@ -66,6 +66,9 @@ if [[ -f cache/fluent/train.jsonl ]]; then
     step "5p/8 EuroEval pilot"      pilot generate --batch-size 8 --delete-after   # needs --extra pilot for 4-bit
     step "5p/8 EuroEval pilot"      pilot score
     step "5p/8 EuroEval pilot"      pilot analyze
+    step "5q/8 arena_sv"            arena_eval build   # Swedish Chatbot Arena human votes
+    step "5q/8 arena_sv"            arena_eval gate
+    step "5q/8 arena_sv"            arena_eval judge   # skips without BASE_URL/API_KEY
 else
     echo "note: no fluent training pairs; skipping v2 and v3" >&2
 fi

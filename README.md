@@ -1092,11 +1092,48 @@ on the shared GPU, except `google/gemma-3n-E4B-it`, which needs Pillow for its v
 not a calibrated predictor. The models' outputs are not redistributed (their licenses differ); the
 scores are in `metrics.json`.
 
+### Human preference on Swedish answers (Chatbot Arena)
+
+The only human-judged test of *answer quality* in Swedish we could find without new annotation:
+[Chatbot Arena](https://lmarena.ai) votes, where users write a prompt, read two anonymous answers and
+vote for the better one (`python -m laya_gate.arena_eval`). Sources:
+`lmarena-ai/arena-human-preference-140k` (CC BY 4.0), `-100k` and `-55k` (Apache-2.0); single-turn
+battles whose prompt and both answers read as Swedish, deduplicated: 192
+battles, 122 decisive votes, 38 ties and
+32 "both bad". Never used for training. No Kimi model appears in these battles,
+so Kimi-k3 is not judging its own output. 40.2% of the pairs
+exceed the gate's 1,024-token window. With 122 votes the 95% CI is about ±8 points.
+
+| Agreement with the human vote | All decisive | Human picked the longer answer | Human picked the shorter (45) |
+|---|---|---|---|
+| v3 `preference` | 62.3% [53%, 70%] | 76.6% | 37.8% |
+| v3 `quality` | 66.4% [57%, 75%] | 87.0% | 31.1% |
+| v4 `preference` | 60.7% [52%, 69%] | 74.0% | 37.8% |
+| v4 `quality` | 64.8% [56%, 73%] | 81.8% | 35.6% |
+| v4.1 `preference` | 57.4% [48%, 66%] | 67.5% | 40.0% |
+| v4.1 `quality` | 60.7% [52%, 69%] | 75.3% | 35.6% |
+| Longer answer wins (no model) | 63.1% [54%, 71%] | 100% | 0% |
+| Kimi-k3 judge (both orders) | 75.0% [68%, 82%] | 74.7% | 75.6% |
+
+**On human votes about Swedish answers, the gate mostly measures length.** People preferred the
+longer answer in 63.1% of these battles, and the gate picks the longer
+answer about as often (v3 71%, v4 70%, v4.1 65%). Where people
+preferred the shorter answer, the gate agrees with them less often than a coin flip. Kimi-k3 agrees
+with the human vote equally often either way: it judges content, the gate does not. The v4 and v4.1
+training (grammar, relevance, translation) did not help here; their accuracy is a few points below
+v3's, within the noise. Ties are not kept near 0.5 either (share within 0.2 of 0.5:
+v3 58%, v4 26%, v4.1 37%).
+
+What this means: the gate is a useful fast check for Swedish *form* (grammar, translationese,
+translation adequacy, relevance on FAQ pages), not yet for which of two fluent answers people
+prefer. Improving that needs human preference data on Swedish answers, which is scarce: this set is
+small and must stay a test set.
+
 ### Tests
 
-`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **160 passed, 0 failed,
-0 errors, 0 skipped** of 160.
-Coverage: **46.3%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `external_eval.py` 37.2% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `ngram.py` 61.0% · `onnx_export.py` 87.2% · `pilot.py` 37.1% · `predictor.py` 81.1% · `probe.py` 46.0% · `publish.py` 60.9% · `publish_data.py` 0.0% · `readme.py` 72.7% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 18.0% · `v4.py` 31.5%.
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **166 passed, 0 failed,
+0 errors, 0 skipped** of 166.
+Coverage: **45.8%** overall — `__init__.py` 100.0% · `arena_eval.py` 36.7% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `external_eval.py` 37.2% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `ngram.py` 61.0% · `onnx_export.py` 87.2% · `pilot.py` 37.1% · `predictor.py` 81.1% · `probe.py` 46.0% · `publish.py` 57.7% · `publish_data.py` 0.0% · `readme.py` 71.0% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 18.0% · `v4.py` 31.5%.
 
 
 ## Limitations
@@ -1111,6 +1148,7 @@ Coverage: **46.3%** overall — `__init__.py` 100.0% · `benchmark.py` 63.2% · 
 - **Grammar and relevance are weak spots.** On natively written Swedish the gate barely prefers a corrected sentence over a learner error (DaLAJ, best v3 question 68.8%) and loses to a word-overlap baseline at picking a question's own FAQ answer (SweFAQ, v3 `quality` 66.8% vs 79.7%); Kimi-k3 gets 90.3% and 99.0%.
 - **v4.1's `grammatical` question over-flags.** At threshold 0.5 it marks 25.2% of fluent LLM answers and 47.9% of WMT24++ references as incorrect; use it to compare two versions of a text, not as a verdict on one.
 - **Translation preference is source-sensitive only after the adequacy fix.** Europarl human-vs-MT pairs alone teach 'the less literal side wins' (see the v4 sanity tests); v4.1 still picks a fluent translation of the wrong sentence in 10.5% of FLORES+ pairs.
+- **Answer preference largely tracks length.** On 122 human Chatbot Arena votes on Swedish answers the gate agrees with people 57.4% (v4.1), close to 'the longer answer wins' (63.1%); Kimi-k3 reaches 75.0%.
 - **CPU is slow.** A pair takes 506.7 ms (median) on CPU with torch fp32; int8 and ONNX do not get anywhere near the GPU's millisecond latency.
 
 ## Conclusion

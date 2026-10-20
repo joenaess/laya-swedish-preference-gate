@@ -1574,6 +1574,69 @@ not a calibrated predictor. The models' outputs are not redistributed (their lic
 scores are in `metrics.json`."""
 
 
+def arena_section(m: dict) -> str:
+    S, D = m.get("arena_sv"), m.get("arena_sv_data") or {}
+    if not isinstance(S, dict) or not S.get("models"):
+        return "Not measured: run `python -m laya_gate.arena_eval build`, `gate`, `judge`."
+    J = S.get("judge") or {}
+    rows = []
+    for name, r in S["models"].items():
+        pr, q, ln = r.get("preference", {}), r.get("quality", {}), r.get("length", {})
+        rows.append(
+            f"| {name} `preference` | {pct(pr.get('accuracy'))} [{pct(get(pr, 'ci95.0'), 0)}, "
+            f"{pct(get(pr, 'ci95.1'), 0)}] | {pct(ln.get('preference_accuracy_human_picked_longer'))} | "
+            f"{pct(ln.get('preference_accuracy_human_picked_shorter'))} |"
+        )
+        rows.append(
+            f"| {name} `quality` | {pct(q.get('accuracy'))} [{pct(get(q, 'ci95.0'), 0)}, "
+            f"{pct(get(q, 'ci95.1'), 0)}] | {pct(ln.get('quality_accuracy_human_picked_longer'))} | "
+            f"{pct(ln.get('quality_accuracy_human_picked_shorter'))} |"
+        )
+    lb = S.get("length_baseline", {})
+    rows.append(
+        f"| Longer answer wins (no model) | {pct(lb.get('accuracy_longer_wins'))} "
+        f"[{pct(get(lb, 'ci95.0'), 0)}, {pct(get(lb, 'ci95.1'), 0)}] | 100% | 0% |"
+    )
+    if J:
+        rows.append(
+            f"| Kimi-k3 judge (both orders) | {pct(J.get('accuracy'))} [{pct(get(J, 'ci95.0'), 0)}, "
+            f"{pct(get(J, 'ci95.1'), 0)}] | {pct(J.get('accuracy_human_picked_longer'))} | "
+            f"{pct(J.get('accuracy_human_picked_shorter'))} |"
+        )
+    n_short = get(S, "models.v3.length.n_human_picked_shorter", NM)
+    ties = {
+        name: (r.get("ties") or {}).get("fraction_within_0.2") for name, r in S["models"].items()
+    }
+    picks = {name: get(r, "length.gate_picks_longer") for name, r in S["models"].items()}
+    return f"""The only human-judged test of *answer quality* in Swedish we could find without new annotation:
+[Chatbot Arena](https://lmarena.ai) votes, where users write a prompt, read two anonymous answers and
+vote for the better one (`python -m laya_gate.arena_eval`). Sources:
+`lmarena-ai/arena-human-preference-140k` (CC BY 4.0), `-100k` and `-55k` (Apache-2.0); single-turn
+battles whose prompt and both answers read as Swedish, deduplicated: {D.get("battles", NM)}
+battles, {S.get("decisive", NM)} decisive votes, {S.get("ties", NM)} ties and
+{S.get("both_bad", NM)} "both bad". Never used for training. No Kimi model appears in these battles,
+so Kimi-k3 is not judging its own output. {pct(get(S, "models.v3.fraction_truncated"))} of the pairs
+exceed the gate's 1,024-token window. With {S.get("decisive", NM)} votes the 95% CI is about ±8 points.
+
+| Agreement with the human vote | All decisive | Human picked the longer answer | Human picked the shorter ({n_short}) |
+|---|---|---|---|
+{chr(10).join(rows)}
+
+**On human votes about Swedish answers, the gate mostly measures length.** People preferred the
+longer answer in {pct(lb.get("accuracy_longer_wins"))} of these battles, and the gate picks the longer
+answer about as often ({", ".join(f"{k} {pct(v, 0)}" for k, v in picks.items())}). Where people
+preferred the shorter answer, the gate agrees with them less often than a coin flip. Kimi-k3 agrees
+with the human vote equally often either way: it judges content, the gate does not. The v4 and v4.1
+training (grammar, relevance, translation) did not help here; their accuracy is a few points below
+v3's, within the noise. Ties are not kept near 0.5 either (share within 0.2 of 0.5:
+{", ".join(f"{k} {pct(v, 0)}" for k, v in ties.items())}).
+
+What this means: the gate is a useful fast check for Swedish *form* (grammar, translationese,
+translation adequacy, relevance on FAQ pages), not yet for which of two fluent answers people
+prefer. Improving that needs human preference data on Swedish answers, which is scarce: this set is
+small and must stay a test set."""
+
+
 def mt_section(m: dict) -> str:
     mt = m.get("mt_naturalness")
     if not isinstance(mt, dict) or not mt.get("models"):
@@ -1890,6 +1953,16 @@ def limitations(m: dict) -> str:
             f"sanity tests); {RELEASE_NAME} still picks a fluent translation of the wrong sentence in "
             f"{pct(1 - (get(m, f'v4.sanity.checkpoints.{RELEASE_ARM}.wrong_source/preference+source.mean') or 0))} "
             "of FLORES+ pairs."
+        )
+    if get(m, "arena_sv.models.v3"):
+        items.append(
+            "**Answer preference largely tracks length.** On "
+            f"{get(m, 'arena_sv.decisive', NM)} human Chatbot Arena votes on Swedish answers the gate "
+            "agrees with people "
+            f"{pct(get((get(m, 'arena_sv.models') or {}).get(RELEASE_NAME, {}), 'preference.accuracy'))} "
+            f"({RELEASE_NAME}), close to 'the longer answer wins' "
+            f"({pct(get(m, 'arena_sv.length_baseline.accuracy_longer_wins'))}); Kimi-k3 reaches "
+            f"{pct(get(m, 'arena_sv.judge.accuracy'))}."
         )
     cpu = get(m, "cpu_inference.variants.torch-fp32.latency_ms.p50")
     if isinstance(cpu, float):
@@ -2224,6 +2297,10 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 ### Pilot: predicting EuroEval Swedish results
 
 {pilot_section(m)}
+
+### Human preference on Swedish answers (Chatbot Arena)
+
+{arena_section(m)}
 
 ### Tests
 

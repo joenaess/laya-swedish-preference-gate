@@ -1132,6 +1132,12 @@ a, b = (gate.score_grammar(x)["p_correct"] for x in ("Hon har bott här.", "Hon 
 - **Wrong-content translations still win sometimes:** v4 prefers a fluent translation of a
   different sentence in {pct(1 - (g(S, f"{R}.wrong_source/preference+source.mean") or 0))} of
   FLORES+ pairs (v3: {pct(1 - (g(S, "v3.wrong_source/preference+source.mean") or 0))}).
+- **Answer preference largely tracks length.** On {g(m, "arena_sv.decisive", "?")} human Chatbot
+  Arena votes on Swedish answers, `preference` agrees with people in
+  {pct(g((g(m, "arena_sv.models") or {}).get(NAME, {}), "preference.accuracy"))} of battles, close to
+  "the longer answer wins" ({pct(g(m, "arena_sv.length_baseline.accuracy_longer_wins"))}); Kimi-k3
+  reaches {pct(g(m, "arena_sv.judge.accuracy"))}. Use the gate for Swedish *form* (grammar,
+  translationese, translation adequacy, relevance), not to pick between two fluent answers.
 - **Pairwise preference, not fact-checking;** 1,024-token window; one seed per training arm.
 - **Kimi-k3 is not a neutral reference for its own output:** on WMT24++ it prefers the human
   translation over OPUS-MT in
@@ -1201,9 +1207,34 @@ def main(argv=None) -> None:
         metavar="TAG",
         help="tag the revision currently on the Hub (e.g. v1) before uploading over it",
     )
+    parser.add_argument(
+        "--card-only", action="store_true", help="update only the model card (README.md) on the Hub"
+    )
     args = parser.parse_args(argv)
     m = load_metrics()
     which = args.checkpoint
+    if args.card_only:
+        from huggingface_hub import HfApi
+
+        if not os.environ.get("HF_TOKEN"):
+            print("card update skipped: HF_TOKEN not set")
+            sys.exit(0)
+        repo_id = os.environ.get("HF_REPO_ID", DEFAULT_HF_REPO)
+        card = {"v2": model_card_v2, "v3": model_card_v3, "v4": model_card_v4}.get(
+            which, model_card
+        )(m, repo_id)
+        for var in ("BASE_URL", "API_KEY", "HF_TOKEN"):
+            val = os.environ.get(var)
+            if val and val in card:
+                raise SystemExit(f"refusing to upload: the card contains {var}")
+        info = HfApi().upload_file(
+            path_or_fileobj=card.encode("utf-8"),
+            path_in_repo="README.md",
+            repo_id=repo_id,
+            commit_message="Model card: human preference (Chatbot Arena) results",
+        )
+        print(f"model card updated: {getattr(info, 'oid', info)}")
+        return
     src_dir = checkpoint_dir(which)
     problems = blockers(m, which)
     if problems:

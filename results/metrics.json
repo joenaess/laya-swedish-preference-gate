@@ -502,16 +502,17 @@
   },
   "tests": {
     "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
-    "total": 160,
-    "passed": 160,
+    "total": 166,
+    "passed": 166,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "skipped_tests": {},
     "all_passed": true,
-    "coverage_percent": 46.3,
+    "coverage_percent": 45.8,
     "coverage_per_module": {
       "__init__.py": 100.0,
+      "arena_eval.py": 36.7,
       "benchmark.py": 63.2,
       "calibrate.py": 64.3,
       "cpu.py": 0.0,
@@ -526,9 +527,9 @@
       "pilot.py": 37.1,
       "predictor.py": 81.1,
       "probe.py": 46.0,
-      "publish.py": 60.9,
+      "publish.py": 57.7,
       "publish_data.py": 0.0,
-      "readme.py": 72.7,
+      "readme.py": 71.0,
       "testing.py": 0.0,
       "train.py": 37.3,
       "utils.py": 100.0,
@@ -20402,6 +20403,284 @@
         "license": "apache-2.0",
         "rows": {
           "test": 960
+        }
+      }
+    }
+  },
+  "arena_sv_data": {
+    "sources": {
+      "arena-140k": "lmarena-ai/arena-human-preference-140k",
+      "arena-100k": "lmarena-ai/arena-human-preference-100k",
+      "arena-55k": "lmarena-ai/arena-human-preference-55k"
+    },
+    "by_source": {
+      "arena-140k": {
+        "kept_a": 30,
+        "multi_turn_or_incomplete": 16,
+        "kept_both_bad": 15,
+        "kept_tie": 9,
+        "kept_b": 29,
+        "not_swedish": 7
+      },
+      "arena-100k": {
+        "kept_a": 18,
+        "kept_b": 11,
+        "multi_turn_or_incomplete": 5,
+        "kept_tie": 13,
+        "kept_both_bad": 17,
+        "not_swedish": 23
+      },
+      "arena-55k": {
+        "multi_turn_or_incomplete": 7835,
+        "not_swedish": 49592,
+        "kept_tie": 16,
+        "kept_a": 20,
+        "kept_b": 14
+      }
+    },
+    "battles": 192,
+    "labels": {
+      "a": 68,
+      "both_bad": 32,
+      "tie": 38,
+      "b": 54
+    }
+  },
+  "arena_sv": {
+    "judge": {
+      "model": "kimi-k3",
+      "hardware": "self-hosted Kimi-k3 on 8× NVIDIA B300 (HGX)",
+      "requests": 244,
+      "parse_failures": 0,
+      "accuracy": 0.75,
+      "agrees_both_orders": 0.7131147540983607,
+      "ci95": [
+        0.6762295081967213,
+        0.8237704918032787
+      ],
+      "positional_consistency": 0.9262295081967213,
+      "n": 122,
+      "latency_s_median": 24.78801242003101,
+      "accuracy_human_picked_longer": 0.7467532467532467,
+      "accuracy_human_picked_shorter": 0.7555555555555555,
+      "kimi_models_in_battles": [],
+      "metric": "per battle, the share of the two slot orders in which Kimi-k3 agrees with the human vote (split verdicts count 0.5)"
+    },
+    "battles": 192,
+    "decisive": 122,
+    "ties": 38,
+    "both_bad": 32,
+    "by_source": {
+      "arena-140k": 59,
+      "arena-100k": 29,
+      "arena-55k": 34
+    },
+    "length_baseline": {
+      "accuracy_longer_wins": 0.6311475409836066,
+      "ci95": [
+        0.5409836065573771,
+        0.7131147540983607
+      ],
+      "n": 122
+    },
+    "metric": "decisive votes: share where the gate's order-averaged P(A wins) > 0.5 agrees with the human vote; ties / both bad: distance of P from 0.5",
+    "models": {
+      "v3": {
+        "preference": {
+          "accuracy": 0.6229508196721312,
+          "ci95": [
+            0.5327868852459017,
+            0.7049180327868853
+          ],
+          "n": 122,
+          "confident_coverage": 0.6639344262295082,
+          "confident_accuracy": 0.6666666666666666,
+          "positional_consistency": 0.8032786885245902
+        },
+        "quality": {
+          "accuracy": 0.6639344262295082,
+          "ci95": [
+            0.5737704918032787,
+            0.7459016393442623
+          ],
+          "n": 122
+        },
+        "fraction_truncated": 0.4016393442622951,
+        "length": {
+          "gate_picks_longer": 0.7131147540983607,
+          "preference_accuracy_human_picked_longer": 0.7662337662337663,
+          "preference_accuracy_human_picked_shorter": 0.37777777777777777,
+          "quality_accuracy_human_picked_longer": 0.8701298701298701,
+          "quality_accuracy_human_picked_shorter": 0.3111111111111111,
+          "n_human_picked_shorter": 45
+        },
+        "by_source": {
+          "arena-100k": {
+            "accuracy": 0.6551724137931034,
+            "ci95": [
+              0.4827586206896552,
+              0.8275862068965517
+            ],
+            "n": 29
+          },
+          "arena-140k": {
+            "accuracy": 0.6101694915254238,
+            "ci95": [
+              0.4915254237288136,
+              0.7288135593220338
+            ],
+            "n": 59
+          },
+          "arena-55k": {
+            "accuracy": 0.6176470588235294,
+            "ci95": [
+              0.4411764705882353,
+              0.7941176470588235
+            ],
+            "n": 34
+          }
+        },
+        "ties": {
+          "n": 38,
+          "mean_abs_dev_from_0.5": 0.18882744014990227,
+          "fraction_within_0.2": 0.5789473684210527
+        },
+        "both_bad": {
+          "n": 32,
+          "mean_abs_dev_from_0.5": 0.2884325219665159,
+          "fraction_within_0.2": 0.3125
+        }
+      },
+      "v4": {
+        "preference": {
+          "accuracy": 0.6065573770491803,
+          "ci95": [
+            0.5163934426229508,
+            0.6885245901639344
+          ],
+          "n": 122,
+          "confident_coverage": 0.680327868852459,
+          "confident_accuracy": 0.6144578313253012,
+          "positional_consistency": 0.8442622950819673
+        },
+        "quality": {
+          "accuracy": 0.6475409836065574,
+          "ci95": [
+            0.5573770491803278,
+            0.7295081967213115
+          ],
+          "n": 122
+        },
+        "fraction_truncated": 0.4016393442622951,
+        "length": {
+          "gate_picks_longer": 0.6967213114754098,
+          "preference_accuracy_human_picked_longer": 0.7402597402597403,
+          "preference_accuracy_human_picked_shorter": 0.37777777777777777,
+          "quality_accuracy_human_picked_longer": 0.8181818181818182,
+          "quality_accuracy_human_picked_shorter": 0.35555555555555557,
+          "n_human_picked_shorter": 45
+        },
+        "by_source": {
+          "arena-100k": {
+            "accuracy": 0.5517241379310345,
+            "ci95": [
+              0.3793103448275862,
+              0.7241379310344828
+            ],
+            "n": 29
+          },
+          "arena-140k": {
+            "accuracy": 0.6610169491525424,
+            "ci95": [
+              0.5423728813559322,
+              0.7796610169491526
+            ],
+            "n": 59
+          },
+          "arena-55k": {
+            "accuracy": 0.5588235294117647,
+            "ci95": [
+              0.38235294117647056,
+              0.7352941176470589
+            ],
+            "n": 34
+          }
+        },
+        "ties": {
+          "n": 38,
+          "mean_abs_dev_from_0.5": 0.2569292927982878,
+          "fraction_within_0.2": 0.2631578947368421
+        },
+        "both_bad": {
+          "n": 32,
+          "mean_abs_dev_from_0.5": 0.26559855275924904,
+          "fraction_within_0.2": 0.4375
+        }
+      },
+      "v4.1": {
+        "preference": {
+          "accuracy": 0.5737704918032787,
+          "ci95": [
+            0.48360655737704916,
+            0.6639344262295082
+          ],
+          "n": 122,
+          "confident_coverage": 0.6721311475409836,
+          "confident_accuracy": 0.6097560975609756,
+          "positional_consistency": 0.7950819672131147
+        },
+        "quality": {
+          "accuracy": 0.6065573770491803,
+          "ci95": [
+            0.5163934426229508,
+            0.6885245901639344
+          ],
+          "n": 122
+        },
+        "fraction_truncated": 0.4016393442622951,
+        "length": {
+          "gate_picks_longer": 0.6475409836065574,
+          "preference_accuracy_human_picked_longer": 0.6753246753246753,
+          "preference_accuracy_human_picked_shorter": 0.4,
+          "quality_accuracy_human_picked_longer": 0.7532467532467533,
+          "quality_accuracy_human_picked_shorter": 0.35555555555555557,
+          "n_human_picked_shorter": 45
+        },
+        "by_source": {
+          "arena-100k": {
+            "accuracy": 0.5862068965517241,
+            "ci95": [
+              0.41379310344827586,
+              0.7586206896551724
+            ],
+            "n": 29
+          },
+          "arena-140k": {
+            "accuracy": 0.559322033898305,
+            "ci95": [
+              0.4406779661016949,
+              0.6949152542372882
+            ],
+            "n": 59
+          },
+          "arena-55k": {
+            "accuracy": 0.5882352941176471,
+            "ci95": [
+              0.4117647058823529,
+              0.7647058823529411
+            ],
+            "n": 34
+          }
+        },
+        "ties": {
+          "n": 38,
+          "mean_abs_dev_from_0.5": 0.24263384193737111,
+          "fraction_within_0.2": 0.3684210526315789
+        },
+        "both_bad": {
+          "n": 32,
+          "mean_abs_dev_from_0.5": 0.27469431398159827,
+          "fraction_within_0.2": 0.34375
         }
       }
     }
