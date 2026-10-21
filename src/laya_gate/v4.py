@@ -468,7 +468,8 @@ _BOT_TEXT = __import__("re").compile(
     r"Omgivningarna runt|Trakten runt|runt .{0,40} är det (ganska |mycket )?(tät|gles)befolkat|"
     r"Årsmedeltemperaturen|Medelnederbörden|invånare per kvadratkilometer|"
     r"Inga underarter finns listade|enligt Catalogue of Life|Klimatet i området är|"
-    r"ligger .{0,40} meter över havet|Terrängen runt|Den högsta punkten i närheten",
+    r"ligger .{0,40} meter över havet|Terrängen runt|Den högsta punkten i närheten|"
+    r"delavrinningsområde|avrinningsområde|Medelhöjden är|SMHI kallar|ytan är kvadratkilometer",
     __import__("re").I,
 )
 

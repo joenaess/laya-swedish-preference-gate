@@ -502,19 +502,20 @@
   },
   "tests": {
     "command": "pytest -v --cov=src/laya_gate (all markers; skips listed)",
-    "total": 171,
-    "passed": 171,
+    "total": 176,
+    "passed": 176,
     "failed": 0,
     "errors": 0,
     "skipped": 0,
     "skipped_tests": {},
     "all_passed": true,
-    "coverage_percent": 44.7,
+    "coverage_percent": 42.8,
     "coverage_per_module": {
       "__init__.py": 100.0,
       "arena_eval.py": 37.4,
       "benchmark.py": 63.2,
       "calibrate.py": 64.3,
+      "ckpt_eval.py": 15.9,
       "cpu.py": 0.0,
       "data.py": 70.9,
       "external_eval.py": 38.5,
@@ -529,7 +530,7 @@
       "probe.py": 46.0,
       "publish.py": 57.7,
       "publish_data.py": 0.0,
-      "readme.py": 69.6,
+      "readme.py": 68.2,
       "testing.py": 0.0,
       "train.py": 37.3,
       "utils.py": 100.0,
@@ -27046,6 +27047,478 @@
           "n": 35,
           "mean_abs_dev_from_0.5": 0.2878576533884302,
           "fraction_within_0.2": 0.2857142857142857
+        }
+      }
+    }
+  },
+  "checkpoint_signals": {
+    "checkpoints": [
+      {
+        "label": "apertus-210B",
+        "series": "apertus",
+        "progress": 210,
+        "revision": "step50000-tokens210B",
+        "repetition": 0.19629051181460155,
+        "swedish_share": 1.0,
+        "continuation_chrf": 21.46526926110294,
+        "translation_chrf": 62.18502031718873,
+        "bits_per_byte": 0.95169620154063,
+        "minimal_pairs/multiblimp": 1.0,
+        "minimal_pairs/blimppi": 0.9491525423728814,
+        "minimal_pairs/gerlangmod": 0.9774881516587678,
+        "minimal_pairs/dalaj": 0.814,
+        "minimal_pairs/mean": 0.9351601735079124,
+        "gate/continuation_natural": 0.6260393240998882,
+        "gate/continuation_grammatical": 0.4995518779681716,
+        "gate/continuation_vs_human": 0.418795247687374,
+        "gate/translation_vs_reference": 0.39104719640093344,
+        "kimi/continuation": 0.0,
+        "kimi/translation": 0.12
+      },
+      {
+        "label": "apertus-840B",
+        "series": "apertus",
+        "progress": 840,
+        "revision": "step200000-tokens840B",
+        "repetition": 0.19317047504776996,
+        "swedish_share": 1.0,
+        "continuation_chrf": 21.02444306802854,
+        "translation_chrf": 63.88581895233674,
+        "bits_per_byte": 0.9125202814987771,
+        "minimal_pairs/multiblimp": 1.0,
+        "minimal_pairs/blimppi": 0.9661016949152542,
+        "minimal_pairs/gerlangmod": 0.981042654028436,
+        "minimal_pairs/dalaj": 0.84,
+        "minimal_pairs/mean": 0.9467860872359226,
+        "gate/continuation_natural": 0.6237995730659022,
+        "gate/continuation_grammatical": 0.5026924213480489,
+        "gate/continuation_vs_human": 0.44644637623974803,
+        "gate/translation_vs_reference": 0.37385493639843326,
+        "kimi/continuation": 0.03,
+        "kimi/translation": 0.23
+      },
+      {
+        "label": "apertus-2100B",
+        "series": "apertus",
+        "progress": 2100,
+        "revision": "step500000-tokens2100B",
+        "repetition": 0.22548558040827782,
+        "swedish_share": 1.0,
+        "continuation_chrf": 21.283707028367715,
+        "translation_chrf": 64.99172526326572,
+        "bits_per_byte": 0.9007711551931838,
+        "minimal_pairs/multiblimp": 1.0,
+        "minimal_pairs/blimppi": 0.9322033898305084,
+        "minimal_pairs/gerlangmod": 0.9751184834123223,
+        "minimal_pairs/dalaj": 0.832,
+        "minimal_pairs/mean": 0.9348304683107076,
+        "gate/continuation_natural": 0.6175799904437821,
+        "gate/continuation_grammatical": 0.49805106325447235,
+        "gate/continuation_vs_human": 0.4063218770708973,
+        "gate/translation_vs_reference": 0.3591635598720012,
+        "kimi/continuation": 0.01,
+        "kimi/translation": 0.27
+      },
+      {
+        "label": "apertus-3990B",
+        "series": "apertus",
+        "progress": 3990,
+        "revision": "step950000-tokens3990B",
+        "repetition": 0.22105384883305593,
+        "swedish_share": 0.985,
+        "continuation_chrf": 21.17683897624025,
+        "translation_chrf": 64.77803138819326,
+        "bits_per_byte": 0.9001491443061683,
+        "minimal_pairs/multiblimp": 1.0,
+        "minimal_pairs/blimppi": 0.9491525423728814,
+        "minimal_pairs/gerlangmod": 0.9834123222748815,
+        "minimal_pairs/dalaj": 0.82,
+        "minimal_pairs/mean": 0.9381412161619407,
+        "gate/continuation_natural": 0.6535951071711174,
+        "gate/continuation_grammatical": 0.5197921135471537,
+        "gate/continuation_vs_human": 0.4099196885065619,
+        "gate/translation_vs_reference": 0.30895728332213607,
+        "kimi/continuation": 0.01,
+        "kimi/translation": 0.13
+      },
+      {
+        "label": "apertus-7232B",
+        "series": "apertus",
+        "progress": 7232,
+        "revision": "step1700000-tokens7232B",
+        "repetition": 0.19611293917138276,
+        "swedish_share": 0.93,
+        "continuation_chrf": 20.84172981731064,
+        "translation_chrf": 66.22431731999242,
+        "bits_per_byte": 0.8789415781315707,
+        "minimal_pairs/multiblimp": 0.9950248756218906,
+        "minimal_pairs/blimppi": 1.0,
+        "minimal_pairs/gerlangmod": 0.976303317535545,
+        "minimal_pairs/dalaj": 0.814,
+        "minimal_pairs/mean": 0.9463320482893589,
+        "gate/continuation_natural": 0.64597877088007,
+        "gate/continuation_grammatical": 0.4959195491944275,
+        "gate/continuation_vs_human": 0.419853089626477,
+        "gate/translation_vs_reference": 0.3640093569347711,
+        "kimi/continuation": 0.0,
+        "kimi/translation": 0.24
+      },
+      {
+        "label": "apertus-12272B",
+        "series": "apertus",
+        "progress": 12272,
+        "revision": "step2300000-tokens12272B",
+        "repetition": 0.13973910293537745,
+        "swedish_share": 0.965,
+        "continuation_chrf": 20.82224466745671,
+        "translation_chrf": 66.0023006072061,
+        "bits_per_byte": 0.8879426302064453,
+        "minimal_pairs/multiblimp": 1.0,
+        "minimal_pairs/blimppi": 0.9491525423728814,
+        "minimal_pairs/gerlangmod": 0.9691943127962085,
+        "minimal_pairs/dalaj": 0.818,
+        "minimal_pairs/mean": 0.9340867137922725,
+        "gate/continuation_natural": 0.6715654492345681,
+        "gate/continuation_grammatical": 0.5204304675506488,
+        "gate/continuation_vs_human": 0.4234229198191239,
+        "gate/translation_vs_reference": 0.346151828007596,
+        "kimi/continuation": 0.05,
+        "kimi/translation": 0.25
+      },
+      {
+        "label": "apertus-15T",
+        "series": "apertus",
+        "progress": 15000,
+        "revision": "step2627139-tokens15T",
+        "repetition": 0.1964551249364517,
+        "swedish_share": 0.945,
+        "continuation_chrf": 20.380721634711843,
+        "translation_chrf": 66.5277653170864,
+        "bits_per_byte": 0.9009166946208349,
+        "minimal_pairs/multiblimp": 0.9950248756218906,
+        "minimal_pairs/blimppi": 0.9491525423728814,
+        "minimal_pairs/gerlangmod": 0.9656398104265402,
+        "minimal_pairs/dalaj": 0.828,
+        "minimal_pairs/mean": 0.9344543071053281,
+        "gate/continuation_natural": 0.6032768944087169,
+        "gate/continuation_grammatical": 0.4837140840089442,
+        "gate/continuation_vs_human": 0.3987787171428392,
+        "gate/translation_vs_reference": 0.3189294551435296,
+        "kimi/continuation": 0.02,
+        "kimi/translation": 0.2
+      },
+      {
+        "label": "goldfish-5mb",
+        "series": "goldfish",
+        "progress": 5.0,
+        "revision": null,
+        "repetition": 0.6568951741613503,
+        "swedish_share": 0.975,
+        "continuation_chrf": 9.238603924259031,
+        "translation_chrf": 0.8966859661498985,
+        "bits_per_byte": 2.1970643736681525,
+        "minimal_pairs/multiblimp": 0.9850746268656716,
+        "minimal_pairs/blimppi": 0.2711864406779661,
+        "minimal_pairs/gerlangmod": 0.8672985781990521,
+        "minimal_pairs/dalaj": 0.59,
+        "minimal_pairs/mean": 0.6783899114356724,
+        "gate/continuation_natural": 0.2880943862505601,
+        "gate/continuation_grammatical": 0.4196847508591716,
+        "gate/continuation_vs_human": 0.17691773443118336,
+        "gate/translation_vs_reference": 0.05905127032405762,
+        "kimi/continuation": 0.0,
+        "kimi/translation": 0.0
+      },
+      {
+        "label": "goldfish-10mb",
+        "series": "goldfish",
+        "progress": 10.0,
+        "revision": null,
+        "repetition": 0.5366083891395319,
+        "swedish_share": 0.97,
+        "continuation_chrf": 9.109871488161577,
+        "translation_chrf": 1.2901123031171604,
+        "bits_per_byte": 2.065051180564218,
+        "minimal_pairs/multiblimp": 0.9950248756218906,
+        "minimal_pairs/blimppi": 0.3559322033898305,
+        "minimal_pairs/gerlangmod": 0.9040284360189573,
+        "minimal_pairs/dalaj": 0.572,
+        "minimal_pairs/mean": 0.7067463787576697,
+        "gate/continuation_natural": 0.3382293834697914,
+        "gate/continuation_grammatical": 0.4199224725643539,
+        "gate/continuation_vs_human": 0.22488471025923132,
+        "gate/translation_vs_reference": 0.0836497928997077,
+        "kimi/continuation": 0.0,
+        "kimi/translation": 0.0
+      },
+      {
+        "label": "goldfish-100mb",
+        "series": "goldfish",
+        "progress": 100.0,
+        "revision": null,
+        "repetition": 0.39840668414944874,
+        "swedish_share": 0.98,
+        "continuation_chrf": 13.830826050993672,
+        "translation_chrf": 12.11799662098328,
+        "bits_per_byte": 1.475273293683914,
+        "minimal_pairs/multiblimp": 0.9950248756218906,
+        "minimal_pairs/blimppi": 0.9322033898305084,
+        "minimal_pairs/gerlangmod": 0.9751184834123223,
+        "minimal_pairs/dalaj": 0.77,
+        "minimal_pairs/mean": 0.9180866872161804,
+        "gate/continuation_natural": 0.7312425957832605,
+        "gate/continuation_grammatical": 0.6094109822712582,
+        "gate/continuation_vs_human": 0.6375080364520729,
+        "gate/translation_vs_reference": 0.059143375485744006,
+        "kimi/continuation": 0.0,
+        "kimi/translation": 0.0
+      },
+      {
+        "label": "goldfish-1000mb",
+        "series": "goldfish",
+        "progress": 1000.0,
+        "revision": null,
+        "repetition": 0.31607394937330324,
+        "swedish_share": 0.985,
+        "continuation_chrf": 16.495776083720422,
+        "translation_chrf": 9.966230016151377,
+        "bits_per_byte": 1.1736822553289552,
+        "minimal_pairs/multiblimp": 1.0,
+        "minimal_pairs/blimppi": 0.9322033898305084,
+        "minimal_pairs/gerlangmod": 0.9834123222748815,
+        "minimal_pairs/dalaj": 0.836,
+        "minimal_pairs/mean": 0.9379039280263475,
+        "gate/continuation_natural": 0.7735975190292489,
+        "gate/continuation_grammatical": 0.6093102642530107,
+        "gate/continuation_vs_human": 0.5800203104423375,
+        "gate/translation_vs_reference": 0.031843184240684795,
+        "kimi/continuation": 0.0,
+        "kimi/translation": 0.0
+      }
+    ],
+    "signals": {
+      "bits_per_byte": {
+        "spearman_with_kimi_continuation": 0.5516996734132338,
+        "spearman_with_kimi_translation": 0.8560454735665932,
+        "spearman_with_progress_goldfish": 1.0,
+        "spearman_with_progress_apertus": 0.6071428571428572
+      },
+      "continuation_chrf": {
+        "spearman_with_kimi_continuation": 0.35288898029134774,
+        "spearman_with_kimi_translation": 0.6513389472789295,
+        "spearman_with_progress_goldfish": 0.7999999999999999,
+        "spearman_with_progress_apertus": -0.8928571428571429
+      },
+      "gate/continuation_grammatical": {
+        "spearman_with_kimi_continuation": 0.164018821825556,
+        "spearman_with_kimi_translation": 0.0,
+        "spearman_with_progress_goldfish": 0.7999999999999999,
+        "spearman_with_progress_apertus": -0.21428571428571433
+      },
+      "gate/continuation_natural": {
+        "spearman_with_kimi_continuation": -0.004970267328047151,
+        "spearman_with_kimi_translation": 0.0,
+        "spearman_with_progress_goldfish": 1.0,
+        "spearman_with_progress_apertus": 0.07142857142857144
+      },
+      "gate/continuation_vs_human": {
+        "spearman_with_kimi_continuation": 0.059643207936565815,
+        "spearman_with_kimi_translation": 0.037219368415938835,
+        "spearman_with_progress_goldfish": 0.7999999999999999,
+        "spearman_with_progress_apertus": -0.28571428571428575
+      },
+      "gate/translation_vs_reference": {
+        "spearman_with_kimi_continuation": 0.3727700496035363,
+        "spearman_with_kimi_translation": 0.6978631577988532,
+        "spearman_with_progress_goldfish": -0.39999999999999997,
+        "spearman_with_progress_apertus": -0.7142857142857144
+      },
+      "minimal_pairs/blimppi": {
+        "spearman_with_kimi_continuation": 0.44686540167011496,
+        "spearman_with_kimi_translation": 0.6202209798130642,
+        "spearman_with_progress_goldfish": 0.9486832980505139,
+        "spearman_with_progress_apertus": 0.03940552031195503
+      },
+      "minimal_pairs/dalaj": {
+        "spearman_with_kimi_continuation": 0.5928106434633027,
+        "spearman_with_kimi_translation": 0.4849552156735284,
+        "spearman_with_progress_goldfish": 0.7999999999999999,
+        "spearman_with_progress_apertus": -0.07207499701564472
+      },
+      "minimal_pairs/gerlangmod": {
+        "spearman_with_kimi_continuation": 0.03994411732627059,
+        "spearman_with_kimi_translation": 0.10282170157812787,
+        "spearman_with_progress_goldfish": 1.0,
+        "spearman_with_progress_apertus": -0.6785714285714287
+      },
+      "minimal_pairs/mean": {
+        "spearman_with_kimi_continuation": 0.23857283174626326,
+        "spearman_with_kimi_translation": 0.4373275788872813,
+        "spearman_with_progress_goldfish": 1.0,
+        "spearman_with_progress_apertus": -0.5357142857142858
+      },
+      "minimal_pairs/multiblimp": {
+        "spearman_with_kimi_continuation": 0.459754525374666,
+        "spearman_with_kimi_translation": 0.4303534380397734,
+        "spearman_with_progress_goldfish": 0.9486832980505139,
+        "spearman_with_progress_apertus": -0.6324555320336758
+      },
+      "repetition": {
+        "spearman_with_kimi_continuation": 0.6461347526461295,
+        "spearman_with_kimi_translation": 0.7443873683187767,
+        "spearman_with_progress_goldfish": 1.0,
+        "spearman_with_progress_apertus": 0.10714285714285716
+      },
+      "swedish_share": {
+        "spearman_with_kimi_continuation": 0.03519410282433275,
+        "spearman_with_kimi_translation": -0.01647172818672541,
+        "spearman_with_progress_goldfish": 0.7999999999999999,
+        "spearman_with_progress_apertus": -0.8524367141602663
+      },
+      "translation_chrf": {
+        "spearman_with_kimi_continuation": 0.6163131486778467,
+        "spearman_with_kimi_translation": 0.8281309472546391,
+        "spearman_with_progress_goldfish": 0.7999999999999999,
+        "spearman_with_progress_apertus": 0.9285714285714288
+      }
+    },
+    "note": "signals oriented so that higher is better (bits per byte and repetition negated); progress = log10 of Swedish training data (Goldfish, MB) or training tokens (Apertus, B)",
+    "judge": {
+      "requests": 2200,
+      "parse_failures": 0,
+      "metric": "share of the two slot orders in which Kimi-k3 prefers the checkpoint's output to the human reference (continuation of a Wikipedia opening, FLORES+ translation)"
+    },
+    "versus_final": {
+      "versus": {
+        "goldfish": "goldfish-1000mb",
+        "apertus": "apertus-15T"
+      },
+      "pairs": {
+        "apertus-210B/continuation": {
+          "kimi_checkpoint_wins": 0.47,
+          "gate_checkpoint_wins": 0.58,
+          "gate_mean_p": 0.5973865919817947,
+          "n": 50,
+          "n_kimi_decided": 47,
+          "gate_agrees_with_kimi": 0.6170212765957447
+        },
+        "apertus-210B/translation": {
+          "kimi_checkpoint_wins": 0.37,
+          "gate_checkpoint_wins": 0.58,
+          "gate_mean_p": 0.5613589517699012,
+          "n": 50,
+          "n_kimi_decided": 45,
+          "gate_agrees_with_kimi": 0.5777777777777777,
+          "chrf_agrees_with_kimi": 0.6444444444444445
+        },
+        "apertus-840B/continuation": {
+          "kimi_checkpoint_wins": 0.53,
+          "gate_checkpoint_wins": 0.62,
+          "gate_mean_p": 0.5475750266921426,
+          "n": 50,
+          "n_kimi_decided": 43,
+          "gate_agrees_with_kimi": 0.7209302325581395
+        },
+        "apertus-840B/translation": {
+          "kimi_checkpoint_wins": 0.52,
+          "gate_checkpoint_wins": 0.62,
+          "gate_mean_p": 0.5481307518254113,
+          "n": 50,
+          "n_kimi_decided": 42,
+          "gate_agrees_with_kimi": 0.5952380952380952,
+          "chrf_agrees_with_kimi": 0.7380952380952381
+        },
+        "apertus-2100B/continuation": {
+          "kimi_checkpoint_wins": 0.49,
+          "gate_checkpoint_wins": 0.56,
+          "gate_mean_p": 0.504604373681195,
+          "n": 50,
+          "n_kimi_decided": 41,
+          "gate_agrees_with_kimi": 0.5365853658536586
+        },
+        "apertus-2100B/translation": {
+          "kimi_checkpoint_wins": 0.55,
+          "gate_checkpoint_wins": 0.62,
+          "gate_mean_p": 0.5748731285446588,
+          "n": 50,
+          "n_kimi_decided": 41,
+          "gate_agrees_with_kimi": 0.5609756097560976,
+          "chrf_agrees_with_kimi": 0.5853658536585366
+        },
+        "apertus-3990B/continuation": {
+          "kimi_checkpoint_wins": 0.53,
+          "gate_checkpoint_wins": 0.6,
+          "gate_mean_p": 0.5742043512280496,
+          "n": 50,
+          "n_kimi_decided": 41,
+          "gate_agrees_with_kimi": 0.4878048780487805
+        },
+        "apertus-3990B/translation": {
+          "kimi_checkpoint_wins": 0.36,
+          "gate_checkpoint_wins": 0.52,
+          "gate_mean_p": 0.5006747567072223,
+          "n": 50,
+          "n_kimi_decided": 40,
+          "gate_agrees_with_kimi": 0.675,
+          "chrf_agrees_with_kimi": 0.675
+        },
+        "apertus-7232B/continuation": {
+          "kimi_checkpoint_wins": 0.56,
+          "gate_checkpoint_wins": 0.56,
+          "gate_mean_p": 0.5619932089144338,
+          "n": 50,
+          "n_kimi_decided": 44,
+          "gate_agrees_with_kimi": 0.6363636363636364
+        },
+        "apertus-7232B/translation": {
+          "kimi_checkpoint_wins": 0.55,
+          "gate_checkpoint_wins": 0.52,
+          "gate_mean_p": 0.5202359653849444,
+          "n": 50,
+          "n_kimi_decided": 41,
+          "gate_agrees_with_kimi": 0.7073170731707317,
+          "chrf_agrees_with_kimi": 0.6097560975609756
+        },
+        "apertus-12272B/continuation": {
+          "kimi_checkpoint_wins": 0.56,
+          "gate_checkpoint_wins": 0.7,
+          "gate_mean_p": 0.6483482352995363,
+          "n": 50,
+          "n_kimi_decided": 42,
+          "gate_agrees_with_kimi": 0.5714285714285714
+        },
+        "apertus-12272B/translation": {
+          "kimi_checkpoint_wins": 0.52,
+          "gate_checkpoint_wins": 0.56,
+          "gate_mean_p": 0.529543769104057,
+          "n": 50,
+          "n_kimi_decided": 40,
+          "gate_agrees_with_kimi": 0.575,
+          "chrf_agrees_with_kimi": 0.75
+        },
+        "goldfish-5mb/continuation": {
+          "kimi_checkpoint_wins": 0.04,
+          "gate_checkpoint_wins": 0.06,
+          "gate_mean_p": 0.08447142760483956,
+          "n": 50,
+          "n_kimi_decided": 48,
+          "gate_agrees_with_kimi": 0.9583333333333334
+        },
+        "goldfish-10mb/continuation": {
+          "kimi_checkpoint_wins": 0.03,
+          "gate_checkpoint_wins": 0.14,
+          "gate_mean_p": 0.16223024294591448,
+          "n": 50,
+          "n_kimi_decided": 49,
+          "gate_agrees_with_kimi": 0.8775510204081632
+        },
+        "goldfish-100mb/continuation": {
+          "kimi_checkpoint_wins": 0.24,
+          "gate_checkpoint_wins": 0.52,
+          "gate_mean_p": 0.5026805188921247,
+          "n": 50,
+          "n_kimi_decided": 40,
+          "gate_agrees_with_kimi": 0.475
         }
       }
     }

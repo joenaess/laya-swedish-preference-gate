@@ -75,6 +75,9 @@ if [[ -f cache/fluent/train.jsonl ]]; then
     step "5q/8 arena_sv"            arena_eval build   # Swedish Chatbot Arena human votes
     step "5q/8 arena_sv"            arena_eval gate
     step "5q/8 arena_sv"            arena_eval judge   # skips without BASE_URL/API_KEY
+    for cmd in prepare "run --delete-after" score judge versus-final analyze; do
+        step "5r/8 checkpoint signals" ckpt_eval $cmd   # Goldfish ladder + Apertus-8B checkpoints
+    done
 else
     echo "note: no fluent training pairs; skipping v2 and v3" >&2
 fi

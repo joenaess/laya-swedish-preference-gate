@@ -234,3 +234,8 @@ def test_bot_text_filter_matches_stub_templates_only():
         "Runt Byn är det ganska glesbefolkat, med invånare per kvadratkilometer."
     )
     assert not v4._BOT_TEXT.search("Maffei verkade främst som översättare av tysk poesi.")
+
+
+def test_bot_text_filter_matches_lake_stubs():
+    assert v4._BOT_TEXT.search("Medelhöjden är meter över havet och ytan är kvadratkilometer.")
+    assert v4._BOT_TEXT.search("Sjön ingår i det delavrinningsområde som SMHI kallar för Mynnar.")

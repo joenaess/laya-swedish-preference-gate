@@ -1719,6 +1719,91 @@ prefer. Improving that needs human preference data on Swedish answers, which is 
 small and must stay a test set.{length_part}"""
 
 
+def checkpoint_section(m: dict) -> str:
+    C = m.get("checkpoint_signals")
+    if not isinstance(C, dict) or not C.get("checkpoints"):
+        return "Not measured: run `python -m laya_gate.ckpt_eval prepare|run|score|judge|versus-final|analyze`."
+    rows = []
+    for c in C["checkpoints"]:
+        rows.append(
+            f"| {c['label']} | {num(c.get('bits_per_byte'), 3)} | {pct(c.get('minimal_pairs/mean'))} | "
+            f"{pct(c.get('repetition'))} | {num(c.get('gate/continuation_natural'), 2)} | "
+            f"{num(c.get('gate/continuation_vs_human'), 2)} | {num(c.get('translation_chrf'), 1)} | "
+            f"{num(c.get('gate/translation_vs_reference'), 2)} |"
+        )
+    VF = get(C, "versus_final.pairs", {})
+    vf_rows = "\n".join(
+        f"| {k.split('/')[0]} | {k.split('/')[1]} | {pct(e.get('kimi_checkpoint_wins'))} | "
+        f"{pct(e.get('gate_checkpoint_wins'))} | {pct(e.get('gate_agrees_with_kimi'))} | "
+        f"{pct(e.get('chrf_agrees_with_kimi')) if e.get('chrf_agrees_with_kimi') is not None else '—'} |"
+        for k, e in VF.items()
+    )
+
+    def mean_of(key, series, setup):
+        xs = [e.get(key) for k, e in VF.items() if k.startswith(series) and k.endswith(setup)]
+        xs = [x for x in xs if isinstance(x, float)]
+        return sum(xs) / len(xs) if xs else None
+
+    S = C.get("signals", {})
+
+    def rho(f, which):
+        return num(get(S, f"{f}.spearman_with_{which}"), 2)
+
+    return f"""Can the gate replace a large LLM judge for early signals of Swedish during pretraining
+(`python -m laya_gate.ckpt_eval`)? Two checkpoint series: the Goldfish Swedish models
+(`goldfish-models/swe_latn_{{5,10,100,1000}}mb`, the same 125M architecture on more Swedish data,
+a stand-in for the start of training) and seven intermediate checkpoints of
+`swiss-ai/Apertus-8B-2509` (multilingual; 210B to 15T training tokens, 4-bit NF4). Each continues
+200 held-out Swedish Wikipedia openings (greedy, 64 tokens) and translates 100 FLORES+ sentences
+5-shot. Signals without a gate: bits per byte on the held-out Swedish paragraphs, minimal-pair
+accuracy from log-probabilities (mean of MultiBLiMP, BLiMPPI, GerLangMod, DaLAJ), repetition (share
+of repeated word 3-grams), chrF. Gate (v4.1): `natural_swedish` on continuations, continuation vs
+the real Wikipedia continuation, translation vs reference.
+
+| Checkpoint | Bits/byte ↓ | Minimal pairs | Repetition ↓ | Gate natural | Gate vs human | Translation chrF | Gate translation |
+|---|---|---|---|---|---|---|---|
+{chr(10).join(rows)}
+
+Spearman with training progress, Goldfish / Apertus: bits per byte {rho("bits_per_byte", "progress_goldfish")} /
+{rho("bits_per_byte", "progress_apertus")}; minimal pairs {rho("minimal_pairs/mean", "progress_goldfish")} /
+{rho("minimal_pairs/mean", "progress_apertus")}; gate `natural_swedish`
+{rho("gate/continuation_natural", "progress_goldfish")} / {rho("gate/continuation_natural", "progress_apertus")};
+translation chrF — / {rho("translation_chrf", "progress_apertus")}; gate translation —
+/ {rho("gate/translation_vs_reference", "progress_apertus")} (signals oriented so higher is better).
+
+**Kimi-k3 as the reference.** Against the human reference every checkpoint loses almost always,
+so that comparison cannot rank checkpoints. Instead Kimi-k3 compared each checkpoint's output with
+the last checkpoint of its series on the same 50 continuations and 50 translations (both orders),
+and the gate made the same comparison:
+
+| Checkpoint vs last | Task | Kimi-k3: checkpoint wins | Gate: checkpoint wins | Gate agrees with Kimi-k3 | chrF agrees with Kimi-k3 |
+|---|---|---|---|---|---|
+{vf_rows}
+
+**What this shows.** While a model is still acquiring Swedish (the Goldfish ladder), everything
+moves together: bits per byte, minimal pairs, repetition and the gate's `natural_swedish` score all
+track the amount of Swedish data perfectly, and on gross differences (5 MB or 10 MB vs 1000 MB) the
+gate agrees with Kimi-k3 on almost every item; on the finer step from 100 MB to 1000 MB, which Kimi-k3
+does see (the 100 MB model wins {pct(get(VF, "goldfish-100mb/continuation.kimi_checkpoint_wins"))}),
+the gate is at chance ({pct(get(VF, "goldfish-100mb/continuation.gate_agrees_with_kimi"))} agreement). From the first public Apertus checkpoint (210B tokens)
+on, Swedish fluency is already saturated: minimal pairs sit at their ceiling, Kimi-k3 itself sees
+the intermediate checkpoints as roughly equal to the final one, and the gate's checkpoint-level
+scores are flat while its per-item agreement with Kimi-k3 is near chance (mean
+{pct(mean_of("gate_agrees_with_kimi", "apertus", "continuation"))} on continuations,
+{pct(mean_of("gate_agrees_with_kimi", "apertus", "translation"))} on translations, chrF
+{pct(mean_of("chrf_agrees_with_kimi", "apertus", "translation"))}). Only bits per byte and few-shot
+translation chrF keep moving. The gate's translation score even falls while chrF rises.
+
+So, for monitoring Swedish during pretraining: the gate works as a cheap, interpretable "is the
+Swedish fluent yet" check on generated text early in training, but bits per byte and log-probability
+minimal pairs give the same early signal without generation, and later in training neither the
+gate nor fluency judging separates checkpoints; translation chrF and perplexity do. The gate adds
+value mainly where the free signals cannot look: generation-level failures such as repetition,
+code-switching or broken output. Caveats: the earliest Apertus checkpoint is already 210B tokens,
+the Goldfish ladder is four separate models rather than one run, and there are 11 checkpoints and
+50 judged items per comparison."""
+
+
 def mt_section(m: dict) -> str:
     mt = m.get("mt_naturalness")
     if not isinstance(mt, dict) or not mt.get("models"):
@@ -2420,6 +2505,10 @@ Requires Python ≥ 3.11. A CUDA GPU is optional for inference and needed for tr
 ### Human preference on Swedish answers (Chatbot Arena)
 
 {arena_section(m)}
+
+### Monitoring Swedish during pretraining (checkpoint signals)
+
+{checkpoint_section(m)}
 
 ### Tests
 

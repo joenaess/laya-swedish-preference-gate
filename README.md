@@ -1188,11 +1188,91 @@ worse; the EuroEval pilot correlation drops). Balancing the base data alone (v4.
 touch the bias. Synthetic "correct vs flawed" pairs do not teach what people prefer in Swedish
 answers; that needs human preference data.
 
+### Monitoring Swedish during pretraining (checkpoint signals)
+
+Can the gate replace a large LLM judge for early signals of Swedish during pretraining
+(`python -m laya_gate.ckpt_eval`)? Two checkpoint series: the Goldfish Swedish models
+(`goldfish-models/swe_latn_{5,10,100,1000}mb`, the same 125M architecture on more Swedish data,
+a stand-in for the start of training) and seven intermediate checkpoints of
+`swiss-ai/Apertus-8B-2509` (multilingual; 210B to 15T training tokens, 4-bit NF4). Each continues
+200 held-out Swedish Wikipedia openings (greedy, 64 tokens) and translates 100 FLORES+ sentences
+5-shot. Signals without a gate: bits per byte on the held-out Swedish paragraphs, minimal-pair
+accuracy from log-probabilities (mean of MultiBLiMP, BLiMPPI, GerLangMod, DaLAJ), repetition (share
+of repeated word 3-grams), chrF. Gate (v4.1): `natural_swedish` on continuations, continuation vs
+the real Wikipedia continuation, translation vs reference.
+
+| Checkpoint | Bits/byte ↓ | Minimal pairs | Repetition ↓ | Gate natural | Gate vs human | Translation chrF | Gate translation |
+|---|---|---|---|---|---|---|---|
+| apertus-210B | 0.952 | 93.5% | 19.6% | 0.63 | 0.42 | 62.2 | 0.39 |
+| apertus-840B | 0.913 | 94.7% | 19.3% | 0.62 | 0.45 | 63.9 | 0.37 |
+| apertus-2100B | 0.901 | 93.5% | 22.5% | 0.62 | 0.41 | 65.0 | 0.36 |
+| apertus-3990B | 0.900 | 93.8% | 22.1% | 0.65 | 0.41 | 64.8 | 0.31 |
+| apertus-7232B | 0.879 | 94.6% | 19.6% | 0.65 | 0.42 | 66.2 | 0.36 |
+| apertus-12272B | 0.888 | 93.4% | 14.0% | 0.67 | 0.42 | 66.0 | 0.35 |
+| apertus-15T | 0.901 | 93.4% | 19.6% | 0.60 | 0.40 | 66.5 | 0.32 |
+| goldfish-5mb | 2.197 | 67.8% | 65.7% | 0.29 | 0.18 | 0.9 | 0.06 |
+| goldfish-10mb | 2.065 | 70.7% | 53.7% | 0.34 | 0.22 | 1.3 | 0.08 |
+| goldfish-100mb | 1.475 | 91.8% | 39.8% | 0.73 | 0.64 | 12.1 | 0.06 |
+| goldfish-1000mb | 1.174 | 93.8% | 31.6% | 0.77 | 0.58 | 10.0 | 0.03 |
+
+Spearman with training progress, Goldfish / Apertus: bits per byte 1.00 /
+0.61; minimal pairs 1.00 /
+-0.54; gate `natural_swedish`
+1.00 / 0.07;
+translation chrF — / 0.93; gate translation —
+/ -0.71 (signals oriented so higher is better).
+
+**Kimi-k3 as the reference.** Against the human reference every checkpoint loses almost always,
+so that comparison cannot rank checkpoints. Instead Kimi-k3 compared each checkpoint's output with
+the last checkpoint of its series on the same 50 continuations and 50 translations (both orders),
+and the gate made the same comparison:
+
+| Checkpoint vs last | Task | Kimi-k3: checkpoint wins | Gate: checkpoint wins | Gate agrees with Kimi-k3 | chrF agrees with Kimi-k3 |
+|---|---|---|---|---|---|
+| apertus-210B | continuation | 47.0% | 58.0% | 61.7% | — |
+| apertus-210B | translation | 37.0% | 58.0% | 57.8% | 64.4% |
+| apertus-840B | continuation | 53.0% | 62.0% | 72.1% | — |
+| apertus-840B | translation | 52.0% | 62.0% | 59.5% | 73.8% |
+| apertus-2100B | continuation | 49.0% | 56.0% | 53.7% | — |
+| apertus-2100B | translation | 55.0% | 62.0% | 56.1% | 58.5% |
+| apertus-3990B | continuation | 53.0% | 60.0% | 48.8% | — |
+| apertus-3990B | translation | 36.0% | 52.0% | 67.5% | 67.5% |
+| apertus-7232B | continuation | 56.0% | 56.0% | 63.6% | — |
+| apertus-7232B | translation | 55.0% | 52.0% | 70.7% | 61.0% |
+| apertus-12272B | continuation | 56.0% | 70.0% | 57.1% | — |
+| apertus-12272B | translation | 52.0% | 56.0% | 57.5% | 75.0% |
+| goldfish-5mb | continuation | 4.0% | 6.0% | 95.8% | — |
+| goldfish-10mb | continuation | 3.0% | 14.0% | 87.8% | — |
+| goldfish-100mb | continuation | 24.0% | 52.0% | 47.5% | — |
+
+**What this shows.** While a model is still acquiring Swedish (the Goldfish ladder), everything
+moves together: bits per byte, minimal pairs, repetition and the gate's `natural_swedish` score all
+track the amount of Swedish data perfectly, and on gross differences (5 MB or 10 MB vs 1000 MB) the
+gate agrees with Kimi-k3 on almost every item; on the finer step from 100 MB to 1000 MB, which Kimi-k3
+does see (the 100 MB model wins 24.0%),
+the gate is at chance (47.5% agreement). From the first public Apertus checkpoint (210B tokens)
+on, Swedish fluency is already saturated: minimal pairs sit at their ceiling, Kimi-k3 itself sees
+the intermediate checkpoints as roughly equal to the final one, and the gate's checkpoint-level
+scores are flat while its per-item agreement with Kimi-k3 is near chance (mean
+59.5% on continuations,
+61.5% on translations, chrF
+66.7%). Only bits per byte and few-shot
+translation chrF keep moving. The gate's translation score even falls while chrF rises.
+
+So, for monitoring Swedish during pretraining: the gate works as a cheap, interpretable "is the
+Swedish fluent yet" check on generated text early in training, but bits per byte and log-probability
+minimal pairs give the same early signal without generation, and later in training neither the
+gate nor fluency judging separates checkpoints; translation chrF and perplexity do. The gate adds
+value mainly where the free signals cannot look: generation-level failures such as repetition,
+code-switching or broken output. Caveats: the earliest Apertus checkpoint is already 210B tokens,
+the Goldfish ladder is four separate models rather than one run, and there are 11 checkpoints and
+50 judged items per comparison.
+
 ### Tests
 
-`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **171 passed, 0 failed,
-0 errors, 0 skipped** of 171.
-Coverage: **44.7%** overall — `__init__.py` 100.0% · `arena_eval.py` 37.4% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `cpu.py` 0.0% · `data.py` 70.9% · `external_eval.py` 38.5% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `ngram.py` 61.0% · `onnx_export.py` 87.2% · `pilot.py` 37.1% · `predictor.py` 81.1% · `probe.py` 46.0% · `publish.py` 57.7% · `publish_data.py` 0.0% · `readme.py` 69.6% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 18.0% · `v4.py` 28.3%.
+`pytest -v --cov=src/laya_gate (all markers; skips listed)`: **176 passed, 0 failed,
+0 errors, 0 skipped** of 176.
+Coverage: **42.8%** overall — `__init__.py` 100.0% · `arena_eval.py` 37.4% · `benchmark.py` 63.2% · `calibrate.py` 64.3% · `ckpt_eval.py` 15.9% · `cpu.py` 0.0% · `data.py` 70.9% · `external_eval.py` 38.5% · `fluent.py` 20.6% · `judge.py` 79.3% · `liu_eval.py` 36.6% · `mtqa.py` 0.0% · `ngram.py` 61.0% · `onnx_export.py` 87.2% · `pilot.py` 37.1% · `predictor.py` 81.1% · `probe.py` 46.0% · `publish.py` 57.7% · `publish_data.py` 0.0% · `readme.py` 68.2% · `testing.py` 0.0% · `train.py` 37.3% · `utils.py` 100.0% · `v2.py` 29.4% · `v3.py` 18.0% · `v4.py` 28.3%.
 
 
 ## Limitations
