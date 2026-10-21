@@ -68,3 +68,22 @@ def test_metrics():
         {"label": "b", "response_a": "lång " * 5, "response_b": "kort"},
     ]
     assert A.length_baseline(rows)["accuracy_longer_wins"] == 0.5
+
+
+def test_from_33k():
+    row = {
+        "question_id": "q1",
+        "model_a": "x",
+        "model_b": "y",
+        "winner": "tie (bothbad)",
+        "conversation_a": [
+            {"role": "user", "content": SV},
+            {"role": "assistant", "content": SV + " a"},
+        ],
+        "conversation_b": [
+            {"role": "user", "content": SV},
+            {"role": "assistant", "content": SV + " b"},
+        ],
+    }
+    r = A.from_33k(row)
+    assert r["id"] == "arena-33k-q1" and r["label"] == "both_bad"

@@ -7,7 +7,8 @@
 Chatbot Arena users write a prompt, read two anonymous answers and vote for the better one (or
 tie / both bad). Sources: `lmarena-ai/arena-human-preference-140k` (CC BY 4.0, `language ==
 "sv"`), `lmarena-ai/arena-human-preference-100k` (`language == "Swedish"`) and
-`lmarena-ai/arena-human-preference-55k` (Apache-2.0, no language field). Kept: single-turn
+`lmarena-ai/arena-human-preference-55k` (Apache-2.0, no language field) and the gated
+`lmsys/chatbot_arena_conversations` (`language == "Swedish"`). Kept: single-turn
 battles whose prompt and both answers read as Swedish, deduplicated across sources. Decisive
 votes are the test; ties and both-bad votes check calibration (P should stay near 0.5). Never
 used for training.
@@ -35,6 +36,7 @@ SOURCES = {
     "arena-140k": "lmarena-ai/arena-human-preference-140k",
     "arena-100k": "lmarena-ai/arena-human-preference-100k",
     "arena-55k": "lmarena-ai/arena-human-preference-55k",
+    "arena-33k": "lmsys/chatbot_arena_conversations",  # gated: accept the terms on the Hub
 }
 
 
@@ -115,6 +117,21 @@ def from_100k(row) -> dict[str, Any] | None:
     )
 
 
+def from_33k(row) -> dict[str, Any] | None:
+    users, a = split_turns(row["conversation_a"])
+    _, b = split_turns(row["conversation_b"])
+    return battle(
+        "arena-33k",
+        row["question_id"],
+        users,
+        a,
+        b,
+        label_from_winner(row["winner"]),
+        row["model_a"],
+        row["model_b"],
+    )
+
+
 def from_55k(row) -> dict[str, Any] | None:
     def turns(s):
         try:
@@ -165,6 +182,9 @@ def build(args) -> None:
         elif source == "arena-100k":
             ds = ds.filter(lambda r: r["language"] == "Swedish")
             conv = from_100k
+        elif source == "arena-33k":
+            ds = ds.filter(lambda r: r["language"] == "Swedish")
+            conv = from_33k
         else:
             conv = from_55k
         s = Counter()
@@ -201,7 +221,13 @@ def gate_checkpoints() -> dict[str, Any]:
     from .v3 import V3_DIR
 
     out = {"v3": V3_DIR}
-    for name, arm in (("v4", "adequacy"), ("v4.1", "v41"), ("v4.2a", "v42a"), ("v4.2b", "v42b")):
+    for name, arm in (
+        ("v4", "adequacy"),
+        ("v4.1", "v41"),
+        ("v4.2a", "v42a"),
+        ("v4.2b", "v42b"),
+        ("v4.3", "v43"),
+    ):
         path = ROOT / "checkpoints" / f"v4-{arm}"
         if (path / "model.safetensors").exists():
             out[name] = path

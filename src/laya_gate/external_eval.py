@@ -63,6 +63,7 @@ SETS = (
     "wmt24pp",
     "blimppi",
     "multiblimp",
+    "wikiedits",
 )
 MT_SYSTEMS = ("opus", "kimi")
 EP_SAMPLE = 1000
@@ -609,6 +610,67 @@ def prepare_minimal_pairs(args=None) -> None:
     print(json.dumps(data["minimal_pairs"], indent=2))
 
 
+WIKIEDITS = "lang-uk/WikiEdits-MultiGEC"  # MIT; human Wikipedia edits, Sep 2024 - May 2025
+_DIGITS = re.compile(r"\d+")
+
+
+def wikiedits_pairs(rows, min_ratio: float = 0.8) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    """(edited, original) pairs from Swedish WikiEdits-MultiGEC rows: drops unchanged texts,
+    large rewrites (character similarity below `min_ratio`) and edits that change numbers
+    (factual updates, not language)."""
+    import difflib
+
+    out, dropped = [], Counter()
+    for r in rows:
+        orig, fixed = " ".join(r["text"].split()), " ".join(r["correction"].split())
+        if _norm(orig) == _norm(fixed):
+            dropped["unchanged"] += 1
+            continue
+        if sorted(_DIGITS.findall(orig)) != sorted(_DIGITS.findall(fixed)):
+            dropped["numbers_changed"] += 1
+            continue
+        ratio = difflib.SequenceMatcher(None, orig, fixed, autojunk=False).ratio()
+        if ratio < min_ratio:
+            dropped["large_rewrite"] += 1
+            continue
+        out.append(
+            {
+                "id": f"wikiedits-{r['index']}",
+                "prompt": "",
+                "ref": fixed,
+                "other": orig,
+                "similarity": round(ratio, 4),
+                "url": r.get("url", ""),
+            }
+        )
+    return out, dict(dropped)
+
+
+def prepare_wikiedits(args=None) -> None:
+    import pandas as pd
+    from huggingface_hub import hf_hub_download
+
+    main = pd.read_parquet(
+        hf_hub_download(WIKIEDITS, "wikiedits_multi_gec.parquet", repo_type="dataset")
+    )
+    meta = pd.read_parquet(
+        hf_hub_download(WIKIEDITS, "wikiedits_multi_gec_metadata.parquet", repo_type="dataset")
+    )
+    sv = main[main.language == "swedish"].merge(meta[["index", "url"]], on="index")
+    pairs, dropped = wikiedits_pairs(sv.to_dict("records"))
+    write_jsonl(EXT_DIR / "wikiedits.jsonl", pairs)
+    data = load_metrics().get("external_data") or {}
+    data["wikiedits"] = {
+        "source": f"{WIKIEDITS} (swedish, MIT)",
+        "rows": int(len(sv)),
+        "pairs": len(pairs),
+        "dropped": dropped,
+        "pages": len({p["url"] for p in pairs}),
+    }
+    update_metrics("external_data", data)
+    print(json.dumps(data["wikiedits"], indent=2))
+
+
 def wmt_rows() -> list[dict[str, Any]]:
     """WMT24++ en->sv segments not marked bad: source, post-edited human reference, domain."""
     from huggingface_hub import hf_hub_download
@@ -687,7 +749,7 @@ def load_sets() -> dict[str, list[dict[str, Any]]]:
     if (EXT_DIR / "gerlangmod.jsonl").exists():
         glm = read_jsonl(EXT_DIR / "gerlangmod.jsonl")
         sets["gerlangmod"] = [p for p in glm if p["treebank"] == "talbanken"]
-    for name in ("blimppi", "multiblimp"):
+    for name in ("blimppi", "multiblimp", "wikiedits"):
         if (EXT_DIR / f"{name}.jsonl").exists():
             sets[name] = read_jsonl(EXT_DIR / f"{name}.jsonl")
     if (EXT_DIR / "wmt24pp.jsonl").exists():
@@ -964,6 +1026,7 @@ JUDGE_PLAN = {
     "gerlangmod": [("grammar", "naturalness", False)],
     "blimppi": [("grammar", "naturalness", False)],
     "multiblimp": [("grammar", "naturalness", False)],
+    "wikiedits": [("grammar", "naturalness", False)],
     "wmt24pp": [
         ("translation_generic", "preference", True),
         ("naturalness", "naturalness", False),
@@ -1189,6 +1252,7 @@ def main(argv=None) -> None:
             "translate",
             "prepare-euroeval",
             "prepare-minimal-pairs",
+            "prepare-wikiedits",
             "gate",
             "judge",
             "length",
@@ -1204,6 +1268,7 @@ def main(argv=None) -> None:
         "translate": translate,
         "prepare-euroeval": prepare_euroeval,
         "prepare-minimal-pairs": prepare_minimal_pairs,
+        "prepare-wikiedits": prepare_wikiedits,
         "gate": gate_eval,
         "judge": judge_eval,
         "length": length_eval,

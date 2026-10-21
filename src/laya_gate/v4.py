@@ -78,6 +78,8 @@ ARMS = {
 V41 = ("europarl", "dalaj", "swefaq", "dalaj_grammar", "adequacy", "registers", "hard_source")
 ARMS["v42a"] = (*V41, "length_balance")
 ARMS["v42b"] = (*V41, "length_balance", "length_pairs")
+ARMS["v43"] = (*V41, "wikipedia")
+WIKIPEDIA_PARAGRAPHS = 4000
 REGISTER_PER_SOURCE = 1000
 LENGTH_PROMPTS = 3000
 LENGTH_RATINGS = {"good": 4.5, "bad": 2.0}  # `quality` targets for the length-controlled answers
@@ -446,6 +448,78 @@ def hard_source_data(pool, rng: random.Random) -> list[dict[str, Any]]:
     return out
 
 
+def wikiedits_exclusions() -> tuple[set[str], set[str]]:
+    """Titles of the WikiEdits pages and normalized openings of their texts, so the Wikipedia
+    training paragraphs never contain a WikiEdits test text (in either version)."""
+    from urllib.parse import parse_qs, unquote, urlparse
+
+    titles, openings = set(), set()
+    for p in read_jsonl(X.EXT_DIR / "wikiedits.jsonl"):
+        q = parse_qs(urlparse(p.get("url", "")).query)
+        if q.get("title"):
+            titles.add(unquote(q["title"][0]).replace("_", " ").casefold())
+        for t in (p["ref"], p["other"]):
+            openings.add(X._norm(t)[:60])
+    return titles, openings
+
+
+# Lsjbot and similar template text (geography and species stubs), half of a random sample
+_BOT_TEXT = __import__("re").compile(
+    r"Omgivningarna runt|Trakten runt|runt .{0,40} är det (ganska |mycket )?(tät|gles)befolkat|"
+    r"Årsmedeltemperaturen|Medelnederbörden|invånare per kvadratkilometer|"
+    r"Inga underarter finns listade|enligt Catalogue of Life|Klimatet i området är|"
+    r"ligger .{0,40} meter över havet|Terrängen runt|Den högsta punkten i närheten",
+    __import__("re").I,
+)
+
+
+def wikipedia_paragraphs(n: int = WIKIPEDIA_PARAGRAPHS, seed: int = SEED) -> list[str]:
+    """Plain prose paragraphs (40-150 words) from Swedish Wikipedia (20231101 dump), skipping
+    every WikiEdits page and any paragraph that opens like a WikiEdits text."""
+    from datasets import load_dataset
+
+    titles, openings = wikiedits_exclusions()
+    ds = load_dataset("wikimedia/wikipedia", "20231101.sv", split="train", streaming=True)
+    ds = ds.shuffle(seed=seed, buffer_size=10_000)
+    out = []
+    for art in ds:
+        if art["title"].casefold() in titles:
+            continue
+        for para in art["text"].split("\n"):
+            para = " ".join(para.split())
+            words = len(para.split())
+            if not 40 <= words <= 150 or "|" in para or para[-1:] not in ".!?":
+                continue
+            if X._norm(para)[:60] in openings or _BOT_TEXT.search(para):
+                continue
+            out.append(para)
+            break  # one paragraph per article, for variety
+        if len(out) >= n:
+            break
+    return out
+
+
+def prepare_wikipedia() -> dict[str, Any]:
+    rng = random.Random(SEED + 43)
+    paras = wikipedia_paragraphs()
+    data = registers_data({"wikipedia": paras}, rng)
+    for row in data["single"]:
+        row["source"] = "wikipedia"
+    write_jsonl(V4_DIR / "wikipedia_naturalness.jsonl", data["naturalness"])
+    write_jsonl(V4_DIR / "wikipedia_single.jsonl", data["single"])
+    stats = {
+        "paragraphs": len(paras),
+        "pairs": len(data["naturalness"]),
+        "single": len(data["single"]),
+        "source": "wikimedia/wikipedia 20231101.sv (CC BY-SA 3.0), WikiEdits pages and "
+        "bot-generated stub text excluded",
+    }
+    v4 = load_metrics().get("v4") or {}
+    v4.setdefault("data", {})["wikipedia"] = stats
+    update_metrics("v4", v4)
+    return stats
+
+
 def prepare_v41() -> dict[str, Any]:
     rng = random.Random(SEED + 41)
     reg = registers_data(register_texts(rng), rng)
@@ -752,6 +826,19 @@ def prepare_adequacy() -> dict[str, Any]:
 def extra_units(tok, sources, internal, room, max_len, head_max_len) -> list[dict[str, Any]]:
     units = []
     for source in sources:
+        if source == "wikipedia":
+            rows = read_jsonl(V4_DIR / "wikipedia_naturalness.jsonl")
+            units += v2.build_units(
+                tok,
+                {source: rows},
+                {NATURALNESS_QID: internal[NATURALNESS_QID]},
+                room,
+                max_len,
+                head_max_len,
+            )
+            rows = read_jsonl(V4_DIR / "wikipedia_single.jsonl")
+            units += v3.build_single_units(tok, rows, internal, room, max_len, head_max_len)
+            continue
         if source == "length_balance":
             continue  # applied to the base pairs in train()
         if source == "length_pairs":
@@ -828,6 +915,8 @@ def train(arm: str, seed: int) -> None:
         print(prepare_v41())
     if "length_pairs" in ARMS[arm] and not (V4_DIR / "length_preference.jsonl").exists():
         print(prepare_length())
+    if "wikipedia" in ARMS[arm] and not (V4_DIR / "wikipedia_single.jsonl").exists():
+        print(prepare_wikipedia())
     internal = {qid: to_internal(qid, q) for qid, q in questions.items()}
     pair_internal = {q: internal[q] for q in QUESTIONS_V2}
     room = state_room_for(tok, questions, hp.max_len, hp.head_max_len)
@@ -988,7 +1077,7 @@ def test_suite() -> list[dict[str, Any]]:
             )
             add(f"length_test/{label}/preference", QID, pr, rf, ot, "length")
             add(f"length_test/{label}/quality", "quality", pr, rf, ot, "length")
-    for name in ("blimppi", "multiblimp"):
+    for name in ("blimppi", "multiblimp", "wikiedits"):
         if name in sets:
             mp = sets[name]
             mr, mo = [p["ref"] for p in mp], [p["other"] for p in mp]
@@ -1073,7 +1162,7 @@ def grammar_tests(gate, wins, guards, extra) -> None:
     """The `grammatical` question: pairwise via scores, ScaLA-sv as a classifier, and how
     often good human Swedish is flagged as incorrect (lower is better)."""
     sets = X.load_sets()
-    for name in ("dalaj", "gerlangmod", "blimppi", "multiblimp"):
+    for name in ("dalaj", "gerlangmod", "blimppi", "multiblimp", "wikiedits"):
         if name in sets:
             ps = sets[name]
             wins[f"{name}/grammatical"] = X.versus(
@@ -1104,6 +1193,7 @@ def grammar_tests(gate, wins, guards, extra) -> None:
         "flores_reference": [r["human"] for r in read_jsonl(_flores_path())],
         "wmt24pp_reference": [p["ref"] for p in sets.get("wmt24pp/opus", [])],
         "europarl_human": [p["ref"] for p in sets.get("europarl_en/kimi", [])],
+        "wikiedits_edited": [p["ref"] for p in sets.get("wikiedits", [])],
         "fluent_responses": [
             r[k] for r in v2.load_rows("val_eval")["fluent"] for k in ("candidate_a", "candidate_b")
         ],
@@ -1246,6 +1336,7 @@ def sanity(args) -> None:
         "v41",
         "v42a",
         "v42b",
+        "v43",
     ):
         path = ROOT / "checkpoints" / f"v4-{t}"
         if (path / "model.safetensors").exists():
@@ -1279,7 +1370,7 @@ def sanity(args) -> None:
 
 # -------------------------------------------------------------------- baselines
 
-MINIMAL_PAIR_SETS = ("dalaj", "gerlangmod", "blimppi", "multiblimp")
+MINIMAL_PAIR_SETS = ("dalaj", "gerlangmod", "blimppi", "multiblimp", "wikiedits")
 
 
 def baselines(args) -> None:

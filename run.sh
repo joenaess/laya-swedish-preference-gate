@@ -62,6 +62,8 @@ if [[ -f cache/fluent/train.jsonl ]]; then
     step "5o/8 v4.2 length (not released)" v4 prepare-length-test  # held-out length test
     step "5o/8 v4.2 length (not released)" v4 run --arm v42a
     step "5o/8 v4.2 length (not released)" v4 run --arm v42b
+    step "5o/8 WikiEdits"           external_eval prepare-wikiedits
+    step "5o/8 v4.3 (not released)" v4 run --arm v43          # + Swedish Wikipedia paragraphs
     step "5o/8 v4 rescore"          v4 rescore --tags v3 control adequacy v41 v42a v42b
     step "5o/8 n-gram baseline"     ngram build
     step "5o/8 v4 baselines"        v4 baselines

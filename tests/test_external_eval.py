@@ -248,3 +248,22 @@ def test_mcc():
     assert X.mcc(y, y) == pytest.approx(1.0)
     assert X.mcc(y, ~y) == pytest.approx(-1.0)
     assert X.mcc(y, np.array([True] * 4)) == 0.0
+
+
+def test_wikiedits_pairs_filters_numbers_rewrites_and_unchanged():
+    base = "Han var en svensk författare som skrev många böcker under sitt liv."
+    rows = [
+        {"index": 1, "text": base, "correction": base.replace("många", "flera"), "url": "u1"},
+        {"index": 2, "text": base, "correction": base, "url": "u2"},
+        {"index": 3, "text": base + " Född 1900.", "correction": base + " Född 1901.", "url": "u3"},
+        {
+            "index": 4,
+            "text": base,
+            "correction": "Något helt annat om något annat ämne.",
+            "url": "u4",
+        },
+    ]
+    pairs, dropped = X.wikiedits_pairs(rows)
+    assert [p["id"] for p in pairs] == ["wikiedits-1"]
+    assert pairs[0]["ref"].endswith("flera böcker under sitt liv.") and pairs[0]["other"] == base
+    assert dropped == {"unchanged": 1, "numbers_changed": 1, "large_rewrite": 1}

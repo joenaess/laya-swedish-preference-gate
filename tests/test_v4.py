@@ -98,6 +98,7 @@ def test_arms_and_sources_are_consistent():
         "v41",
         "v42a",
         "v42b",
+        "v43",
     }
     for sources in v4.ARMS.values():
         extra = (
@@ -107,6 +108,7 @@ def test_arms_and_sources_are_consistent():
             "hard_source",
             "length_balance",
             "length_pairs",
+            "wikipedia",
         )
         assert all(s in v4.SOURCE_FILES or s in extra for s in sources)
     assert set(v4.ARMS["both"]) == set(v4.ARMS["europarl"]) | set(v4.ARMS["native"])
@@ -224,3 +226,11 @@ def test_balance_rows_makes_chosen_longer_half():
     assert st == {"before": 11, "chosen_longer_before": 7, "chosen_shorter": 3, "after": 6}
     assert sum(v4.chosen_is_longer(r) for r in kept) == 3
     assert v4.chosen_is_longer(tie) is None
+
+
+def test_bot_text_filter_matches_stub_templates_only():
+    assert v4._BOT_TEXT.search("Omgivningarna runt Timóteo är huvudsakligen savann.")
+    assert v4._BOT_TEXT.search(
+        "Runt Byn är det ganska glesbefolkat, med invånare per kvadratkilometer."
+    )
+    assert not v4._BOT_TEXT.search("Maffei verkade främst som översättare av tysk poesi.")

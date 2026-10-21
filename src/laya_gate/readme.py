@@ -1217,6 +1217,7 @@ V4_ORDER = (
     ("grammar", "+both +grammar"),
     ("adequacy", "v4: +grammar +adequacy"),
     ("v41", "**v4.1**: v4 +registers +hard sources"),
+    ("v43", "v4.3: v4.1 +Wikipedia (not released)"),
 )
 RELEASE_ARM, RELEASE_NAME = "v41", "v4.1"
 V4_GROUPS = (
@@ -1250,6 +1251,8 @@ V4_GROUPS = (
             "blimppi/grammatical",
             "multiblimp/naturalness",
             "multiblimp/grammatical",
+            "wikiedits/naturalness",
+            "wikiedits/grammatical",
             "scala/accuracy@0.5",
         ),
     ),
@@ -1345,12 +1348,42 @@ def v4_section(m: dict) -> str:
     item = get(P, "translation_item_level", {})
     gram = get(A, "adequacy.guards", {})
     gram41 = get(A, f"{RELEASE_ARM}.guards", {})
+    gram43 = get(A, "v43.guards", {})
+    WD, WP = get(m, "external_data.wikiedits", {}), get(V, "data.wikipedia", {})
+    v43_part = (
+        f"""
+
+**WikiEdits and v4.3 (not released).** [`lang-uk/WikiEdits-MultiGEC`](https://huggingface.co/datasets/lang-uk/WikiEdits-MultiGEC)
+(MIT) holds human edits of Swedish Wikipedia text (September 2024 - May 2025). Keeping edits that
+change words but not numbers and do not rewrite more than a fifth of the text leaves
+{WD.get("pairs", NM)} pairs from {WD.get("pages", NM)} pages, a native, multi-sentence test of
+"the edited version is better" that no baseline solves (trigram
+{pct(get(V, "baselines.sets.wikiedits.trigram.mean"))}, longer wins
+{pct(get(V, "baselines.sets.wikiedits.longer_wins.mean"))}).
+Many edits are stylistic rather than grammatical, so this is a hard test. v4.3 adds to v4.1
+{get(WP, "paragraphs", 0):,} Swedish Wikipedia paragraphs (`wikimedia/wikipedia` 20231101.sv,
+CC BY-SA 3.0; every WikiEdits page and bot-generated stub text excluded), each against a
+corrupted copy, to teach that native encyclopedic text is correct. Against v4.1: WikiEdits
+`naturalness` {pct(val(RELEASE_ARM, "wikiedits/naturalness"))} → {pct(val("v43", "wikiedits/naturalness"))},
+`grammatical` {pct(val(RELEASE_ARM, "wikiedits/grammatical"))} → {pct(val("v43", "wikiedits/grammatical"))},
+ScaLA-sv MCC {num((get(A, f"{RELEASE_ARM}.classifiers.scala_grammatical") or {}).get("mcc@0.5"))} →
+{num((get(A, "v43.classifiers.scala_grammatical") or {}).get("mcc@0.5"))}; but over-flagging did
+not fall (fluent LLM answers flagged {pct(get(gram41, "fluent_responses_flagged_incorrect.mean"))}
+→ {pct(get(gram43, "fluent_responses_flagged_incorrect.mean"))}, edited Wikipedia text
+{pct(get(gram41, "wikiedits_edited_flagged_incorrect.mean"))} →
+{pct(get(gram43, "wikiedits_edited_flagged_incorrect.mean"))}), and the wrong-source sanity test
+slipped ({pct(sane(RELEASE_ARM, "wrong_source/preference+source"))} →
+{pct(sane("v43", "wrong_source/preference+source"))}). A better grammar ranker, not a fix for
+over-flagging; v4.1 stays the release."""
+        if get(A, "v43.tests")
+        else ""
+    )
     BL = get(V, "baselines.sets", {})
     bl_rows = "\n".join(
         f"| {name} | {get(BL, f'{name}.n', NM)} | {pct(get(BL, f'{name}.longer_wins.mean'))} | "
         f"{pct(get(BL, f'{name}.unigram_frequency.mean'))} | {pct(get(BL, f'{name}.trigram.mean'))} | "
         f"{pct(val(RELEASE_ARM, f'{name}/naturalness'))} | {pct(val(RELEASE_ARM, f'{name}/grammatical'))} |"
-        for name in ("dalaj", "gerlangmod", "blimppi", "multiblimp")
+        for name in ("dalaj", "gerlangmod", "blimppi", "multiblimp", "wikiedits")
         if get(BL, name)
     )
 
@@ -1497,7 +1530,7 @@ BLiMPPI (polarity items: the licenser is removed) and MultiBLiMP (subject-verb n
 the wrong side uses a plural verb form, archaic in modern Swedish) are new held-out tests here.
 Both are nearly solved by length or the trigram model: in BLiMPPI the grammatical sentence is
 the longer one in nearly every pair, in MultiBLiMP the shorter. The gate's lead over the trigram
-is clearest on DaLAJ and GerLangMod-sv."""
+is clearest on DaLAJ and GerLangMod-sv.{v43_part}"""
 
 
 def pilot_section(m: dict) -> str:
@@ -1659,7 +1692,8 @@ answers; that needs human preference data."""
     return f"""The only human-judged test of *answer quality* in Swedish we could find without new annotation:
 [Chatbot Arena](https://lmarena.ai) votes, where users write a prompt, read two anonymous answers and
 vote for the better one (`python -m laya_gate.arena_eval`). Sources:
-`lmarena-ai/arena-human-preference-140k` (CC BY 4.0), `-100k` and `-55k` (Apache-2.0); single-turn
+`lmarena-ai/arena-human-preference-140k` (CC BY 4.0), `-100k`, `-55k` (Apache-2.0) and
+`lmsys/chatbot_arena_conversations` (gated); single-turn
 battles whose prompt and both answers read as Swedish, deduplicated: {D.get("battles", NM)}
 battles, {S.get("decisive", NM)} decisive votes, {S.get("ties", NM)} ties and
 {S.get("both_bad", NM)} "both bad". Never used for training. No Kimi model appears in these battles,
@@ -1958,8 +1992,16 @@ def limitations(m: dict) -> str:
         ),
         "**Kimi-k3 is a reference, not ground truth.** The judge is a strong but imperfect "
         "model; agreement with it is not correctness.",
-        "**Single seed, single run.** Numbers come from one training run; seed-to-seed variance "
-        "was not measured.",
+        (
+            "**One training run per arm.** "
+            + (
+                "Two seeds of the v4 control arm differ by up to "
+                f"{num(100 * max(abs(x['diff']) for x in get(m, 'v4.comparison.arms.control-s20261015', {}).values()), 1)} "
+                "points on a single test; smaller differences between arms are noise."
+                if get(m, "v4.comparison.arms.control-s20261015")
+                else "Seed-to-seed variance was not measured."
+            )
+        ),
     ]
     if isinstance(m.get("mt_naturalness"), dict):
         items.append(
@@ -2101,8 +2143,37 @@ def conclusion(m: dict) -> str:
         )
     else:
         p2 = "The judge comparison is incomplete, so the cascade could not be assessed."
-    extra = [x for x in (v2_summary(m), v3_summary(m), v4_summary(m)) if x]
+    extra = [x for x in (v2_summary(m), v3_summary(m), v4_summary(m), overall_summary(m)) if x]
     return "\n\n".join([p1, p2, *extra])
+
+
+def overall_summary(m: dict) -> str | None:
+    """What the whole series of experiments shows, from the measured numbers."""
+    S, A = m.get("arena_sv") or {}, get(m, "v4.arms", {})
+    if not S.get("models") or not get(A, f"{RELEASE_ARM}.tests"):
+        return None
+    rel = (S["models"].get(RELEASE_NAME) or {}).get("preference", {})
+    q = get(m, "pilot_euroeval.partial_spearman_rank_given_size.v4-v41/answer_quality", {})
+    return (
+        "**Overall.** Across v1 to v4.3 one lesson repeats: the gate learns exactly the contrast "
+        'its pairs encode, including unintended ones (translationese in v1, "least like the '
+        'source wins" from Europarl, length from UltraFeedback-style data). Each was found only '
+        "with a held-out test built to expose it, so sanity tests and model-free baselines (length, "
+        "n-gram) are part of every result here. As a fast System 1 check of Swedish *form* the "
+        f"released {RELEASE_NAME} is solid: grammar (DaLAJ "
+        f"{pct(get(A, f'{RELEASE_ARM}.tests.dalaj/naturalness.mean'))}, ScaLA-sv MCC "
+        f"{num((get(A, f'{RELEASE_ARM}.classifiers.scala_grammatical') or {}).get('mcc@0.5'))}), "
+        "translation adequacy, translationese and relevance, at about 10 ms per pair. As a judge "
+        "of which of two fluent Swedish answers people prefer it is not: on human Chatbot Arena "
+        f'votes it agrees {pct(rel.get("accuracy"))}, near "the longer answer wins" '
+        f"({pct(get(S, 'length_baseline.accuracy_longer_wins'))}), while Kimi-k3 reaches "
+        f"{pct(get(S, 'judge.accuracy'))}. Synthetic length-controlled data fixes the length bias "
+        "in-distribution but not on human votes, so the remaining gap needs human preference data "
+        "on Swedish answers (or a larger model with world knowledge). Used that way, as a "
+        "form filter with uncertain or content-level decisions sent to an LLM judge, it is useful; "
+        "its model-level `quality` score also tracks EuroEval Swedish rank (Spearman "
+        f"{num(q.get('rho'), 2)} after controlling for size), a cheap screening signal."
+    )
 
 
 def v4_summary(m: dict) -> str | None:
