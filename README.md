@@ -903,7 +903,7 @@ own test split (`mteb/scala_sv_classification`); GerLangMod-sv the native Talban
 (`google/wmt24pp`, 960 post-edited segments with OPUS-MT and Kimi-k3 translations). Each cell is
 the share of items where the reference side wins (corrected sentence, own answer, human Swedish).
 **\*** marks a difference from control whose paired-bootstrap 95% CI excludes zero; the two
-control seeds differ by up to 4.2 points on a single
+control seeds differ by up to 12.4 points on a single
 test, so smaller differences are noise even when starred.
 
 | Test | v3 (published) | control | control, seed 2 | +Europarl | +DaLAJ/SweFAQ | +both | +both +grammar | v4: +grammar +adequacy | **v4.1**: v4 +registers +hard sources | v4.3: v4.1 +Wikipedia (not released) |
@@ -928,12 +928,12 @@ test, so smaller differences are noise even when starred.
 | dalaj/grammatical | — | — | — | — | — | — | 83.2% | 83.2% | 81.4% | 82.1% |
 | gerlangmod/naturalness | 83.3% | 85.1% | 81.6% * | 32.5% * | 94.5% * | 89.2% * | 93.6% * | 95.5% * | 95.7% * | 96.4% * |
 | gerlangmod/grammatical | — | — | — | — | — | — | 88.0% | 47.8% | 86.3% | 90.8% |
-| blimppi/naturalness | 40.7% * | 13.6% | — | — | — | — | — | 86.4% * | 89.8% * | 91.5% * |
-| blimppi/grammatical | — | — | — | — | — | — | — | 84.7% | 71.2% | 67.8% |
-| multiblimp/naturalness | 83.1% | 80.1% | — | — | — | — | — | 97.0% * | 97.5% * | 96.0% * |
-| multiblimp/grammatical | — | — | — | — | — | — | — | 94.0% | 95.3% | 93.3% |
-| wikiedits/naturalness | 51.4% | 52.6% | — | — | — | — | — | — | 56.6% | 61.0% * |
-| wikiedits/grammatical | — | — | — | — | — | — | — | — | 53.5% | 57.9% |
+| blimppi/naturalness | 40.7% * | 13.6% | 20.3% | 59.3% * | 86.4% * | 91.5% * | 89.8% * | 86.4% * | 89.8% * | 91.5% * |
+| blimppi/grammatical | — | — | — | — | — | — | 74.6% | 84.7% | 71.2% | 67.8% |
+| multiblimp/naturalness | 83.1% | 80.1% | 80.6% | 23.9% * | 99.0% * | 100.0% * | 98.5% * | 97.0% * | 97.5% * | 96.0% * |
+| multiblimp/grammatical | — | — | — | — | — | — | 95.0% | 94.0% | 95.3% | 93.3% |
+| wikiedits/naturalness | 51.4% | 52.6% | 51.5% | 44.4% * | 59.0% * | 55.1% | 57.8% * | 57.4% | 56.6% | 61.0% * |
+| wikiedits/grammatical | — | — | — | — | — | — | 54.5% | 55.8% | 53.5% | 57.9% |
 | **Relevance (SweFAQ)** | | | | | | | | | | |
 | swefaq/preference | 60.3% | 60.8% | 60.0% | 54.6% * | 88.7% * | 87.5% * | 87.7% * | 88.9% * | 88.6% * | 88.3% * |
 | swefaq/quality | 66.7% | 67.9% | 64.9% * | 65.2% * | 76.6% * | 68.0% | 71.7% * | 72.8% * | 71.3% * | 71.0% * |
@@ -1282,7 +1282,7 @@ Coverage: **42.8%** overall — `__init__.py` 100.0% · `arena_eval.py` 37.4% ·
 - **Pairwise preference, not fact-checking.** The gate predicts which of two responses the dataset labels as chosen. It does not verify factual correctness, and a fluent wrong answer can beat a terse correct one.
 - **1024-token window.** 42.3% of pairs exceed it; the gate then sees only the end of the prompt and the start of each response, so differences late in long answers are invisible to it. Scoring at 2048 or 4096 tokens without retraining did not help (see Context length) and costs latency.
 - **Kimi-k3 is a reference, not ground truth.** The judge is a strong but imperfect model; agreement with it is not correctness.
-- **One training run per arm.** Two seeds of the v4 control arm differ by up to 4.2 points on a single test; smaller differences between arms are noise.
+- **One training run per arm.** Two seeds of the v4 control arm differ by up to 12.4 points on a single test; smaller differences between arms are noise.
 - **Naturalness does not transfer to machine translation.** On professional vs `opus-mt-en-sv` translations of FLORES+ sentences no version separates the two usefully (AUC ≤ 0.56, see the machine-translation test); it detects Kimi-k3-style translationese, not machine translation in general. The same holds on the human-annotated translationese benchmark (liu-nlp/translationese-opensubtitles): every gate prefers the OPUS-MT translation over the native speaker's alternative.
 - **Grammar and relevance are weak spots.** On natively written Swedish the gate barely prefers a corrected sentence over a learner error (DaLAJ, best v3 question 68.8%) and loses to a word-overlap baseline at picking a question's own FAQ answer (SweFAQ, v3 `quality` 66.8% vs 79.7%); Kimi-k3 gets 90.3% and 99.0%.
 - **v4.1's `grammatical` question over-flags.** At threshold 0.5 it marks 25.2% of fluent LLM answers and 47.9% of WMT24++ references as incorrect; use it to compare two versions of a text, not as a verdict on one.
